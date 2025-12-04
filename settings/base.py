@@ -182,6 +182,13 @@ CORS_ALLOWED_ORIGINS = [
     "https://*.edusuite.com",
 ]
 
+ALLOWED_HOSTS = [
+    "102.212.246.160",
+    "localhost",
+    "127.0.0.1",
+]
+
+
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
