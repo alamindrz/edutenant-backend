@@ -1,0 +1,22 @@
+# ENV
+.env
+
+# Django Stuff
+__pycache__/
+db.sqlite3
+
+# Static
+staticfiles/
+
+# Media
+media/
+
+# Logs
+*.log
+logs/
+
+# Compiled
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
