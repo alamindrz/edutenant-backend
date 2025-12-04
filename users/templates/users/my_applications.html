@@ -1,0 +1,91 @@
+<!-- templates/users/my_applications.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block page_title %}My Applications{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-check me-2"></i>
+                        My Teacher Applications
+                    </h5>
+                    <a href="{% url 'school_discovery' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Apply to More Schools
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>School</th>
+                                    <th>Position</th>
+                                    <th>Applied</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in applications %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if application.school.logo %}
+                                            <img src="{{ application.school.logo.url }}" alt="{{ application.school.name }}" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-building"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ application.school.name }}</strong>
+                                                <div class="text-muted small">{{ application.school.get_school_type_display }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ application.position_applied }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ application.created_at|date:"M d, Y" }}</small>
+                                        <div class="text-muted small">{{ application.created_at|timesince }} ago</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if application.status == 'pending' %}warning{% elif application.status == 'approved' %}success{% else %}danger{% endif %}">
+                                            {{ application.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#applicationModal{{ application.id }}">
+                                            <i class="bi bi-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-person-x fs-1 text-muted mb-3"></i>
+                        <h4 class="text-muted mb-3">No Applications Yet</h4>
+                        <p class="text-muted mb-4">Start applying to teaching positions at schools that interest you.</p>
+                        <a href="{% url 'school_discovery' %}" class="btn btn-primary">
+                            <i class="bi bi-search me-2"></i>Discover Schools
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

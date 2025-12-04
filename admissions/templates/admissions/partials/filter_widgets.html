@@ -1,0 +1,112 @@
+<!-- templates/admissions/partials/filter_widgets.html -->
+<div class="card">
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Status Filter -->
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" 
+                        hx-get="{% url 'admissions:application_table_partial' %}"
+                        hx-target="#applications-table"
+                        hx-trigger="change"
+                        hx-include="[name='form'], [name='priority'], [name='search']">
+                    <option value="">All Statuses</option>
+                    {% for status in status_counts %}
+                    <option value="{{ status.status }}" 
+                            {% if request.GET.status == status.status %}selected{% endif %}>
+                        {{ status.status|title }} ({{ status.count }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Form Filter -->
+            <div class="col-md-4">
+                <label class="form-label">Application Form</label>
+                <select name="form" class="form-select"
+                        hx-get="{% url 'admissions:application_table_partial' %}"
+                        hx-target="#applications-table"
+                        hx-trigger="change"
+                        hx-include="[name='status'], [name='priority'], [name='search']">
+                    <option value="">All Forms</option>
+                    {% for form in forms %}
+                    <option value="{{ form.id }}" 
+                            {% if request.GET.form == form.id|stringformat:"i" %}selected{% endif %}>
+                        {{ form.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Priority Filter -->
+            <div class="col-md-4">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select"
+                        hx-get="{% url 'admissions:application_table_partial' %}"
+                        hx-target="#applications-table"
+                        hx-trigger="change"
+                        hx-include="[name='status'], [name='form'], [name='search']">
+                    <option value="">All Priorities</option>
+                    {% for priority in priority_counts %}
+                    <option value="{{ priority.priority }}" 
+                            {% if request.GET.priority == priority.priority %}selected{% endif %}>
+                        {{ priority.priority|title }} ({{ priority.count }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Active Filters -->
+        {% if request.GET.status or request.GET.form or request.GET.priority %}
+        <div class="mt-3">
+            <div class="d-flex flex-wrap gap-2">
+                {% if request.GET.status %}
+                <span class="badge bg-primary">
+                    Status: {{ request.GET.status|title }}
+                    <button class="btn-close btn-close-white ms-1" 
+                            style="font-size: 0.7rem;"
+                            hx-get="{% url 'admissions:application_table_partial' %}"
+                            hx-target="#applications-table"
+                            hx-vals='{"status": ""}'
+                            hx-include="[name='form'], [name='priority'], [name='search']"></button>
+                </span>
+                {% endif %}
+
+                {% if request.GET.form %}
+                <span class="badge bg-success">
+                    Form: 
+                    {% for form in forms %}
+                        {% if form.id == request.GET.form|add:"0" %}
+                            {{ form.name }}
+                        {% endif %}
+                    {% endfor %}
+                    <button class="btn-close btn-close-white ms-1" 
+                            style="font-size: 0.7rem;"
+                            hx-get="{% url 'admissions:application_table_partial' %}"
+                            hx-target="#applications-table"
+                            hx-vals='{"form": ""}'
+                            hx-include="[name='status'], [name='priority'], [name='search']"></button>
+                </span>
+                {% endif %}
+
+                {% if request.GET.priority %}
+                <span class="badge bg-warning text-dark">
+                    Priority: {{ request.GET.priority|title }}
+                    <button class="btn-close ms-1" 
+                            style="font-size: 0.7rem;"
+                            hx-get="{% url 'admissions:application_table_partial' %}"
+                            hx-target="#applications-table"
+                            hx-vals='{"priority": ""}'
+                            hx-include="[name='status'], [name='form'], [name='search']"></button>
+                </span>
+                {% endif %}
+
+                <a href="{% url 'admissions:application_list' %}" class="badge bg-secondary text-decoration-none">
+                    Clear All
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>

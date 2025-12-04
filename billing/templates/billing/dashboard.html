@@ -1,0 +1,189 @@
+<!-- templates/billing/dashboard.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Billing Dashboard - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Billing Dashboard</h1>
+            <p class="text-muted">Financial overview and payment management for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'billing:invoice_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-file-invoice me-2"></i>View All Invoices
+            </a>
+            <a href="{% url 'billing:fee_structure_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-money-bill-wave me-2"></i>Fee Structures
+            </a>
+        </div>
+    </div>
+
+    <!-- Financial Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Total Revenue</div>
+                            <div class="h5 mb-0">₦{{ financial_stats.total_revenue|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Pending Invoices</div>
+                            <div class="h5 mb-0">₦{{ financial_stats.pending_invoices|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Paid Invoices</div>
+                            <div class="h5 mb-0">{{ financial_stats.paid_invoices }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Total Invoices</div>
+                            <div class="h5 mb-0">{{ financial_stats.total_invoices }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Transactions -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Transactions</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                <tr>
+                                    <td>
+                                        <code>{{ transaction.paystack_reference|truncatechars:12 }}</code>
+                                    </td>
+                                    <td>{{ transaction.invoice.student.full_name }}</td>
+                                    <td>₦{{ transaction.amount|floatformat:2|intcomma }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if transaction.status == 'success' %}success{% elif transaction.status == 'pending' %}warning{% else %}danger{% endif %}">
+                                            {{ transaction.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ transaction.created_at|date:"M j, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent transactions</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Status Breakdown -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Status</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in invoice_breakdown %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-sm text-capitalize">{{ item.status }}</span>
+                            <span class="text-sm fw-bold">{{ item.count }} (₦{{ item.amount|floatformat:2|intcomma }})</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-{% if item.status == 'paid' %}success{% elif item.status == 'sent' %}warning{% elif item.status == 'overdue' %}danger{% else %}info{% endif %}" 
+                                 style="width: {{ item.count|divisibleby:financial_stats.total_invoices|default:0|floatformat:0 }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Subscription Info -->
+            {% if subscription %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ subscription.plan.name }}</strong>
+                        <span class="badge bg-{% if subscription.is_active %}success{% else %}warning{% endif %}">
+                            {{ subscription.status|title }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-muted">
+                        <div>Billing: {{ subscription.billing_period|title }}</div>
+                        <div>Expires: {{ subscription.current_period_end|date:"M j, Y" }}</div>
+                        {% if subscription.days_remaining %}
+                        <div class="text-success">
+                            <i class="fas fa-clock me-1"></i>{{ subscription.days_remaining }} days remaining
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Applicant</th>
+                <th>Position</th>
+                <th>Experience</th>
+                <th>Qualification</th>
+                <th>Status</th>
+                <th>Applied</th>
+                <th width="120">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for application in applications %}
+            <tr class="application-row">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="application-avatar bg-primary text-white me-3">
+                            {{ application.first_name|first|upper }}{{ application.last_name|first|upper }}
+                        </div>
+                        <div>
+                            <div class="fw-semibold">{{ application.full_name }}</div>
+                            <small class="text-muted">{{ application.email }}</small>
+                            <br>
+                            <small class="text-muted">{{ application.phone_number }}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="fw-medium">
+                        {% if application.position %}
+                            {{ application.position.title }}
+                        {% else %}
+                            {{ application.position_applied }}
+                        {% endif %}
+                    </span>
+                    <br>
+                    <small class="text-muted text-capitalize">
+                        {{ application.get_application_type_display }}
+                    </small>
+                </td>
+                <td>
+                    <span class="fw-medium">{{ application.years_of_experience }}</span>
+                    <small class="text-muted d-block">years</small>
+                </td>
+                <td>
+                    <span class="fw-medium">{{ application.qualification }}</span>
+                    {% if application.specialization %}
+                    <br>
+                    <small class="text-muted">{{ application.specialization }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if application.status == 'pending' %}
+                    <span class="badge bg-warning status-badge">Pending</span>
+                    {% elif application.status == 'approved' %}
+                    <span class="badge bg-success status-badge">Approved</span>
+                    {% elif application.status == 'rejected' %}
+                    <span class="badge bg-danger status-badge">Rejected</span>
+                    {% elif application.status == 'withdrawn' %}
+                    <span class="badge bg-secondary status-badge">Withdrawn</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <small class="text-muted">{{ application.created_at|date:"M j, Y" }}</small>
+                    <br>
+                    <small class="text-muted">{{ application.created_at|timesince }} ago</small>
+                </td>
+                <td>
+                    <div class="d-flex gap-1 action-buttons">
+                        <!-- View Details Button -->
+                        <button class="btn btn-sm btn-outline-primary" 
+                                hx-get="{% url 'users:application_detail_modal' application.id %}"
+                                hx-target="#applicationDetailContent"
+                                hx-trigger="click"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#applicationDetailModal"
+                                title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        
+                        {% if application.status == 'pending' %}
+                        <!-- Approve Button -->
+                        <button class="btn btn-sm btn-outline-success" 
+                                hx-post="{% url 'users:approve_application' application.id %}"
+                                hx-target="#applications-table"
+                                hx-confirm="Are you sure you want to approve this application?"
+                                hx-indicator="#applications-loading"
+                                title="Approve Application">
+                            <i class="bi bi-check"></i>
+                        </button>
+                        
+                        <!-- Reject Button -->
+                        <button class="btn btn-sm btn-outline-danger" 
+                                hx-post="{% url 'users:reject_application' application.id %}"
+                                hx-target="#applications-table"
+                                hx-confirm="Are you sure you want to reject this application?"
+                                hx-indicator="#applications-loading"
+                                title="Reject Application">
+                            <i class="bi bi-x"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                        No applications found
+                        {% if request.GET.search or request.GET.status or request.GET.application_type %}
+                        <br><small>Try adjusting your filters</small>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if applications.has_other_pages %}
+    <div class="card-footer">
+        <nav aria-label="Application pagination">
+            <ul class="pagination justify-content-center mb-0">
+                {% if applications.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       hx-get="{% url 'users:applications_table_partial' %}"
+                       hx-target="#applications-table"
+                       hx-vals='{"page": "{{ applications.previous_page_number }}", "search": "{{ request.GET.search }}", "status": "{{ request.GET.status }}", "application_type": "{{ request.GET.application_type }}"}'
+                       href="?page={{ applications.previous_page_number }}">&laquo;</a>
+                </li>
+                {% endif %}
+                
+                {% for i in applications.paginator.page_range %}
+                <li class="page-item {% if applications.number == i %}active{% endif %}">
+                    <a class="page-link" 
+                       hx-get="{% url 'users:applications_table_partial' %}"
+                       hx-target="#applications-table"
+                       hx-vals='{"page": "{{ i }}", "search": "{{ request.GET.search }}", "status": "{{ request.GET.status }}", "application_type": "{{ request.GET.application_type }}"}'
+                       href="?page={{ i }}">{{ i }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if applications.has_next %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       hx-get="{% url 'users:applications_table_partial' %}"
+                       hx-target="#applications-table"
+                       hx-vals='{"page": "{{ applications.next_page_number }}", "search": "{{ request.GET.search }}", "status": "{{ request.GET.status }}", "application_type": "{{ request.GET.application_type }}"}'
+                       href="?page={{ applications.next_page_number }}">&raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>

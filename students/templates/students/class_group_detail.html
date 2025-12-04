@@ -1,0 +1,270 @@
+<!-- templates/students/class_group_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ class_group.name }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Class Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="avatar-xl bg-primary rounded-circle text-white d-flex align-items-center justify-content-center">
+                                <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h1 class="h3 mb-1">{{ class_group.name }}</h1>
+                            <p class="text-muted mb-1">
+                                Education Level: <strong>{{ class_group.education_level.name }}</strong> | 
+                                Capacity: <strong>{{ class_group.student_count }}/{{ class_group.capacity }}</strong>
+                            </p>
+                            <p class="text-muted mb-0">
+                                {% if class_group.is_full %}
+                                <span class="badge bg-danger">Class Full</span>
+                                {% else %}
+                                <span class="badge bg-success">{{ class_group.capacity|subtract:class_group.student_count }} seats available</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group">
+                                <a href="{% url 'students:class_group_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back
+                                </a>
+                                <a href="#" class="btn btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Class Info -->
+        <div class="col-lg-4">
+            <!-- Class Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Class Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="text-muted" width="40%">Class Name:</td>
+                            <td><strong>{{ class_group.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Education Level:</td>
+                            <td>{{ class_group.education_level.name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Capacity:</td>
+                            <td>{{ class_group.capacity }} students</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Current Students:</td>
+                            <td>
+                                <strong>{{ class_group.student_count }}</strong>
+                                <div class="progress mt-1" style="height: 6px;">
+                                    {% with percentage=class_group.student_count|divisible:class_group.capacity|multiply:100 %}
+                                    <div class="progress-bar {% if percentage >= 90 %}bg-danger{% elif percentage >= 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         style="width: {{ percentage }}%"></div>
+                                    {% endwith %}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Availability:</td>
+                            <td>
+                                {% if class_group.is_full %}
+                                <span class="badge bg-danger">Full</span>
+                                {% else %}
+                                <span class="badge bg-success">{{ class_group.capacity|subtract:class_group.student_count }} available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Class Teacher -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Class Teacher</h5>
+                </div>
+                <div class="card-body">
+                    {% if class_group.class_teacher %}
+                    <div class="text-center">
+                        <div class="avatar-xxl bg-info rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-3">
+                            {{ class_group.class_teacher.user.first_name|first }}{{ class_group.class_teacher.user.last_name|first }}
+                        </div>
+                        <h5 class="mb-1">{{ class_group.class_teacher.user.get_full_name }}</h5>
+                        <p class="text-muted mb-2">{{ class_group.class_teacher.role.name }}</p>
+                        <div class="d-grid gap-2">
+                            <a href="mailto:{{ class_group.class_teacher.user.email }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-envelope"></i> Send Email
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-user-slash fa-2x mb-2"></i>
+                        <p>No class teacher assigned</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Additional Teachers -->
+            {% if teachers.count > 1 %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Additional Teachers</h5>
+                </div>
+                <div class="card-body">
+                    {% for teacher in teachers %}
+                    {% if teacher != class_group.class_teacher %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar-sm bg-light rounded-circle text-dark d-flex align-items-center justify-content-center me-3 border">
+                            {{ teacher.user.first_name|first }}{{ teacher.user.last_name|first }}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 small">{{ teacher.user.get_full_name }}</h6>
+                            <small class="text-muted">{{ teacher.role.name }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Students -->
+        <div class="col-lg-8">
+            <!-- Students List -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Students ({{ students.count }})</h5>
+                    <a href="{% url 'students:student_create' %}?class_group={{ class_group.id }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Add Student
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Admission No.</th>
+                                    <th>Parent</th>
+                                    <th>Contact</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle text-white d-flex align-items-center justify-content-center me-3">
+                                                {{ student.first_name|first }}{{ student.last_name|first }}
+                                            </div>
+                                            <div>
+                                                <a href="{% url 'students:student_detail' student.id %}" class="text-dark fw-semibold">
+                                                    {{ student.full_name }}
+                                                </a>
+                                                <small class="d-block text-muted">{{ student.get_gender_display }}, Age {{ student.age }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <code>{{ student.admission_number }}</code>
+                                    </td>
+                                    <td>
+                                        {% if student.parent %}
+                                        <a href="{% url 'students:parent_detail' student.parent.id %}" class="text-dark">
+                                            {{ student.parent.full_name }}
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.parent %}
+                                        <small class="text-muted d-block">{{ student.parent.phone_number }}</small>
+                                        <small class="text-muted">{{ student.parent.email }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'students:student_detail' student.id %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fas fa-users fa-2x mb-3"></i>
+                            <p>No students assigned to this class yet.</p>
+                            <a href="{% url 'students:student_create' %}?class_group={{ class_group.id }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add First Student
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Statistics -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ students.count }}</h3>
+                            <small>Total Students</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ students.count }}</h3>
+                            <small>Active Students</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h3 class="mb-0">{{ teachers.count }}</h3>
+                            <small>Teachers</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

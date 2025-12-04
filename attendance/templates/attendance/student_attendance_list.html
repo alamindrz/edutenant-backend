@@ -1,0 +1,248 @@
+<!-- templates/attendance/student_attendance_list.html -->
+{% extends 'attendance/base.html' %}
+{% load static humanize %}
+
+{% block title %}Student Attendance - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Student Attendance</h1>
+            <p class="text-muted">Manage daily student attendance for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <a href="{% url 'attendance:reports' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-bar me-2"></i>Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Class Group</label>
+                    <select name="class_group" class="form-select">
+                        <option value="">All Classes</option>
+                        {% for class in class_groups %}
+                        <option value="{{ class.id }}" {% if class_filter == class.id|stringformat:"i" %}selected{% endif %}>
+                            {{ class.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="present" {% if status_filter == 'present' %}selected{% endif %}>Present</option>
+                        <option value="absent" {% if status_filter == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="late" {% if status_filter == 'late' %}selected{% endif %}>Late</option>
+                        <option value="excused" {% if status_filter == 'excused' %}selected{% endif %}>Excused</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Attendance Form -->
+    <form method="post" id="attendanceForm">
+        {% csrf_token %}
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    Attendance for {{ selected_date|date:"F j, Y" }}
+                    {% if current_term %}
+                    <span class="badge bg-info ms-2">{{ current_term.name }}</span>
+                    {% endif %}
+                </h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="markAllPresent">
+                        Mark All Present
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="markAllAbsent">
+                        Mark All Absent
+                    </button>
+                    <button type="submit" name="bulk_attendance" class="btn btn-sm btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Attendance
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <!-- Students with Attendance Records -->
+                {% if attendance_records %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="5%">#</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Admission No.</th>
+                                <th width="20%">Status</th>
+                                <th width="15%">Time In/Out</th>
+                                <th width="10%">Recorded By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_records %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ record.student.full_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ record.student.class_group.name|default:"-" }}</span>
+                                </td>
+                                <td>
+                                    <code>{{ record.student.admission_number }}</code>
+                                </td>
+                                <td>
+                                    <select name="attendance_{{ record.student.id }}" class="form-select form-select-sm attendance-status">
+                                        <option value="present" {% if record.status == 'present' %}selected{% endif %}>Present</option>
+                                        <option value="absent" {% if record.status == 'absent' %}selected{% endif %}>Absent</option>
+                                        <option value="late" {% if record.status == 'late' %}selected{% endif %}>Late</option>
+                                        <option value="excused" {% if record.status == 'excused' %}selected{% endif %}>Excused</option>
+                                        <option value="sick" {% if record.status == 'sick' %}selected{% endif %}>Sick Leave</option>
+                                    </select>
+                                    {% if record.is_late %}
+                                    <small class="text-warning d-block mt-1">
+                                        <i class="fas fa-clock me-1"></i>Late arrival
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.time_in %}
+                                    <small class="text-muted">
+                                        In: {{ record.time_in|time }}<br>
+                                        {% if record.time_out %}
+                                        Out: {{ record.time_out|time }}
+                                        {% endif %}
+                                    </small>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ record.recorded_by.user.get_full_name|default:record.recorded_by.user.username }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No attendance records found for the selected date</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Students Without Attendance -->
+        {% if students_without_attendance %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0 text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Students Without Attendance Records ({{ students_without_attendance.count }})
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-warning">
+                            <tr>
+                                <th width="5%">#</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Admission No.</th>
+                                <th width="20%">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students_without_attendance %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ student.full_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ student.class_group.name|default:"-" }}</span>
+                                </td>
+                                <td>
+                                    <code>{{ student.admission_number }}</code>
+                                </td>
+                                <td>
+                                    <select name="attendance_{{ student.id }}" class="form-select form-select-sm attendance-status">
+                                        <option value="present">Present</option>
+                                        <option value="absent" selected>Absent</option>
+                                        <option value="late">Late</option>
+                                        <option value="excused">Excused</option>
+                                        <option value="sick">Sick Leave</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark all present
+    document.getElementById('markAllPresent').addEventListener('click', function() {
+        document.querySelectorAll('.attendance-status').forEach(select => {
+            select.value = 'present';
+        });
+    });
+
+    // Mark all absent
+    document.getElementById('markAllAbsent').addEventListener('click', function() {
+        document.querySelectorAll('.attendance-status').forEach(select => {
+            select.value = 'absent';
+        });
+    });
+
+    // Form submission confirmation
+    document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+        const presentCount = Array.from(document.querySelectorAll('.attendance-status'))
+            .filter(select => select.value === 'present').length;
+        
+        if (presentCount === 0) {
+            const confirmed = confirm('No students are marked as present. Are you sure you want to save?');
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

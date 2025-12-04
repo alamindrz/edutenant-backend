@@ -1,0 +1,283 @@
+{% extends 'attendance/base.html' %}
+{% load static humanize %}
+
+{% block title %}Attendance Dashboard - {{ request.school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Attendance Dashboard</h1>
+            <p class="text-muted">Monitor student and teacher attendance for {{ request.school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'attendance:student_attendance_list' %}" class="btn btn-primary">
+                <i class="fas fa-users me-2"></i>Student Attendance
+            </a>
+            <a href="{% url 'attendance:teacher_attendance_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chalkboard-teacher me-2"></i>Teacher Attendance
+            </a>
+            <a href="{% url 'attendance:reports' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-chart-bar me-2"></i>Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Today's Date + Term -->
+      {% if current_term %}
+      <div class="alert alert-info mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+              <div>
+                  <strong>{{ current_term.name }}</strong> • {{ current_term.academic_year }}
+                  <br>
+                  <small>
+                      {{ current_term.start_date|date:"M j" }} to {{ current_term.end_date|date:"M j, Y" }} • 
+                      {{ current_term.total_working_days }} school days
+                      {% if not is_school_day %}
+                      • <span class="text-warning">Today is not a school day</span>
+                      {% endif %}
+                  </small>
+              </div>
+              <a href="{% url 'students:academic_term_detail' current_term.id %}" class="btn btn-sm btn-outline-info">
+                  View Term
+              </a>
+          </div>
+      </div>
+      {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <!-- Student Statistics -->
+        <div class="col-xl-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2 text-primary"></i>Student Attendance
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h3 text-primary mb-1">{{ student_stats.total_students }}</div>
+                            <small class="text-muted">Total Students</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h3 text-success mb-1">{{ student_stats.present_today }}</div>
+                            <small class="text-muted">Present Today</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h3 text-danger mb-1">{{ student_stats.absent_today }}</div>
+                            <small class="text-muted">Absent Today</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Attendance Rate</small>
+                            <small class="text-muted">{{ student_stats.present_rate }}%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success"
+                                 role="progressbar"
+                                 style="width: {{ student_stats.present_rate }}%;"
+                                 aria-valuenow="{{ student_stats.present_rate }}"
+                                 aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                        {% if student_stats.total_students == 0 %}
+                            <small class="text-warning">No active students found for this school.</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teacher Statistics -->
+        <div class="col-xl-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2 text-warning"></i>Teacher Attendance
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h3 text-warning mb-1">{{ teacher_stats.total_teachers }}</div>
+                            <small class="text-muted">Total Teachers</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h3 text-success mb-1">{{ teacher_stats.present_today }}</div>
+                            <small class="text-muted">Present Today</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h3 text-info mb-1">{{ teacher_stats.signed_in_today }}</div>
+                            <small class="text-muted">Signed In</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Sign-in Rate</small>
+                            <small class="text-muted">{{ teacher_stats.signin_rate }}%</small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info"
+                                 role="progressbar"
+                                 style="width: {{ teacher_stats.signin_rate }}%;"
+                                 aria-valuenow="{{ teacher_stats.signin_rate }}"
+                                 aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                        {% if teacher_stats.total_teachers == 0 %}
+                            <small class="text-warning">No active teachers found for this school.</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class group attendance ranking -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Top Class Attendance</h5>
+                    <a href="{% url 'attendance:class_attendance' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if class_group_attendance %}
+                        <div class="list-group list-group-flush">
+                            {% for item in class_group_attendance %}
+                                <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ item.class_group.name }}</strong>
+                                        <div class="small text-muted">{{ item.present_count }} / {{ item.total_students }} present</div>
+                                    </div>
+                                    <div class="text-end" style="width: 220px;">
+                                        <div class="d-flex justify-content-between small text-muted mb-1">
+                                            <div>{{ item.attendance_rate }}%</div>
+                                            <div>Rank {{ forloop.counter }}</div>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: {{ item.attendance_rate }}%;"
+                                                 aria-valuenow="{{ item.attendance_rate }}"
+                                                 aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-school fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No class attendance data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick recent stats / small placeholders -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="mb-2">Quick Snapshot</h6>
+                    <div class="small text-muted mb-1">Students present: {{ student_stats.present_today }}</div>
+                    <div class="small text-muted mb-1">Students absent: {{ student_stats.absent_today }}</div>
+                    <div class="small text-muted mb-1">Teachers signed in: {{ teacher_stats.signed_in_today }}</div>
+                    <div class="small text-muted">Updated: {{ today|date:"M j, Y" }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="mb-2">Legend</h6>
+                    <div class="mb-2"><span class="badge bg-success me-1">Present</span><span class="text-muted"> Present status</span></div>
+                    <div class="mb-2"><span class="badge bg-danger me-1">Absent</span><span class="text-muted"> Absent status</span></div>
+                    <div><span class="badge bg-warning me-1">Late</span><span class="text-muted"> Late status</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent lists -->
+    <div class="row">
+        <!-- Recent Student Attendance -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Student Attendance</h5>
+                    <a href="{% url 'attendance:student_attendance_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_student_attendance %}
+                        <div class="list-group list-group-flush">
+                            {% for record in recent_student_attendance %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ record.student.full_name }}</h6>
+                                        <small class="text-muted">{{ record.student.class_group.name|default:"No Class" }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-{% if record.status == 'present' %}success{% elif record.status == 'absent' %}danger{% else %}warning{% endif %}">
+                                            {{ record.status|title }}
+                                        </span>
+                                        <div><small class="text-muted">{{ record.recorded_at|time }}</small></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-clipboard-list fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No student attendance recorded today</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Teacher Sign-ins -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Teacher Sign-ins</h5>
+                    <a href="{% url 'attendance:teacher_attendance_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_teacher_attendance %}
+                        <div class="list-group list-group-flush">
+                            {% for record in recent_teacher_attendance %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ record.staff.full_name }}</h6>
+                                        <small class="text-muted">{{ record.staff.position }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if record.is_late %}
+                                            <span class="badge bg-warning me-1">Late</span>
+                                        {% endif %}
+                                        <span class="badge bg-success">Signed In</span>
+                                        <div><small class="text-muted">{{ record.sign_in_time|time }}</small></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-user-clock fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No teacher sign-ins today</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

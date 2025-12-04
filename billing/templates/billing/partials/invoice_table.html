@@ -1,0 +1,162 @@
+<!-- templates/billing/partials/invoice_table.html -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Invoices</h5>
+        <div class="d-flex gap-2">
+            <!-- Search Form -->
+            <form hx-get="{% url 'billing:invoice_table_partial' %}" 
+                  hx-target="#invoice-table" 
+                  hx-trigger="keyup changed delay:500ms">
+                <div class="input-group input-group-sm">
+                    <input type="text" name="search" value="{{ search_query }}" 
+                           class="form-control" placeholder="Search invoices..." style="width: 200px;">
+                </div>
+            </form>
+
+            <!-- Status Filter -->
+            <select class="form-select form-select-sm" style="width: 150px;"
+                    name="status"
+                    hx-get="{% url 'billing:invoice_table_partial' %}" 
+                    hx-target="#invoice-table"
+                    hx-trigger="change"
+                    hx-include="[name='search']">
+                <option value="">All Status</option>
+                <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+            </select>
+
+            <!-- Type Filter -->
+            <select class="form-select form-select-sm" style="width: 150px;"
+                    name="type"
+                    hx-get="{% url 'billing:invoice_table_partial' %}" 
+                    hx-target="#invoice-table"
+                    hx-trigger="change"
+                    hx-include="[name='search'], [name='status']">
+                <option value="">All Types</option>
+                <option value="school_fees" {% if type_filter == 'school_fees' %}selected{% endif %}>School Fees</option>
+                <option value="application" {% if type_filter == 'application' %}selected{% endif %}>Application</option>
+                <option value="acceptance" {% if type_filter == 'acceptance' %}selected{% endif %}>Acceptance</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Student</th>
+                        <th>Parent</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>
+                            <strong>{{ invoice.invoice_number }}</strong>
+                        </td>
+                        <td>
+                            {% if invoice.student %}
+                            {{ invoice.student.full_name }}
+                            {% else %}
+                            <span class="text-muted">No Student</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ invoice.parent.full_name }}</td>
+                        <td>
+                            <span class="badge bg-secondary text-capitalize">{{ invoice.invoice_type }}</span>
+                        </td>
+                        <td>₦{{ invoice.total_amount|floatformat:2|intcomma }}</td>
+                        <td>
+                            <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' %}danger{% elif invoice.status == 'sent' %}warning{% else %}info{% endif %}">
+                                {{ invoice.status|title }}
+                            </span>
+                            {% if invoice.is_overdue %}
+                            <small class="text-danger">({{ invoice.days_overdue }} days)</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ invoice.due_date|date:"M j, Y" }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'billing:invoice_detail' invoice.id %}" 
+                                   class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if invoice.status == 'sent' %}
+                                <button class="btn btn-outline-success" title="Mark as Paid"
+                                        hx-post="{% url 'billing:mark_invoice_paid' invoice.id %}"
+                                        hx-target="closest tr"
+                                        hx-confirm="Mark this invoice as paid?">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-file-invoice fa-2x mb-3"></i>
+                                <p>No invoices found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj %}
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }} invoices
+            </small>
+            {% if page_obj.has_other_pages %}
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           hx-get="{% url 'billing:invoice_table_partial' %}?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&type={{ type_filter }}&search={{ search_query }}"
+                           hx-target="#invoice-table">&laquo;</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           hx-get="{% url 'billing:invoice_table_partial' %}?page={{ num }}&status={{ status_filter }}&type={{ type_filter }}&search={{ search_query }}"
+                           hx-target="#invoice-table">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           hx-get="{% url 'billing:invoice_table_partial' %}?page={{ page_obj.next_page_number }}&status={{ status_filter }}&type={{ type_filter }}&search={{ search_query }}"
+                           hx-target="#invoice-table">&raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>

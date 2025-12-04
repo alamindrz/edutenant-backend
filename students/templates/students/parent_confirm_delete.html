@@ -1,0 +1,77 @@
+<!-- templates/students/parent_confirm_delete.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <h4>Confirm Deletion</h4>
+                    </div>
+                    
+                    <div class="alert alert-danger">
+                        <p class="mb-2"><strong>You are about to permanently delete:</strong></p>
+                        <h5 class="mb-1">{{ parent.full_name }}</h5>
+                        <p class="mb-0 text-muted">
+                            Email: {{ parent.email }}<br>
+                            Phone: {{ parent.phone_number }}
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-danger">
+                            <strong>Warning:</strong> This action cannot be undone. 
+                            All parent information will be permanently deleted from the system.
+                        </p>
+                        
+                        {% if parent.user %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-user me-2"></i>
+                            The associated user account will also be deleted.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="confirm_text" class="form-label">
+                                Type <strong>DELETE</strong> to confirm:
+                            </label>
+                            <input type="text" class="form-control text-center" id="confirm_text" 
+                                   placeholder="DELETE" required>
+                        </div>
+                        
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'students:parent_detail' parent.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="delete_btn" disabled>
+                                <i class="fas fa-trash"></i> Permanently Delete
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.getElementById('confirm_text').addEventListener('input', function(e) {
+    const deleteBtn = document.getElementById('delete_btn');
+    deleteBtn.disabled = e.target.value !== 'DELETE';
+});
+</script>
+{% endblock %}
+{% endblock %}

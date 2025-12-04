@@ -1,0 +1,512 @@
+<!-- templates/partials/school_feed.html -->
+{% for school in schools %}
+<div class="card school-card feed-item shadow-sm mb-4">
+    <div class="card-body p-4">
+        <!-- School Header -->
+        <div class="d-flex align-items-start mb-3">
+            <!-- School Logo -->
+            <div class="flex-shrink-0">
+                {% if school.logo %}
+                <img src="{{ school.logo.url }}" alt="{{ school.name }}" class="school-logo rounded">
+                {% else %}
+                <div class="school-logo bg-primary text-white d-flex align-items-center justify-content-center rounded">
+                    <i class="bi bi-building fs-4"></i>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- School Info -->
+            <div class="flex-grow-1 ms-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-1 fw-bold">{{ school.name }}</h5>
+                        {% if school.address %}
+                        <p class="text-muted school-meta mb-2">
+                            <i class="bi bi-geo-alt me-1"></i>
+                            {{ school.address|truncatewords:8 }}
+                        </p>
+                        {% endif %}
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary">
+                                <i class="bi bi-mortarboard me-1"></i>
+                                {{ school.get_school_type_display }}
+                            </span>
+                            {% if school.student_count %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-people me-1"></i>{{ school.student_count }} students
+                            </span>
+                            {% endif %}
+                            {% if school.staff_count %}
+                            <span class="badge bg-info">
+                                <i class="bi bi-person-badge me-1"></i>{{ school.staff_count }} staff
+                            </span>
+                            {% endif %}
+                            {% if school.open_teaching_positions.exists %}
+                            <span class="badge bg-warning">
+                                <i class="bi bi-briefcase me-1"></i>Hiring
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-calendar me-1"></i>
+                            Joined {{ school.created_at|date:"M Y" }}
+                        </small>
+                        <div class="mt-2">
+                            {% if school in user_schools %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle me-1"></i>Your School
+                            </span>
+                            {% else %}
+                            <div class="btn-group" role="group">
+                                {% if school.open_teaching_positions.exists %}
+                                <a href="{% url 'users:apply_to_school' school.id %}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="bi bi-send me-1"></i>Apply
+                                </a>
+                                {% endif %}
+                                <button class="btn btn-outline-primary btn-sm follow-school" 
+                                        data-school-id="{{ school.id }}">
+                                    <i class="bi bi-plus-lg me-1"></i> Follow
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- School Description -->
+        {% if school.description %}
+        <p class="card-text text-muted mb-3">
+            {{ school.description|truncatewords:40 }}
+        </p>
+        {% endif %}
+
+        <!-- Open Positions -->
+        {% if school.open_teaching_positions.exists %}
+        <div class="mb-3">
+            <h6 class="text-primary mb-2">
+                <i class="bi bi-briefcase me-2"></i>Open Positions
+            </h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for position in school.open_teaching_positions.all|slice:":3" %}
+                <span class="badge bg-light text-dark border">
+                    {{ position.title }}
+                    {% if position.department %}
+                    <small class="text-muted">({{ position.department }})</small>
+                    {% endif %}
+                </span>
+                {% endfor %}
+                {% if school.open_teaching_positions.count > 3 %}
+                <span class="badge bg-light text-dark border">
+                    +{{ school.open_teaching_positions.count|add:"-3" }} more
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Contact & Stats -->
+        <div class="row text-center mt-3 pt-3 border-top">
+            {% if school.contact_email %}
+            <div class="col-4 col-md-3">
+                <small class="text-muted d-block">
+                    <i class="bi bi-envelope"></i> Email
+                </small>
+                <small class="text-primary d-block text-truncate" title="{{ school.contact_email }}">
+                    {{ school.contact_email }}
+                </small>
+            </div>
+            {% endif %}
+            {% if school.phone_number %}
+            <div class="col-4 col-md-3">
+                <small class="text-muted d-block">
+                    <i class="bi bi-telephone"></i> Phone
+                </small>
+                <small class="text-success">{{ school.phone_number }}</small>
+            </div>
+            {% endif %}
+            <div class="col-4 col-md-3">
+                <small class="text-muted d-block">
+                    <i class="bi bi-building"></i> Status
+                </small>
+                <span class="badge {% if school.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                    {{ school.is_active|yesno:"Active,Inactive" }}
+                </span>
+            </div>
+            <div class="col-12 col-md-3 mt-2 mt-md-0">
+                <small class="text-muted d-block">
+                    <i class="bi bi-eye"></i> Views
+                </small>
+                <small>{{ school.view_count|default:0 }}</small>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+            <div class="btn-group" role="group">
+                {% if school.website %}
+                <a href="{{ school.website }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-globe me-1"></i> Website
+                </a>
+                {% endif %}
+                <button class="btn btn-outline-info btn-sm share-school" data-school-id="{{ school.id }}">
+                    <i class="bi bi-share me-1"></i> Share
+                </button>
+                {% if user.is_authenticated and school not in user_schools %}
+                <button class="btn btn-outline-success btn-sm save-school" data-school-id="{{ school.id }}">
+                    <i class="bi bi-bookmark me-1"></i> Save
+                </button>
+                {% endif %}
+            </div>
+            <div>
+                <small class="text-muted">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    Updated {{ school.updated_at|timesince }} ago
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-building fs-1 text-muted mb-3"></i>
+        <h4 class="text-muted mb-3">No schools found</h4>
+        <p class="text-muted mb-4">Try adjusting your search criteria or explore different filters.</p>
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <button class="btn btn-primary"
+                    hx-get="{% url 'school_feed' %}"
+                    hx-target="#school-feed"
+                    hx-indicator="#school-feed">
+                <i class="bi bi-arrow-clockwise me-1"></i> Reset Filters
+            </button>
+            {% if user.is_authenticated %}
+            <a href="{% url 'users:school_onboarding_start' %}" class="btn btn-outline-primary">
+                <i class="bi bi-plus-circle me-1"></i> Create School
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Enhanced Pagination -->
+{% if schools.has_other_pages %}
+<nav aria-label="School pagination" class="mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="text-muted small">
+            Showing {{ schools.start_index }} - {{ schools.end_index }} of {{ schools.paginator.count }} schools
+        </div>
+        
+        <ul class="pagination justify-content-center mb-0">
+            {% if schools.has_previous %}
+            <li class="page-item">
+                <a class="page-link" 
+                   hx-get="{% url 'school_feed' %}?page={{ schools.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   hx-target="#school-feed"
+                   hx-indicator="#school-feed"
+                   aria-label="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+            </li>
+            {% endif %}
+
+            {% for i in schools.paginator.page_range %}
+                {% if schools.number == i %}
+                <li class="page-item active">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+                {% elif i > schools.number|add:"-3" and i < schools.number|add:"3" %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       hx-get="{% url 'school_feed' %}?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                       hx-target="#school-feed"
+                       hx-indicator="#school-feed">
+                        {{ i }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if schools.has_next %}
+            <li class="page-item">
+                <a class="page-link" 
+                   hx-get="{% url 'school_feed' %}?page={{ schools.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   hx-target="#school-feed"
+                   hx-indicator="#school-feed"
+                   aria-label="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <div class="text-muted small d-none d-md-block">
+            Page {{ schools.number }} of {{ schools.paginator.num_pages }}
+        </div>
+    </div>
+</nav>
+{% endif %}
+
+<!-- Loading Indicator -->
+<div id="school-feed-indicator" class="htmx-indicator text-center py-4">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading schools...</span>
+    </div>
+    <p class="text-muted mt-2 mb-0">Loading schools...</p>
+</div>
+
+<style>
+.school-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 2px solid var(--bs-border-color);
+}
+
+.school-card {
+    transition: all 0.3s ease;
+    border: 1px solid var(--bs-border-color);
+}
+
+.school-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    border-color: var(--bs-primary);
+}
+
+.feed-item {
+    animation: fadeInUp 0.5s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stat-badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+}
+
+.school-meta {
+    font-size: 0.9rem;
+}
+
+.pagination .page-link {
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    border: 1px solid var(--bs-border-color);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.htmx-request .htmx-indicator {
+    opacity: 1;
+}
+
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .school-logo {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .card-body {
+        padding: 1.5rem !important;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.8rem;
+        padding: 0.375rem 0.5rem;
+    }
+}
+
+/* Dark mode support */
+[data-bs-theme="dark"] .school-card {
+    background: var(--bs-dark);
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .badge.bg-light {
+    background-color: var(--bs-gray-800) !important;
+    color: var(--bs-light) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize school interactions
+    initializeSchoolInteractions();
+});
+
+// Re-initialize after HTMX swaps
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.target.id === 'school-feed') {
+        initializeSchoolInteractions();
+    }
+});
+
+function initializeSchoolInteractions() {
+    // Follow school functionality
+    const followButtons = document.querySelectorAll('.follow-school');
+    followButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const schoolId = this.dataset.schoolId;
+            followSchool(schoolId, this);
+        });
+    });
+
+    // Share school functionality
+    const shareButtons = document.querySelectorAll('.share-school');
+    shareButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const schoolId = this.dataset.schoolId;
+            shareSchool(schoolId);
+        });
+    });
+
+    // Save school functionality
+    const saveButtons = document.querySelectorAll('.save-school');
+    saveButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const schoolId = this.dataset.schoolId;
+            saveSchool(schoolId, this);
+        });
+    });
+
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[title]');
+    tooltips.forEach(element => {
+        new bootstrap.Tooltip(element);
+    });
+}
+
+function followSchool(schoolId, button) {
+    // Implement follow functionality
+    console.log('Following school:', schoolId);
+    
+    // Visual feedback
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-check-lg me-1"></i> Following';
+    button.classList.remove('btn-outline-primary');
+    button.classList.add('btn-success');
+    
+    // You would typically make an AJAX call here
+    // htmx.ajax('POST', `/schools/${schoolId}/follow/`, { target: '#school-feed' });
+    
+    // Revert after 2 seconds for demo
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-primary');
+    }, 2000);
+}
+
+function shareSchool(schoolId) {
+    // Implement share functionality
+    if (navigator.share) {
+        // Web Share API
+        navigator.share({
+            title: 'Check out this school on Edusuite',
+            text: 'I found an interesting school on Edusuite that you might like!',
+            url: window.location.origin + `/schools/${schoolId}/`
+        });
+    } else {
+        // Fallback: copy to clipboard
+        const shareUrl = window.location.origin + `/schools/${schoolId}/`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            // Show success message
+            showToast('Link copied to clipboard!', 'success');
+        });
+    }
+}
+
+function saveSchool(schoolId, button) {
+    // Implement save functionality
+    console.log('Saving school:', schoolId);
+    
+    // Visual feedback
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-bookmark-fill me-1"></i> Saved';
+    button.classList.remove('btn-outline-success');
+    button.classList.add('btn-success');
+    
+    // You would typically make an AJAX call here
+    // htmx.ajax('POST', `/schools/${schoolId}/save/`, { target: '#school-feed' });
+    
+    // Keep the saved state
+}
+
+function showToast(message, type = 'info') {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 250px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
+// Handle infinite scroll (optional enhancement)
+let isLoading = false;
+window.addEventListener('scroll', function() {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000 && !isLoading) {
+        const nextPage = {{ schools.number|default:1 }} + 1;
+        const totalPages = {{ schools.paginator.num_pages|default:1 }};
+        
+        if (nextPage <= totalPages) {
+            isLoading = true;
+            htmx.ajax('GET', `{% url 'school_feed' %}?page=${nextPage}`, {
+                target: '#school-feed',
+                swap: 'beforeend',
+                onAfterSwap: () => {
+                    isLoading = false;
+                    initializeSchoolInteractions();
+                }
+            });
+        }
+    }
+});
+</script>

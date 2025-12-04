@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - {{ school.name }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pencil me-2 text-primary"></i>{{ title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Subject Name -->
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
+                                Subject Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.name.id_for_label }}" 
+                                   name="{{ form.name.name }}" 
+                                   value="{{ form.name.value|default:'' }}"
+                                   placeholder="e.g., Mathematics, Science, English"
+                                   required>
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">The full name of the subject</div>
+                        </div>
+
+                        <!-- Subject Code -->
+                        <div class="col-md-6">
+                            <label for="{{ form.code.id_for_label }}" class="form-label fw-semibold">
+                                Subject Code
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if form.code.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.code.id_for_label }}" 
+                                   name="{{ form.code.name }}" 
+                                   value="{{ form.code.value|default:'' }}"
+                                   placeholder="e.g., MATH, SCI, ENG"
+                                   maxlength="10">
+                            {% if form.code.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.code.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Short code for the subject (optional)</div>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="col-md-6">
+                            <label for="{{ form.category.id_for_label }}" class="form-label fw-semibold">
+                                Category
+                            </label>
+                            <select class="form-select {% if form.category.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.category.id_for_label }}" 
+                                    name="{{ form.category.name }}">
+                                <option value="">Select Category</option>
+                                <option value="core" {% if form.category.value == "core" %}selected{% endif %}>Core Academic</option>
+                                <option value="elective" {% if form.category.value == "elective" %}selected{% endif %}>Elective</option>
+                                <option value="language" {% if form.category.value == "language" %}selected{% endif %}>Language</option>
+                                <option value="arts" {% if form.category.value == "arts" %}selected{% endif %}>Arts & Music</option>
+                                <option value="physical" {% if form.category.value == "physical" %}selected{% endif %}>Physical Education</option>
+                                <option value="technical" {% if form.category.value == "technical" %}selected{% endif %}>Technical/Vocational</option>
+                            </select>
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.category.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Subject category for organization</div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="{{ form.is_active.id_for_label }}" 
+                                       name="{{ form.is_active.name }}" 
+                                       {% if form.is_active.value %}checked{% endif %}>
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Active Subject
+                                </label>
+                            </div>
+                            <div class="form-text text-muted">Inactive subjects won't be available for new classes</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-12">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">
+                                Description
+                            </label>
+                            <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                      id="{{ form.description.id_for_label }}" 
+                                      name="{{ form.description.name }}" 
+                                      rows="4"
+                                      placeholder="Describe the subject, learning objectives, or any important notes...">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Optional description of the subject</div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancel
+                                </a>
+                                <div class="btn-group">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
+                                    </button>
+                                    <a href="{% url 'core:subject_detail' subject.id %}" class="btn btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Associated Classes Warning -->
+        {% if subject.class_set.exists %}
+        <div class="card border-warning border-0 bg-warning bg-opacity-10 mt-4">
+            <div class="card-header bg-warning bg-opacity-25 border-warning">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle me-2 text-warning"></i>Associated Classes
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">This subject is currently used by <strong>{{ subject.class_set.count }}</strong> class{{ subject.class_set.count|pluralize:"es" }}:</p>
+                <div class="list-group list-group-flush">
+                    {% for class in subject.class_set.all %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-journal text-primary me-3"></i>
+                            <div>
+                                <strong class="text-body">{{ class.name }}</strong>
+                                <div class="text-muted small">{{ class.category.name }}</div>
+                            </div>
+                        </div>
+                        <a href="{% url 'core:class_detail' class.pk %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>View
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Note:</strong> Changes to this subject will affect all associated classes.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-format class code to uppercase
+    const codeInput = document.getElementById('{{ form.code.id_for_label }}');
+    if (codeInput) {
+        codeInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Real-time validation for subject name
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    if (nameInput) {
+        nameInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value.length < 2) {
+                this.classList.add('is-invalid');
+                this.focus();
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Enhanced form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validate subject name
+            if (nameInput && nameInput.value.trim().length < 2) {
+                nameInput.classList.add('is-invalid');
+                nameInput.focus();
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Show error message
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                toast.innerHTML = `
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Please fix the validation errors above.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 5000);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

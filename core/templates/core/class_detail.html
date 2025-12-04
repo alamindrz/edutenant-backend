@@ -1,0 +1,31 @@
+<!-- core/templates/core/class_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ class_instance.name }} - Class Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">{{ class_instance.name }}</h1>
+        <a href="{% url 'core:class_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Classes
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5>Class Details</h5>
+            <p><strong>Category:</strong> {{ class_instance.category.name }}</p>
+            <p><strong>Form Master:</strong> {{ class_instance.form_master.full_name|default:"Not assigned" }}</p>
+            <p><strong>Students:</strong> {{ class_instance.current_strength }}/{{ class_instance.max_students }}</p>
+            <p><strong>Room:</strong> {{ class_instance.room_number|default:"Not assigned" }}</p>
+            
+            <div class="mt-4">
+                <a href="{% url 'core:class_update' class_instance.id %}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit Class
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

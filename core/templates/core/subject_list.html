@@ -1,0 +1,58 @@
+<!-- core/templates/core/subject_list.html -->
+{% extends "base.html" %}
+
+{% block title %}Subjects - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Subject Management</h1>
+        <a href="{% url 'core:subject_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Subject
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" placeholder="Search subjects..." 
+                           name="search" value="{{ search_query }}"
+                           hx-get="{% url 'core:subject_list' %}"
+                           hx-target="#subject-table"
+                           hx-trigger="keyup changed delay:500ms"
+                           hx-include="[name='category']">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="category"
+                            hx-get="{% url 'core:subject_list' %}"
+                            hx-target="#subject-table"
+                            hx-trigger="change">
+                        <option value="">All Categories</option>
+                        {% for value, label in subject_categories %}
+                        <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'core:subject_list' %}" class="btn btn-outline-secondary w-100">
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subjects Table -->
+    <div class="card">
+        <div class="card-body">
+            <div id="subject-table">
+                {% include 'core/partials/subject_table.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - {{ school.name }}{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <!-- Stats Cards -->
+    <div class="col-12">
+        <div id="stats-container" hx-get="{% url 'users:dashboard_stats' %}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+            <div class="row g-3">
+                {% for i in "1234" %}
+                <div class="col-xl-3 col-md-6">
+                    <div class="card border-0 bg-light h-100">
+                        <div class="card-body text-center py-4">
+                            <div class="placeholder-glow">
+                                <div class="placeholder col-6 mb-2" style="height: 20px;"></div>
+                                <div class="placeholder col-8" style="height: 15px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Principal-Only Quick Actions -->
+    {% if user_profile.role.system_role_type == 'principal' or user_profile.role.can_manage_academics %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-award me-2 text-primary"></i>Principal Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 bg-primary bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-journal-plus text-primary mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">Create Classes</h6>
+                                <p class="text-muted small mb-3">Set up new academic classes</p>
+                                <a href="{% url 'core:class_create' %}" class="btn btn-primary btn-sm mt-auto">
+                                    <i class="bi bi-plus-circle me-1"></i>Create Class
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 bg-success bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-book text-success mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">Manage Subjects</h6>
+                                <p class="text-muted small mb-3">Add academic subjects</p>
+                                <a href="{% url 'core:subject_list' %}" class="btn btn-success btn-sm mt-auto">
+                                    <i class="bi bi-gear me-1"></i>Manage Subjects
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 bg-danger bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-people text-danger mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">Staff Management</h6>
+                                <p class="text-muted small mb-3">Manage all staff members</p>
+                                <a href="{% url 'users:staff_list' %}" class="btn btn-danger btn-sm mt-auto">
+                                    <i class="bi bi-people me-1"></i>Manage Staff
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 bg-info bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-graph-up text-info mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">School Reports</h6>
+                                <p class="text-muted small mb-3">View comprehensive reports</p>
+                                <a href="#" class="btn btn-info btn-sm mt-auto">
+                                    <i class="bi bi-graph-up me-1"></i>View Reports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions for All Staff -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 bg-primary bg-opacity-10 h-100">
+            <div class="card-body text-center d-flex flex-column py-4">
+                <i class="bi bi-person-plus text-primary mb-3 fs-1"></i>
+                <h6 class="card-title fw-semibold">Add Staff</h6>
+                <p class="text-muted small mb-3">Invite new teachers or staff members</p>
+                {% if user_profile.role.can_manage_staff %}
+                <a href="{% url 'users:staff_invite' %}" class="btn btn-primary btn-sm mt-auto">
+                    Invite Staff
+                </a>
+                {% else %}
+                <button class="btn btn-primary btn-sm mt-auto" disabled title="Permission required">
+                    Invite Staff
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 bg-success bg-opacity-10 h-100">
+            <div class="card-body text-center d-flex flex-column py-4">
+                <i class="bi bi-person-gear text-success mb-3 fs-1"></i>
+                <h6 class="card-title fw-semibold">Manage Roles</h6>
+                <p class="text-muted small mb-3">Create and manage user roles</p>
+                {% if user_profile.role.can_manage_roles %}
+                <a href="{% url 'users:role_list' %}" class="btn btn-success btn-sm mt-auto">
+                    View Roles
+                </a>
+                {% else %}
+                <button class="btn btn-success btn-sm mt-auto" disabled title="Permission required">
+                    View Roles
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 bg-warning bg-opacity-10 h-100">
+            <div class="card-body text-center d-flex flex-column py-4">
+                <i class="bi bi-people text-warning mb-3 fs-1"></i>
+                <h6 class="card-title fw-semibold">Student Management</h6>
+                <p class="text-muted small mb-3">Manage student records</p>
+                {% if user_profile.role.can_manage_students %}
+                <a href="{% url 'students:student_list' %}" class="btn btn-warning btn-sm mt-auto">
+                    View Students
+                </a>
+                {% else %}
+                <button class="btn btn-warning btn-sm mt-auto" disabled title="Permission required">
+                    View Students
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 bg-info bg-opacity-10 h-100">
+            <div class="card-body text-center d-flex flex-column py-4">
+                <i class="bi bi-clipboard-check text-info mb-3 fs-1"></i>
+                <h6 class="card-title fw-semibold">Attendance</h6>
+                <p class="text-muted small mb-3">Track student & teacher attendance</p>
+                <a href="{% url 'attendance:dashboard' %}" class="btn btn-info btn-sm mt-auto">
+                    View Attendance
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher-Specific Actions -->
+    {% if user_profile.role.system_role_type == 'teacher' or user_profile.role.category == 'academic' %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-mortarboard me-2 text-primary"></i>Teacher Tools
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-xl-4 col-md-6">
+                        <div class="card border-0 bg-success bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-journal-text text-success mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">My Classes</h6>
+                                <p class="text-muted small mb-3">View assigned classes</p>
+                                <a href="#" class="btn btn-success btn-sm mt-auto">
+                                    <i class="bi bi-list me-1"></i>View Classes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-4 col-md-6">
+                        <div class="card border-0 bg-warning bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-calendar-check text-warning mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">Take Attendance</h6>
+                                <p class="text-muted small mb-3">Record daily attendance</p>
+                                <a href="{% url 'attendance:student_attendance_list' %}" class="btn btn-warning btn-sm mt-auto">
+                                    <i class="bi bi-check-circle me-1"></i>Mark Attendance
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-4 col-md-6">
+                        <div class="card border-0 bg-info bg-opacity-10 h-100">
+                            <div class="card-body text-center d-flex flex-column py-4">
+                                <i class="bi bi-pencil-square text-info mb-3 fs-1"></i>
+                                <h6 class="card-title fw-semibold">Enter Grades</h6>
+                                <p class="text-muted small mb-3">Record student scores</p>
+                                <a href="#" class="btn btn-info btn-sm mt-auto">
+                                    <i class="bi bi-pencil me-1"></i>Enter Grades
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Recent Activity
+                </h5>
+                <button class="btn btn-sm btn-outline-primary"
+                        hx-get="{% url 'users:recent_activity' %}"
+                        hx-target="#activity-container"
+                        hx-indicator="#activity-spinner">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div id="activity-container" hx-get="{% url 'users:recent_activity' %}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+                    <div class="text-center text-muted py-5">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" id="activity-spinner"></div>
+                        Loading recent activity...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Smooth loading states */
+.htmx-request .spinner-border {
+    display: inline-block !important;
+}
+
+/* Better card hover effects */
+.bg-opacity-10 {
+    transition: all 0.2s ease-in-out;
+}
+
+.bg-opacity-10:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.15) !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,29 @@
+<!-- templates/core/partials/recent_activity.html -->
+<div class="list-group list-group-flush">
+    {% for staff in recent_staff %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-user-plus text-success me-2"></i>
+            <strong>{{ staff.full_name }}</strong> joined as {{ staff.position }}
+        </div>
+        <small class="text-muted">{{ staff.date_joined|timesince }} ago</small>
+    </div>
+    {% endfor %}
+
+    {% for invitation in recent_invitations %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-envelope text-primary me-2"></i>
+            Invited <strong>{{ invitation.email }}</strong> as {{ invitation.role.name }}
+        </div>
+        <small class="text-muted">{{ invitation.created_at|timesince }} ago</small>
+    </div>
+    {% endfor %}
+
+    {% if not recent_staff and not recent_invitations %}
+    <div class="list-group-item text-center text-muted">
+        <i class="fas fa-inbox fa-2x mb-2"></i>
+        <p>No recent activity</p>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,167 @@
+<!-- templates/students/parent_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Parents - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Parent Management</h1>
+            <p class="text-muted">Manage parents and guardians for {{ school.name }}</p>
+        </div>
+        <a href="{% url 'students:parent_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Parent
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label for="search" class="form-label">Search Parents</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search by name, email, or phone...">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">Search</button>
+                    <a href="{% url 'students:parent_list' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Parents Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Parents ({{ page_obj.paginator.count }})</h5>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-outline-secondary">Export</button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Parent Name</th>
+                            <th>Contact Information</th>
+                            <th>Children</th>
+                            <th>Relationship</th>
+                            <th>User Account</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parent in parents %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-success rounded-circle text-white d-flex align-items-center justify-content-center me-3">
+                                        {{ parent.first_name|first }}{{ parent.last_name|first }}
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'students:parent_detail' parent.id %}" class="text-dark fw-semibold">
+                                            {{ parent.full_name }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-envelope text-muted me-2"></i>
+                                        <small>{{ parent.email }}</small>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-phone text-muted me-2"></i>
+                                        <small>{{ parent.phone_number }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% with children_count=parent.children.count %}
+                                {% if children_count > 0 %}
+                                <span class="badge bg-primary">{{ children_count }} child{{ children_count|pluralize }}</span>
+                                {% else %}
+                                <span class="text-muted">No children</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ parent.relationship }}</span>
+                            </td>
+                            <td>
+                                {% if parent.user %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-warning">No Account</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'students:parent_detail' parent.id %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if not parent.user %}
+                                    <form method="post" action="{% url 'students:parent_create_account' parent.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-success" title="Create User Account">
+                                            <i class="fas fa-user-plus"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-users fa-2x mb-3"></i>
+                                    <p>No parents found. <a href="{% url 'students:parent_create' %}">Add your first parent</a></p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Parent pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

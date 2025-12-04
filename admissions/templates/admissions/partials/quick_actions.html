@@ -1,0 +1,83 @@
+<!-- templates/admissions/partials/quick_actions.html -->
+<div class="modal-header">
+    <h5 class="modal-title">Quick Actions</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <div class="d-grid gap-2">
+        <!-- Assign to Me -->
+        <button class="btn btn-outline-primary text-start" 
+                hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                hx-vals='{"action": "assign_to_me"}'
+                hx-target="#application-header"
+                data-bs-dismiss="modal">
+            <i class="fas fa-user-check me-2"></i>
+            Assign to Me
+        </button>
+
+        <!-- Priority Actions -->
+        <div class="dropdown">
+            <button class="btn btn-outline-warning text-start dropdown-toggle w-100" 
+                    type="button" 
+                    data-bs-toggle="dropdown">
+                <i class="fas fa-flag me-2"></i>
+                Change Priority
+            </button>
+            <ul class="dropdown-menu w-100">
+                {% for priority_value, priority_label in application._meta.get_field('priority').choices %}
+                <li>
+                    <button class="dropdown-item {% if application.priority == priority_value %}active{% endif %}"
+                            hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                            hx-vals='{"action": "change_priority", "priority": "{{ priority_value }}"}'
+                            hx-target="#application-header"
+                            data-bs-dismiss="modal">
+                        {{ priority_label }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Status Actions -->
+        <div class="dropdown">
+            <button class="btn btn-outline-info text-start dropdown-toggle w-100" 
+                    type="button" 
+                    data-bs-toggle="dropdown">
+                <i class="fas fa-sync-alt me-2"></i>
+                Change Status
+            </button>
+            <ul class="dropdown-menu w-100">
+                {% for status_value, status_label in application._meta.get_field('status').choices %}
+                {% if status_value != application.status %}
+                <li>
+                    <form method="post" 
+                          action="{% url 'admissions:application_detail' application.id %}"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="{{ status_value }}">
+                        <button type="submit" class="dropdown-item">
+                            Mark as {{ status_label }}
+                        </button>
+                    </form>
+                </li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Additional Actions -->
+        <hr>
+        <a href="{% url 'students:student_detail' application.student.id %}" 
+           class="btn btn-outline-success text-start"
+           {% if not application.student %}disabled{% endif %}>
+            <i class="fas fa-user me-2"></i>
+            View Student Profile
+        </a>
+
+        <a href="{% url 'students:parent_detail' application.parent.id %}" 
+           class="btn btn-outline-secondary text-start">
+            <i class="fas fa-users me-2"></i>
+            View Parent Profile
+        </a>
+    </div>
+</div>

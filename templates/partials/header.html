@@ -1,0 +1,413 @@
+<!-- templates/base.html - Updated Header Section -->
+{% if user.is_authenticated %}
+<header class="navbar navbar-light bg-white border-bottom sticky-top" id="main-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <!-- Left Section: Page Title & Breadcrumb -->
+            <div class="d-flex align-items-center">
+                <h1 class="h5 mb-0 text-dark me-3">{% block page_title %}Dashboard{% endblock %}</h1>
+                
+                <!-- Quick Action Badges -->
+                <div class="d-none d-md-flex align-items-center gap-2">
+                    {% if pending_applications_count and pending_applications_count > 0 %}
+                    <a href="{% url 'users:school_applications' %}" class="badge bg-warning text-decoration-none hover-lift">
+                        <i class="bi bi-person-check me-1"></i>
+                        {{ pending_applications_count }} pending
+                    </a>
+                    {% endif %}
+                    
+                    {% if my_pending_applications and my_pending_applications > 0 %}
+                    <a href="{% url 'users:my_applications' %}" class="badge bg-info text-decoration-none hover-lift">
+                        <i class="bi bi-file-earmark-person me-1"></i>
+                        {{ my_pending_applications }} my apps
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Section: Controls & Actions -->
+            <div class="d-flex align-items-center gap-3">
+                <!-- School Context Badge -->
+                {% if request.school %}
+                <div class="d-none d-md-block">
+                    <span class="badge bg-primary bg-opacity-20 text-primary border-0">
+                        <i class="bi bi-building me-1"></i>
+                        <span class="school-name">{{ request.school.name }}</span>
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- Quick Action Buttons -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Applications Alert (for admins) -->
+                    {% if pending_applications_count and pending_applications_count > 0 %}
+                    <a href="{% url 'users:school_applications' %}" class="btn btn-sm btn-warning position-relative d-none d-md-inline-flex">
+                        <i class="bi bi-person-check me-1"></i>
+                        Applications
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ pending_applications_count }}
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    <!-- My Applications Alert (for teachers) -->
+                    {% if my_pending_applications and my_pending_applications > 0 %}
+                    <a href="{% url 'users:my_applications' %}" class="btn btn-sm btn-outline-info position-relative d-none d-md-inline-flex">
+                        <i class="bi bi-file-earmark-person me-1"></i>
+                        My Apps
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ my_pending_applications }}
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    <!-- Discover Schools Button -->
+                    <a href="{% url 'school_discovery' %}" class="btn btn-sm btn-outline-success d-none d-md-inline-flex">
+                        <i class="bi bi-search me-1"></i>
+                        Discover
+                    </a>
+
+                    <!-- Theme Toggle -->
+                    <button class="btn btn-sm btn-outline-secondary" id="theme-toggle" type="button" aria-label="Toggle theme">
+                        <i class="bi bi-moon" id="theme-icon"></i>
+                    </button>
+
+                    <!-- Desktop Sidebar Toggle -->
+                    <button class="btn btn-sm btn-outline-secondary d-none d-lg-inline-flex" 
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#sidebarOffcanvas"
+                            aria-label="Toggle sidebar">
+                        <i class="bi bi-list"></i>
+                    </button>
+
+                    <!-- Mobile Menu Toggle (hidden on desktop) -->
+                    <button class="btn btn-sm btn-outline-secondary d-lg-none" 
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#mobileMenuOffcanvas"
+                            aria-label="Open menu">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Quick Actions Row -->
+        <div class="row mt-2 d-md-none">
+            <div class="col-12">
+                <div class="d-flex flex-wrap gap-1 justify-content-center">
+                    {% if pending_applications_count and pending_applications_count > 0 %}
+                    <a href="{% url 'users:school_applications' %}" class="btn btn-xs btn-warning position-relative">
+                        <i class="bi bi-person-check me-1"></i>
+                        Apps
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                            {{ pending_applications_count }}
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if my_pending_applications and my_pending_applications > 0 %}
+                    <a href="{% url 'users:my_applications' %}" class="btn btn-xs btn-outline-info position-relative">
+                        <i class="bi bi-file-earmark-person me-1"></i>
+                        My Apps
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                            {{ my_pending_applications }}
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    <a href="{% url 'school_discovery' %}" class="btn btn-xs btn-outline-success">
+                        <i class="bi bi-search me-1"></i>
+                        Discover
+                    </a>
+
+                    {% if request.school %}
+                    <span class="btn btn-xs btn-outline-primary disabled">
+                        <i class="bi bi-building me-1"></i>
+                        <span class="text-truncate" style="max-width: 100px;">{{ request.school.name }}</span>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<style>
+/* Header Styles */
+#main-header {
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-bs-theme="dark"] #main-header {
+    background: rgba(33, 37, 41, 0.95) !important;
+}
+
+/* Badge and Button Enhancements */
+.hover-lift {
+    transition: all 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+/* School name truncation */
+.school-name {
+    max-width: 150px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+/* Position relative for badges */
+.position-relative .badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Smooth transitions */
+#main-header,
+#main-header .btn,
+#main-header .badge {
+    transition: all 0.3s ease;
+}
+
+/* Mobile optimizations */
+@media (max-width: 767.98px) {
+    #main-header .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .btn-sm {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    #main-header {
+        border-bottom-width: 2px;
+    }
+    
+    .badge {
+        border: 1px solid currentColor;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    #main-header,
+    .hover-lift,
+    .btn {
+        transition: none;
+    }
+    
+    .hover-lift:hover {
+        transform: none;
+    }
+}
+
+/* Focus states for accessibility */
+#main-header .btn:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+/* Loading state for buttons */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize header functionality
+    initializeHeader();
+    
+    // Re-initialize after HTMX swaps
+    document.body.addEventListener('htmx:afterSwap', function() {
+        initializeHeader();
+    });
+});
+
+function initializeHeader() {
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (themeToggle && themeIcon) {
+        themeToggle.addEventListener('click', toggleDarkMode);
+        
+        // Initialize theme icon
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+        themeIcon.className = currentTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    }
+    
+    // Add loading states to buttons
+    const headerButtons = document.querySelectorAll('#main-header .btn[href]');
+    headerButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Only add loading for same-page navigation
+            if (!this.getAttribute('hx-get') && !this.getAttribute('hx-post')) {
+                this.classList.add('loading');
+                
+                // Remove loading state after a delay (in case navigation is slow)
+                setTimeout(() => {
+                    this.classList.remove('loading');
+                }, 3000);
+            }
+        });
+    });
+    
+    // Update school name truncation
+    updateSchoolNameTruncation();
+    
+    // Add scroll effect to header
+    setupHeaderScrollEffect();
+}
+
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const themeIcon = document.getElementById('theme-icon');
+    const currentTheme = html.getAttribute('data-bs-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    // Apply theme
+    html.setAttribute('data-bs-theme', newTheme);
+    themeIcon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    
+    // Save to localStorage
+    localStorage.setItem('theme', newTheme);
+    
+    // Update navbar background
+    updateNavbarTheme(newTheme);
+    
+    // Dispatch event for other components
+    document.dispatchEvent(new CustomEvent('themeChanged', { 
+        detail: { theme: newTheme } 
+    }));
+}
+
+function updateNavbarTheme(theme) {
+    const navbar = document.getElementById('main-header');
+    const mobileNav = document.getElementById('mobile-bottom-nav');
+    
+    if (navbar) {
+        if (theme === 'dark') {
+            navbar.classList.remove('navbar-light', 'bg-white');
+            navbar.classList.add('navbar-dark', 'bg-dark');
+        } else {
+            navbar.classList.remove('navbar-dark', 'bg-dark');
+            navbar.classList.add('navbar-light', 'bg-white');
+        }
+    }
+    
+    if (mobileNav) {
+        if (theme === 'dark') {
+            mobileNav.classList.remove('navbar-light', 'bg-white');
+            mobileNav.classList.add('navbar-dark', 'bg-dark');
+        } else {
+            mobileNav.classList.remove('navbar-dark', 'bg-dark');
+            mobileNav.classList.add('navbar-light', 'bg-white');
+        }
+    }
+}
+
+function updateSchoolNameTruncation() {
+    const schoolNameElements = document.querySelectorAll('.school-name');
+    schoolNameElements.forEach(element => {
+        const text = element.textContent;
+        if (text.length > 20) {
+            element.textContent = text.substring(0, 17) + '...';
+        }
+    });
+}
+
+function setupHeaderScrollEffect() {
+    let lastScrollTop = 0;
+    const header = document.getElementById('main-header');
+    const headerHeight = header ? header.offsetHeight : 0;
+    
+    if (!header) return;
+    
+    window.addEventListener('scroll', function() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (scrollTop > lastScrollTop && scrollTop > headerHeight) {
+            // Scrolling down - hide header
+            header.style.transform = 'translateY(-100%)';
+        } else {
+            // Scrolling up - show header
+            header.style.transform = 'translateY(0)';
+        }
+        
+        lastScrollTop = scrollTop;
+    }, { passive: true });
+}
+
+// Performance optimization: Throttle scroll events
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    }
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) {
+        themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    }
+    
+    updateNavbarTheme(savedTheme);
+});
+
+// Export functions for global access
+window.toggleDarkMode = toggleDarkMode;
+window.initializeHeader = initializeHeader;
+</script>
+{% endif %}

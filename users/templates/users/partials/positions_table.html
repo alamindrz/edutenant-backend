@@ -1,0 +1,74 @@
+<!-- templates/users/partials/positions_table.html -->
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Position Title</th>
+                <th>Department</th>
+                <th>Description</th>
+                <th>Applications</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for position in positions %}
+            <tr>
+                <td>
+                    <strong>{{ position.title }}</strong>
+                </td>
+                <td>{{ position.department|default:"-" }}</td>
+                <td>
+                    {% if position.description %}
+                    <span class="d-inline-block text-truncate" style="max-width: 200px;">
+                        {{ position.description }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">No description</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-primary">{{ position.application_count }}</span>
+                </td>
+                <td>
+                    <span class="badge bg-{% if position.is_active %}success{% else %}secondary{% endif %}">
+                        {{ position.is_active|yesno:"Active,Inactive" }}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-{% if position.is_active %}warning{% else %}success{% endif %}"
+                                hx-post="{% url 'users:toggle_position_status' position.id %}"
+                                hx-target="#positions-table">
+                            <i class="fas fa-{% if position.is_active %}pause{% else %}play{% endif %}"></i>
+                            {{ position.is_active|yesno:"Pause,Activate" }}
+                        </button>
+                        <button class="btn btn-outline-danger"
+                                onclick="confirmDelete({{ position.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4">
+                    <i class="fas fa-briefcase fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Open Positions</h5>
+                    <p class="text-muted">Create your first open position to attract teacher applications.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function confirmDelete(positionId) {
+    if (confirm('Are you sure you want to delete this position?')) {
+        htmx.ajax('DELETE', `/users/positions/${positionId}/delete/`, {
+            target: '#positions-table'
+        });
+    }
+}
+</script>

@@ -1,0 +1,194 @@
+<!-- templates/attendance/teacher_attendance_list.html -->
+{% extends 'attendance/base.html' %}
+{% load static humanize %}
+
+{% block title %}Teacher Attendance - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Teacher Attendance</h1>
+            <p class="text-muted">Manage teacher sign-in/out and attendance for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <a href="{% url 'attendance:reports' %}?report_type=teacher" class="btn btn-outline-primary">
+                <i class="fas fa-chart-bar me-2"></i>Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="present" {% if status_filter == 'present' %}selected{% endif %}>Present</option>
+                        <option value="absent" {% if status_filter == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="late" {% if status_filter == 'late' %}selected{% endif %}>Late</option>
+                        <option value="half_day" {% if status_filter == 'half_day' %}selected{% endif %}>Half Day</option>
+                        <option value="leave" {% if status_filter == 'leave' %}selected{% endif %}>On Leave</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Teacher Attendance Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                Teacher Attendance for {{ selected_date|date:"F j, Y" }}
+                {% if current_term %}
+                <span class="badge bg-info ms-2">{{ current_term.name }}</span>
+                {% endif %}
+            </h5>
+            <div class="text-muted">
+                {{ attendance_records.count }} records found
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            {% if attendance_records %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="5%">#</th>
+                            <th>Teacher Name</th>
+                            <th>Position</th>
+                            <th width="15%">Status</th>
+                            <th width="20%">Sign In/Out</th>
+                            <th width="10%">Duration</th>
+                            <th width="15%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in attendance_records %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ record.staff.full_name }}</strong>
+                                {% if record.is_late %}
+                                <span class="badge bg-warning ms-1">Late</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.staff.position }}</td>
+                            <td>
+                                <span class="badge bg-{% if record.status == 'present' %}success{% elif record.status == 'absent' %}danger{% else %}warning{% endif %}">
+                                    {{ record.status|title }}
+                                </span>
+                                {% if record.auto_signed_out %}
+                                <br><small class="text-muted">Auto-signed out</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.sign_in_time %}
+                                <small class="text-success">
+                                    <i class="fas fa-sign-in-alt me-1"></i>{{ record.sign_in_time|time }}
+                                </small>
+                                <br>
+                                {% if record.sign_out_time %}
+                                <small class="text-danger">
+                                    <i class="fas fa-sign-out-alt me-1"></i>{{ record.sign_out_time|time }}
+                                </small>
+                                {% else %}
+                                <small class="text-warning">
+                                    <i class="fas fa-clock me-1"></i>Still signed in
+                                </small>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">Not signed in</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.sign_in_time and record.sign_out_time %}
+                                <small class="text-muted">
+                                    {{ record.work_duration_minutes|floatformat:0 }} mins
+                                </small>
+                                {% elif record.sign_in_time %}
+                                <small class="text-info">In progress</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if not record.sign_in_time %}
+                                    <a href="{% url 'attendance:teacher_signin' record.staff.id %}" 
+                                       class="btn btn-outline-success" 
+                                       title="Sign In">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </a>
+                                    {% elif not record.sign_out_time %}
+                                    <a href="{% url 'attendance:teacher_signout' record.staff.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Sign Out">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted small">Completed</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No teacher attendance records found for the selected date</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Teachers Without Attendance -->
+    {% if teachers_without_attendance %}
+    <div class="card mt-4">
+        <div class="card-header bg-warning">
+            <h5 class="card-title mb-0 text-white">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Teachers Without Attendance Records ({{ teachers_without_attendance.count }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for teacher in teachers_without_attendance %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">{{ teacher.full_name }}</h6>
+                            <p class="text-muted small mb-2">{{ teacher.position }}</p>
+                            <a href="{% url 'attendance:teacher_signin' teacher.id %}" 
+                               class="btn btn-sm btn-success">
+                                <i class="fas fa-sign-in-alt me-1"></i>Sign In
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

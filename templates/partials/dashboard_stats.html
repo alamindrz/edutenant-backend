@@ -1,0 +1,411 @@
+<div class="row g-3">
+    <!-- Total Staff Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-primary h-100 border-0 shadow-sm">
+            <div class="card-body position-relative">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Total Staff</div>
+                        <div class="h2 fw-bold text-primary mb-0">{{ stats.total_staff }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-arrow-up-short text-success"></i>
+                            <span class="text-success">{{ stats.staff_growth|default:"0" }}%</span> this term
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-people-fill fs-2 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Progress indicator -->
+                <div class="position-absolute top-0 end-0 m-3">
+                    <span class="badge bg-primary bg-opacity-20 text-primary">
+                        <i class="bi bi-person-check me-1"></i>{{ stats.teaching_staff|default:"0" }} teaching
+                    </span>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <small class="text-muted">
+                    <i class="bi bi-clock me-1"></i>Updated recently
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Students Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-success h-100 border-0 shadow-sm">
+            <div class="card-body position-relative">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Total Students</div>
+                        <div class="h2 fw-bold text-success mb-0">{{ stats.total_students }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-arrow-up-short text-success"></i>
+                            <span class="text-success">{{ stats.student_growth|default:"5" }}%</span> growth
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-person-badge fs-2 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Gender distribution -->
+                <div class="position-absolute top-0 end-0 m-3">
+                    <span class="badge bg-success bg-opacity-20 text-success">
+                        <i class="bi bi-gender-male me-1"></i>{{ stats.male_students|default:"0" }}M
+                    </span>
+                    <span class="badge bg-info bg-opacity-20 text-info ms-1">
+                        <i class="bi bi-gender-female me-1"></i>{{ stats.female_students|default:"0" }}F
+                    </span>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <small class="text-muted">
+                    <i class="bi bi-people me-1"></i>{{ stats.average_class_size|default:"25" }} avg/class
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Applications Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-warning h-100 border-0 shadow-sm">
+            <div class="card-body position-relative">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Pending Applications</div>
+                        <div class="h2 fw-bold text-warning mb-0">{{ stats.pending_applications|default:"0" }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-clock text-warning"></i>
+                            Need your review
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-person-plus fs-2 text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick action -->
+                <div class="position-absolute top-0 end-0 m-3">
+                    {% if stats.pending_applications > 0 %}
+                    <a href="{% url 'users:school_applications' %}" class="badge bg-warning text-dark text-decoration-none">
+                        <i class="bi bi-eye me-1"></i>Review
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <small class="text-muted">
+                    <i class="bi bi-lightning me-1"></i>
+                    {% if stats.pending_applications > 0 %}
+                    <a href="{% url 'users:school_applications' %}" class="text-warning text-decoration-none">Take action</a>
+                    {% else %}
+                    All caught up!
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Classes Card -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-info h-100 border-0 shadow-sm">
+            <div class="card-body position-relative">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Active Classes</div>
+                        <div class="h2 fw-bold text-info mb-0">{{ stats.total_classes }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-check-circle text-success"></i>
+                            <span class="text-success">{{ stats.occupied_classes|default:stats.total_classes }}/{{ stats.total_classes }}</span> occupied
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-info bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-mortarboard fs-2 text-info"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Class status -->
+                <div class="position-absolute top-0 end-0 m-3">
+                    <span class="badge bg-info bg-opacity-20 text-info">
+                        <i class="bi bi-journal me-1"></i>{{ stats.class_categories|default:"5" }} categories
+                    </span>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <small class="text-muted">
+                    <i class="bi bi-book me-1"></i>{{ stats.total_subjects|default:"15" }} subjects
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second Row: Additional Metrics -->
+<div class="row g-3 mt-2">
+    <!-- Attendance Rate -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-success h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Attendance Rate</div>
+                        <div class="h2 fw-bold text-success mb-0">{{ stats.attendance_rate|default:"95" }}%</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-calendar-check text-success"></i>
+                            This week
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-check-circle fs-2 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Progress bar -->
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-success" style="width: {{ stats.attendance_rate|default:'95' }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Invitations -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-purple h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Pending Invitations</div>
+                        <div class="h2 fw-bold text-purple mb-0">{{ stats.pending_invitations }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-clock text-purple"></i>
+                            Awaiting response
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-purple bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-envelope fs-2 text-purple"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick action -->
+                {% if stats.pending_invitations > 0 %}
+                <div class="mt-2">
+                    <a href="{% url 'users:staff_invite' %}" class="btn btn-sm btn-outline-purple w-100">
+                        <i class="bi bi-send me-1"></i>Send Reminder
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Open Positions -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-orange h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Open Positions</div>
+                        <div class="h2 fw-bold text-orange mb-0">{{ stats.open_positions|default:"3" }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-briefcase text-orange"></i>
+                            Hiring now
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-orange bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-briefcase fs-2 text-orange"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick action -->
+                <div class="mt-2">
+                    <a href="{% url 'users:manage_open_positions' %}" class="btn btn-sm btn-outline-orange w-100">
+                        <i class="bi bi-plus-circle me-1"></i>Manage Positions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Engagement -->
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card card-indigo h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="small fw-semibold text-muted mb-1">Parent Accounts</div>
+                        <div class="h2 fw-bold text-indigo mb-0">{{ stats.total_parents }}</div>
+                        <div class="small text-muted">
+                            <i class="bi bi-house-check text-indigo"></i>
+                            {{ stats.parent_engagement|default:"78" }}% engaged
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="bg-indigo bg-opacity-10 rounded-3 p-3">
+                            <i class="bi bi-house-door fs-2 text-indigo"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Engagement indicator -->
+                <div class="progress mt-2" style="height: 4px;">
+                    <div class="progress-bar bg-indigo" style="width: {{ stats.parent_engagement|default:'78' }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --bs-purple: #6f42c1;
+    --bs-orange: #fd7e14;
+    --bs-indigo: #6610f2;
+}
+
+.card-purple {
+    border-left: 4px solid var(--bs-purple) !important;
+}
+
+.card-orange {
+    border-left: 4px solid var(--bs-orange) !important;
+}
+
+.card-indigo {
+    border-left: 4px solid var(--bs-indigo) !important;
+}
+
+.text-purple {
+    color: var(--bs-purple) !important;
+}
+
+.text-orange {
+    color: var(--bs-orange) !important;
+}
+
+.text-indigo {
+    color: var(--bs-indigo) !important;
+}
+
+.bg-purple {
+    background-color: var(--bs-purple) !important;
+}
+
+.bg-orange {
+    background-color: var(--bs-orange) !important;
+}
+
+.bg-indigo {
+    background-color: var(--bs-indigo) !important;
+}
+
+.btn-outline-purple {
+    border-color: var(--bs-purple);
+    color: var(--bs-purple);
+}
+
+.btn-outline-purple:hover {
+    background-color: var(--bs-purple);
+    color: white;
+}
+
+.btn-outline-orange {
+    border-color: var(--bs-orange);
+    color: var(--bs-orange);
+}
+
+.btn-outline-orange:hover {
+    background-color: var(--bs-orange);
+    color: white;
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid !important;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.stat-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Dark mode support */
+[data-bs-theme="dark"] .stat-card {
+    background: var(--bs-dark);
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .stat-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-card .card-body {
+        padding: 1.25rem;
+    }
+    
+    .stat-card .h2 {
+        font-size: 1.75rem;
+    }
+}
+
+/* Animation for card hover */
+@keyframes pulse-glow {
+    0% { box-shadow: 0 0 0 0 rgba(var(--bs-primary-rgb), 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(var(--bs-primary-rgb), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--bs-primary-rgb), 0); }
+}
+
+.stat-card:hover {
+    animation: pulse-glow 2s infinite;
+}
+</style>
+
+<script>
+// Add interactive functionality to stats cards
+document.addEventListener('DOMContentLoaded', function() {
+    const statCards = document.querySelectorAll('.stat-card');
+    
+    statCards.forEach(card => {
+        // Add click handlers for cards with actions
+        if (card.querySelector('a[href]')) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function(e) {
+                if (!e.target.closest('a') && !e.target.closest('button')) {
+                    const link = this.querySelector('a[href]');
+                    if (link) {
+                        window.location.href = link.href;
+                    }
+                }
+            });
+        }
+        
+        // Add loading state for cards that might refresh
+        card.addEventListener('click', function() {
+            if (this.hasAttribute('data-hx-get')) {
+                this.classList.add('loading');
+            }
+        });
+    });
+    
+    // Auto-refresh stats every 30 seconds
+    setInterval(() => {
+        const statsContainer = document.querySelector('[hx-get]');
+        if (statsContainer) {
+            htmx.trigger(statsContainer, 'refresh');
+        }
+    }, 30000);
+});
+</script>

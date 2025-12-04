@@ -1,0 +1,122 @@
+<div class="application-detail-content">
+    <!-- Header with basic info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-3">
+                <div class="application-avatar bg-primary text-white me-3" style="width: 60px; height: 60px; font-size: 1.2rem;">
+                    {{ application.first_name|first|upper }}{{ application.last_name|first|upper }}
+                </div>
+                <div>
+                    <h4 class="mb-1">{{ application.full_name }}</h4>
+                    <p class="text-muted mb-0">{{ application.email }} • {{ application.phone_number }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Details -->
+    <div class="row">
+        <div class="col-md-6">
+            <h6 class="border-bottom pb-2">Personal Information</h6>
+            <div class="mb-3">
+                <strong>Application Type:</strong>
+                <span class="badge bg-info">{{ application.get_application_type_display }}</span>
+            </div>
+            <div class="mb-3">
+                <strong>Years of Experience:</strong>
+                <span class="fw-medium">{{ application.years_of_experience }} years</span>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <h6 class="border-bottom pb-2">Professional Information</h6>
+            <div class="mb-3">
+                <strong>Position Applied:</strong>
+                <span class="fw-medium">
+                    {% if application.position %}
+                        {{ application.position.title }}
+                    {% else %}
+                        {{ application.position_applied }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="mb-3">
+                <strong>Qualification:</strong>
+                <span class="fw-medium">{{ application.qualification }}</span>
+            </div>
+            {% if application.specialization %}
+            <div class="mb-3">
+                <strong>Specialization:</strong>
+                <span class="fw-medium">{{ application.specialization }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Cover Letter -->
+    {% if application.cover_letter %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h6 class="border-bottom pb-2">Cover Letter</h6>
+            <div class="border rounded p-3 bg-light">
+                {{ application.cover_letter|linebreaks }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Attachments -->
+    {% if application.resume or application.certificates %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h6 class="border-bottom pb-2">Attachments</h6>
+            <div class="d-flex gap-2">
+                {% if application.resume %}
+                <a href="{{ application.resume.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                    <i class="bi bi-file-earmark-person me-1"></i>View Resume
+                </a>
+                {% endif %}
+                {% if application.certificates %}
+                <a href="{{ application.certificates.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+                    <i class="bi bi-file-earmark-check me-1"></i>View Certificates
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Footer with Actions -->
+    <div class="row mt-4 pt-3 border-top">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    Applied on {{ application.created_at|date:"F j, Y g:i A" }}
+                </small>
+                
+                {% if application.status == 'pending' %}
+                <div class="btn-group">
+                    <button class="btn btn-success"
+                            hx-post="{% url 'users:approve_application' application.id %}"
+                            hx-target="#applications-table"
+                            hx-confirm="Are you sure you want to approve this application?"
+                            data-bs-dismiss="modal">
+                        <i class="bi bi-check me-1"></i>Approve
+                    </button>
+                    <button class="btn btn-danger"
+                            hx-post="{% url 'users:reject_application' application.id %}"
+                            hx-target="#applications-table"
+                            hx-confirm="Are you sure you want to reject this application?"
+                            data-bs-dismiss="modal">
+                        <i class="bi bi-x me-1"></i>Reject
+                    </button>
+                </div>
+                {% else %}
+                <span class="badge {% if application.status == 'approved' %}bg-success{% elif application.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {{ application.get_status_display }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

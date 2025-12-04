@@ -1,0 +1,20 @@
+<!-- templates/users/partials/email_validation.html -->
+<div id="email-validation">
+    {% if available %}
+    <div class="text-success small">
+        <i class="fas fa-check-circle"></i> Email is available for invitation
+    </div>
+    {% elif school_access %}
+    <div class="text-danger small">
+        <i class="fas fa-exclamation-circle"></i> This user already has access to your school
+    </div>
+    {% elif pending_invitation %}
+    <div class="text-warning small">
+        <i class="fas fa-clock"></i> A pending invitation already exists for this email
+    </div>
+    {% elif user_exists %}
+    <div class="text-info small">
+        <i class="fas fa-info-circle"></i> User exists - they'll be added to your school
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,301 @@
+<div class="row g-4">
+    {% for school in schools %}
+    <div class="col-xl-4 col-lg-6 col-md-6">
+        <div class="card school-card h-100">
+            <!-- School Header -->
+            <div class="card-header position-relative" style="background: linear-gradient(135deg, {{ school.primary_color|default:'#3B82F6' }} 0%, {{ school.secondary_color|default:'#1E40AF' }} 100%); min-height: 120px;">
+                {% if school.logo %}
+                <img src="{{ school.logo.url }}" alt="{{ school.name }}" class="school-logo position-absolute top-50 start-50 translate-middle" style="max-height: 60px; max-width: 120px;">
+                {% else %}
+                <div class="school-logo-placeholder position-absolute top-50 start-50 translate-middle text-white text-center">
+                    <i class="bi bi-building display-6"></i>
+                </div>
+                {% endif %}
+                
+                <!-- Open Positions Badge -->
+                {% if school.open_positions_count > 0 %}
+                <span class="position-absolute top-0 end-0 badge bg-warning m-2">
+                    <i class="bi bi-briefcase me-1"></i>{{ school.open_positions_count }} Position{{ school.open_positions_count|pluralize }}
+                </span>
+                {% endif %}
+                
+                <!-- Open Applications Badge -->
+                {% if school.open_application_forms_count > 0 %}
+                <span class="position-absolute top-0 start-0 badge bg-success m-2">
+                    <i class="bi bi-pencil-square me-1"></i>Admissions Open
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- School Body -->
+            <div class="card-body">
+                <h5 class="card-title text-truncate">{{ school.name }}</h5>
+                
+                <!-- School Type and Location -->
+                <div class="mb-3">
+                    <span class="badge bg-primary mb-2">{{ school.get_school_type_display }}</span>
+                    {% if school.address %}
+                    <p class="text-muted small mb-1">
+                        <i class="bi bi-geo-alt me-1"></i>{{ school.address|truncatewords:8 }}
+                    </p>
+                    {% endif %}
+                    {% if school.contact_email %}
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-envelope me-1"></i>{{ school.contact_email }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Open Positions -->
+                {% if school.open_teaching_positions %}
+                <div class="mb-3">
+                    <h6 class="small text-muted mb-2">Open Positions:</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for position in school.open_teaching_positions|slice:":3" %}
+                        <span class="badge bg-light text-dark border">{{ position.title }}</span>
+                        {% endfor %}
+                        {% if school.open_teaching_positions.count > 3 %}
+                        <span class="badge bg-light text-dark border">+{{ school.open_teaching_positions.count|add:"-3" }} more</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Open Application Forms -->
+                {% if school.open_application_forms %}
+                <div class="mb-3">
+                    <h6 class="small text-muted mb-2">Admission Forms:</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for form in school.open_application_forms|slice:":2" %}
+                        <span class="badge bg-info text-white">
+                            {{ form.name }}
+                            {% if form.application_fee > 0 %}
+                            <small class="ms-1">- {{ form.currency }} {{ form.application_fee }}</small>
+                            {% else %}
+                            <small class="ms-1">- Free</small>
+                            {% endif %}
+                        </span>
+                        {% endfor %}
+                        {% if school.open_application_forms.count > 2 %}
+                        <span class="badge bg-light text-dark border">+{{ school.open_application_forms.count|add:"-2" }} more</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Card Footer with Actions -->
+            <div class="card-footer bg-transparent border-top">
+                <div class="d-flex justify-content-between align-items-center">
+                    <!-- View School Button -->
+                    <a href="{{ school.school_url }}" 
+                       class="btn btn-outline-primary btn-sm"
+                       target="_blank">
+                        <i class="bi bi-eye me-1"></i>View
+                    </a>
+
+                    <!-- Apply Now Button (Shows if user is not part of school AND admissions are open) -->
+                    {% if not user_has_access_to_school and school.open_application_forms_count > 0 %}
+                    <div class="dropdown">
+                        <button class="btn btn-success btn-sm dropdown-toggle" 
+                                type="button" 
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <i class="bi bi-pencil-square me-1"></i>Apply Now
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% for form in school.open_application_forms %}
+                            <li>
+                                <a class="dropdown-item" 
+                                   href="{% url 'admissions:public_application_start' form.slug %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>{{ form.name }}</span>
+                                        <small class="text-muted">
+                                            {% if form.application_fee > 0 %}
+                                            {{ form.currency }} {{ form.application_fee }}
+                                            {% else %}
+                                            Free
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% if form.days_remaining > 0 %}
+                                    <small class="text-success">{{ form.days_remaining }} days left</small>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% elif user_has_access_to_school %}
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-check-circle me-1"></i>Already Member
+                    </span>
+                    {% elif school.open_application_forms_count == 0 %}
+                    <span class="badge bg-warning">
+                        <i class="bi bi-clock me-1"></i>Admissions Closed
+                    </span>
+                    {% endif %}
+
+                    <!-- Apply for Teaching Position -->
+                    {% if school.open_teaching_positions and not user_has_access_to_school %}
+                    <a href="{% url 'users:apply_to_school' school.id %}" 
+                       class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-briefcase me-1"></i>Teach Here
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-search display-1 text-muted mb-3"></i>
+                <h4 class="text-muted">No schools found</h4>
+                <p class="text-muted">Try adjusting your search criteria</p>
+                <a href="{% url 'school_feed' %}" class="btn btn-primary">Clear Filters</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if schools.has_other_pages %}
+<nav aria-label="School pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if schools.has_previous %}
+        <li class="page-item">
+            <a class="page-link" 
+               hx-get="{% url 'school_feed' %}"
+               hx-target="#schools-container"
+               hx-vals='{"page": "{{ schools.previous_page_number }}", "search": "{{ request.GET.search }}", "school_type": "{{ request.GET.school_type }}"}'
+               href="?page={{ schools.previous_page_number }}">&laquo;</a>
+        </li>
+        {% endif %}
+        
+        {% for i in schools.paginator.page_range %}
+        <li class="page-item {% if schools.number == i %}active{% endif %}">
+            <a class="page-link" 
+               hx-get="{% url 'school_feed' %}"
+               hx-target="#schools-container"
+               hx-vals='{"page": "{{ i }}", "search": "{{ request.GET.search }}", "school_type": "{{ request.GET.school_type }}"}'
+               href="?page={{ i }}">{{ i }}</a>
+        </li>
+        {% endfor %}
+        
+        {% if schools.has_next %}
+        <li class="page-item">
+            <a class="page-link" 
+               hx-get="{% url 'school_feed' %}"
+               hx-target="#schools-container"
+               hx-vals='{"page": "{{ schools.next_page_number }}", "search": "{{ request.GET.search }}", "school_type": "{{ request.GET.school_type }}"}'
+               href="?page={{ schools.next_page_number }}">&raquo;</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<style>
+.school-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.school-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.school-logo {
+    background: rgba(255,255,255,0.9);
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.school-logo-placeholder {
+    background: rgba(255,255,255,0.2);
+    padding: 12px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+/* Badge styles */
+.badge {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.5rem;
+}
+
+/* Button styles */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+/* Dropdown styles */
+.dropdown-menu {
+    min-width: 250px;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .school-card .card-footer .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .school-card .card-footer .btn {
+        width: 100%;
+    }
+    
+    .dropdown {
+        width: 100%;
+    }
+    
+    .dropdown-toggle {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+// Initialize tooltips for school cards
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+
+// Handle HTMX after swap to re-initialize tooltips
+document.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'schools-container') {
+        const tooltips = event.detail.elt.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(tooltip => {
+            new bootstrap.Tooltip(tooltip);
+        });
+    }
+});
+</script>

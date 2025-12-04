@@ -1,0 +1,323 @@
+<!-- templates/core/subject_detail.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ subject.name }} - {{ school.name }}{% endblock %}
+
+{% block page_title %}{{ subject.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Subject Header Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-book me-2"></i>Subject Details
+                </h5>
+                <div class="btn-group">
+                    <a href="{% url 'core:subject_edit' subject.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </a>
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th class="text-muted" style="width: 140px;">Subject Name:</th>
+                                <td>{{ subject.name }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Subject Code:</th>
+                                <td>
+                                    <span class="badge bg-primary">{{ subject.code|default:"No code" }}</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Description:</th>
+                                <td>{{ subject.description|default:"No description provided" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th class="text-muted" style="width: 140px;">Category:</th>
+                                <td>
+                                    {% if subject.category %}
+                                        <span class="badge bg-secondary">{{ subject.category }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Status:</th>
+                                <td>
+                                    <span class="badge {% if subject.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ subject.is_active|yesno:"Active,Inactive" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Created:</th>
+                                <td>{{ subject.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Associated Classes Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people me-2"></i>Associated Classes
+                    <span class="badge bg-primary ms-2">{{ subject.class_set.count }}</span>
+                </h5>
+                <a href="{% url 'core:class_create' %}?subject={{ subject.pk }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>Add Class
+                </a>
+            </div>
+            <div class="card-body">
+                {% if subject.class_set.all %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Class Name</th>
+                                    <th>Grade Level</th>
+                                    <th>Teacher</th>
+                                    <th>Students</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for class in subject.class_set.all %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'core:class_detail' class.pk %}" class="text-decoration-none">
+                                            {{ class.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ class.grade_level|default:"-" }}</td>
+                                    <td>
+                                        {% if class.teacher %}
+                                            {{ class.teacher.get_full_name|default:class.teacher.username }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ class.students.count }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if class.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ class.is_active|yesno:"Active,Inactive" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'core:class_detail' class.pk %}" class="btn btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'core:class_update' class.pk %}" class="btn btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="text-muted mt-2">No classes associated with this subject</h6>
+                        <p class="text-muted mb-3">Create a new class that uses this subject</p>
+                        <a href="{% url 'core:class_create' %}?subject={{ subject.pk }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Create Class
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Teachers Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-person-badge me-2"></i>Assigned Teachers
+                    <span class="badge bg-info ms-2">{{ teachers.count }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if teachers %}
+                    <div class="row g-3">
+                        {% for teacher in teachers %}
+                        <div class="col-md-4 col-6">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="bi bi-person-circle text-primary" style="font-size: 2.5rem;"></i>
+                                    </div>
+                                    <h6 class="card-title mb-1">{{ teacher.get_full_name|default:teacher.username }}</h6>
+                                    <p class="text-muted small mb-2">{{ teacher.email }}</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary">
+                                            {{ teacher.class_set.count }} class{{ teacher.class_set.count|pluralize:"es" }}
+                                        </span>
+                                    </div>
+                                    <a href="{% url 'users:staff_detail' teacher.pk %}" class="btn btn-outline-primary btn-sm">
+                                        View Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                        <h6 class="text-muted mt-2">No teachers assigned</h6>
+                        <p class="text-muted">Teachers will appear here when assigned to classes with this subject</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <a href="{% url 'core:class_create' %}?subject={{ subject.pk }}" class="card h-100 text-decoration-none">
+                            <div class="card-body text-center">
+                                <i class="bi bi-plus-circle text-primary mb-3" style="font-size: 2rem;"></i>
+                                <h6 class="card-title">Create Class</h6>
+                                <p class="text-muted small">Start a new class with this subject</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{% url 'core:subject_edit' subject.pk %}" class="card h-100 text-decoration-none">
+                            <div class="card-body text-center">
+                                <i class="bi bi-pencil text-success mb-3" style="font-size: 2rem;"></i>
+                                <h6 class="card-title">Edit Subject</h6>
+                                <p class="text-muted small">Update subject details</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{% url 'core:subject_list' %}" class="card h-100 text-decoration-none">
+                            <div class="card-body text-center">
+                                <i class="bi bi-list-ul text-info mb-3" style="font-size: 2rem;"></i>
+                                <h6 class="card-title">All Subjects</h6>
+                                <p class="text-muted small">View all subjects</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <button type="button" class="card h-100 text-decoration-none border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <div class="card-body text-center">
+                                <i class="bi bi-trash text-danger mb-3" style="font-size: 2rem;"></i>
+                                <h6 class="card-title">Delete Subject</h6>
+                                <p class="text-muted small">Remove this subject</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to delete the subject <strong>"{{ subject.name }}"</strong>?</p>
+                {% if subject.class_set.all %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This subject has {{ subject.class_set.count }} associated class{{ subject.class_set.count|pluralize:"es" }}. 
+                    Deleting this subject may affect those classes.
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'core:subject_delete' subject.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Subject</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+.card:hover {
+    transform: translateY(-2px);
+}
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--bs-secondary);
+}
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add any subject-specific JavaScript here
+document.addEventListener('DOMContentLoaded', function() {
+    // Example: Confirm before deleting if there are associated classes
+    const deleteForm = document.querySelector('#deleteModal form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const classCount = {{ subject.class_set.count }};
+            if (classCount > 0) {
+                const confirmed = confirm(
+                    `This subject has ${classCount} associated class${classCount > 1 ? 'es' : ''}. ` +
+                    `Are you absolutely sure you want to delete it? This may break class associations.`
+                );
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

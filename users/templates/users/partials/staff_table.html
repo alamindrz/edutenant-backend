@@ -1,0 +1,100 @@
+<!-- templates/users/partials/staff_table.html -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Staff Members</h5>
+        <span class="badge bg-primary">{{ staff_members.count }} staff</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="5%">
+                            <input type="checkbox" class="form-check-input" id="select-all">
+                        </th>
+                        <th>Staff ID</th>
+                        <th>Name</th>
+                        <th>Position</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_members %}
+                    {% include 'users/partials/staff_row.html' with staff=staff %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No staff members found</p>
+                            <a href="{% url 'users:staff_create' %}" class="btn btn-primary btn-sm">
+                                Add Your First Staff Member
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions -->
+{% if staff_members %}
+<div class="mt-3" id="bulk-actions" style="display: none;">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <span id="selected-count">0 staff selected</span>
+                <div class="btn-group">
+                    <button class="btn btn-success btn-sm" 
+                            hx-post="{% url 'users:staff_bulk_actions' %}"
+                            hx-include="[name='staff_ids']"
+                            name="action" value="activate">
+                        Activate
+                    </button>
+                    <button class="btn btn-warning btn-sm"
+                            hx-post="{% url 'users:staff_bulk_actions' %}"
+                            hx-include="[name='staff_ids']"
+                            name="action" value="deactivate">
+                        Deactivate
+                    </button>
+                    <button class="btn btn-danger btn-sm"
+                            hx-post="{% url 'users:staff_bulk_actions' %}"
+                            hx-include="[name='staff_ids']"
+                            name="action" value="delete">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bulk selection
+    const selectAll = document.getElementById('select-all');
+    const staffCheckboxes = document.querySelectorAll('.staff-checkbox');
+    const bulkActions = document.getElementById('bulk-actions');
+    const selectedCount = document.getElementById('selected-count');
+
+    function updateBulkActions() {
+        const selected = document.querySelectorAll('.staff-checkbox:checked');
+        selectedCount.textContent = `${selected.length} staff selected`;
+        bulkActions.style.display = selected.length > 0 ? 'block' : 'none';
+    }
+
+    selectAll?.addEventListener('change', function() {
+        staffCheckboxes.forEach(cb => cb.checked = this.checked);
+        updateBulkActions();
+    });
+
+    staffCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkActions);
+    });
+});
+</script>

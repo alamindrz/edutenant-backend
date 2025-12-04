@@ -1,0 +1,79 @@
+<!-- templates/admissions/application_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Applications - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Applications</h1>
+            <p class="text-muted">Manage and review student applications</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" hx-get="{% url 'admissions:application_filters_partial' %}" hx-target="#filter-widgets">
+                <i class="fas fa-filter"></i> Filters
+            </button>
+            <a href="{% url 'admissions:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Widgets (HTMX) -->
+    <div id="filter-widgets" class="mb-4">
+        <!-- Will be loaded via HTMX -->
+    </div>
+
+    <!-- Applications Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">All Applications</h5>
+            <div class="d-flex gap-2">
+                <input type="search" 
+                       class="form-control form-control-sm" 
+                       placeholder="Search applications..." 
+                       name="search"
+                       hx-get="{% url 'admissions:application_table_partial' %}"
+                       hx-target="#applications-table"
+                       hx-trigger="keyup changed delay:500ms"
+                       hx-include="[name='status'], [name='form'], [name='priority']">
+                
+                <button class="btn btn-sm btn-outline-secondary" 
+                        hx-get="{% url 'admissions:application_table_partial' %}"
+                        hx-target="#applications-table"
+                        hx-include="[name='status'], [name='form'], [name='priority'], [name='search']">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div id="applications-table">
+                {% include 'admissions/partials/application_table.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Handle filter changes
+document.addEventListener('change', function(event) {
+    if (event.target.matches('[name="status"], [name="form"], [name="priority"]')) {
+        htmx.trigger('input[name="search"]', 'change');
+    }
+});
+
+// Auto-refresh every 2 minutes
+setInterval(() => {
+    htmx.ajax('GET', '{% url 'admissions:application_table_partial' %}', {
+        target: '#applications-table',
+        swap: 'innerHTML'
+    });
+}, 120000);
+</script>
+{% endblock %}

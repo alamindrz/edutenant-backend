@@ -1,0 +1,122 @@
+<!-- templates/students/class_group_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="classGroupForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Basic Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        Class Name *
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">e.g., Primary 1A, JSS 2B</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.education_level.id_for_label }}" class="form-label">
+                                        Education Level *
+                                    </label>
+                                    {{ form.education_level }}
+                                    {% if form.education_level.errors %}
+                                    <div class="text-danger small">{{ form.education_level.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.capacity.id_for_label }}" class="form-label">
+                                        Capacity *
+                                    </label>
+                                    {{ form.capacity }}
+                                    {% if form.capacity.errors %}
+                                    <div class="text-danger small">{{ form.capacity.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Maximum number of students</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teacher Assignments -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Teacher Assignments</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.class_teacher.id_for_label }}" class="form-label">
+                                        Class Teacher
+                                    </label>
+                                    {{ form.class_teacher }}
+                                    {% if form.class_teacher.errors %}
+                                    <div class="text-danger small">{{ form.class_teacher.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Primary teacher responsible for this class</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.teachers.id_for_label }}" class="form-label">
+                                        Additional Teachers
+                                    </label>
+                                    {{ form.teachers }}
+                                    {% if form.teachers.errors %}
+                                    <div class="text-danger small">{{ form.teachers.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Hold Ctrl/Cmd to select multiple teachers</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'students:class_group_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back to List
+                                    </a>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> 
+                                            {% if class_group %}Update Class{% else %}Create Class{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

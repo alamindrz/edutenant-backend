@@ -1,0 +1,92 @@
+<!-- templates/admissions/partials/application_timeline_partial.html -->
+<div class="card">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar avatar-lg">
+                            <div class="avatar-title rounded-circle bg-primary bg-opacity-10 text-primary">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h4 class="mb-1">
+                            {% if application.student %}
+                            {{ application.student.full_name }}
+                            {% else %}
+                            {{ application.data.first_name }} {{ application.data.last_name }}
+                            {% endif %}
+                        </h4>
+                        <p class="text-muted mb-0">
+                            Application #{{ application.application_number }}
+                            • Applied for {{ application.applied_class.name|default:"Unknown Class" }}
+                            • {{ application.submitted_at|date:"M j, Y" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-end gap-2">
+                    <!-- Status Badge -->
+                    <span class="badge fs-6 
+                        {% if application.status == 'submitted' %}bg-warning
+                        {% elif application.status == 'under_review' %}bg-info
+                        {% elif application.status == 'accepted' %}bg-success
+                        {% elif application.status == 'rejected' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ application.status|title }}
+                    </span>
+
+                    <!-- Priority Badge -->
+                    <span class="badge fs-6 
+                        {% if application.priority == 'urgent' %}bg-danger
+                        {% elif application.priority == 'high' %}bg-warning
+                        {% elif application.priority == 'normal' %}bg-primary
+                        {% else %}bg-secondary{% endif %}">
+                        {{ application.priority|title }}
+                    </span>
+                </div>
+                
+                <!-- Processing Time -->
+                <div class="text-end mt-2">
+                    <small class="text-muted {% if application.is_overdue %}text-danger{% endif %}">
+                        Processing: {{ application.processing_time }} days
+                        {% if application.is_overdue %}(Overdue){% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <small class="text-muted">Application Progress</small>
+                <small class="text-muted">
+                    {% if application.assigned_to %}
+                    Assigned to: {{ application.assigned_to.user.get_full_name }}
+                    {% else %}
+                    Unassigned
+                    {% endif %}
+                </small>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar 
+                    {% if application.status == 'submitted' %}bg-warning
+                    {% elif application.status == 'under_review' %}bg-info
+                    {% elif application.status == 'accepted' %}bg-success
+                    {% elif application.status == 'rejected' %}bg-danger
+                    {% else %}bg-secondary{% endif %}" 
+                    role="progressbar" 
+                    style="width: 
+                    {% if application.status == 'submitted' %}25%
+                    {% elif application.status == 'under_review' %}50%
+                    {% elif application.status == 'accepted' %}75%
+                    {% elif application.status == 'rejected' %}100%
+                    {% else %}0%{% endif %};">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

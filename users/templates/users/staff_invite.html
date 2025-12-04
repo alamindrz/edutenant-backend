@@ -1,0 +1,87 @@
+<!-- templates/users/staff_invite.html -->
+{% extends "base.html" %}
+
+{% block title %}Invite Staff - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-envelope me-2"></i>
+                    Invite Staff to {{ school.name }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Invitation Form -->
+                <form method="post" 
+                      hx-post="{% url 'users:staff_invite' %}"
+                      hx-target="#invitation-result">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Teacher's Email *</label>
+                                <input type="email" name="email" class="form-control" 
+                                       placeholder="teacher@school.com" required
+                                       hx-post="{% url 'users:check_email' %}"
+                                       hx-trigger="change"
+                                       hx-target="#email-validation">
+                                <div id="email-validation"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Role *</label>
+                                <select name="role" class="form-select" required>
+                                    <option value="">Select a role...</option>
+                                    {% for role in available_roles %}
+                                    <option value="{{ role.id }}">{{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Personal Message (Optional)</label>
+                        <textarea name="message" class="form-control" rows="3" 
+                                  placeholder="Add a personal note to the invitation..."></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'users:staff_list' %}" class="btn btn-secondary me-md-2">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>
+                            Send Invitation
+                        </button>
+                    </div>
+                </form>
+
+                <div id="invitation-result"></div>
+            </div>
+        </div>
+
+        <!-- Pending Invitations -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Pending Invitations</h5>
+                <button class="btn btn-sm btn-outline-primary"
+                        hx-get="{% url 'users:staff_invitation_list' %}"
+                        hx-target="#invitations-list">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="invitations-list" hx-get="{% url 'users:staff_invitation_list' %}" hx-trigger="load">
+                    <!-- Loading invitations... -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

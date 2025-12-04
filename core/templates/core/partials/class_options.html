@@ -1,0 +1,8 @@
+<!-- core/templates/core/partials/class_options.html -->
+{% for class in classes %}
+<option value="{{ class.id }}">
+    {{ class.name }} ({{ class.current_strength }}/{{ class.max_students }} students)
+</option>
+{% empty %}
+<option value="">No classes available</option>
+{% endfor %}

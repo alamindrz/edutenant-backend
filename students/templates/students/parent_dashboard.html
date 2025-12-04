@@ -1,0 +1,216 @@
+<!-- templates/students/parent_dashboard.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Parent Dashboard - Edusuite{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Parent Dashboard</h1>
+            <p class="text-muted">Manage your children across {{ parent_count }} school{{ parent_count|pluralize }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'billing:parent_invoices' %}" class="btn btn-outline-primary">
+                <i class="fas fa-file-invoice me-2"></i>View Invoices
+            </a>
+            <a href="{% url 'billing:parent_payment' %}" class="btn btn-primary">
+                <i class="fas fa-credit-card me-2"></i>Pay Fees
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Children</div>
+                            <div class="h5 mb-0">{{ children_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-child fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Pending Fees</div>
+                            <div class="h5 mb-0">₦{{ total_pending_fees|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Paid Fees</div>
+                            <div class="h5 mb-0">₦{{ total_paid_fees|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Schools</div>
+                            <div class="h5 mb-0">{{ parent_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-school fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Children Overview -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Your Children</h5>
+                </div>
+                <div class="card-body">
+                    {% if children_data %}
+                    <div class="row">
+                        {% for data in children_data %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="card-title mb-1">{{ data.child.full_name }}</h6>
+                                            <p class="text-muted small mb-0">{{ data.school.name }}</p>
+                                        </div>
+                                        <span class="badge bg-{% if data.child.is_active %}success{% else %}secondary{% endif %}">
+                                            {{ data.child.class_group.name|default:"No Class" }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="text-sm text-muted">Admission No:</div>
+                                        <div class="fw-bold">{{ data.child.admission_number }}</div>
+                                    </div>
+
+                                    <!-- Pending Invoices -->
+                                    {% if data.pending_invoices %}
+                                    <div class="mb-3">
+                                        <div class="text-sm text-warning fw-bold">Pending Fees: ₦{{ data.total_pending|floatformat:2|intcomma }}</div>
+                                        <div class="text-xs text-muted">
+                                            {{ data.pending_invoices|length }} invoice{{ data.pending_invoices|length|pluralize }} due
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Applications -->
+                                    {% if data.applications %}
+                                    <div class="mb-2">
+                                        <div class="text-sm text-info">Applications:</div>
+                                        {% for app in data.applications %}
+                                        <div class="text-xs">
+                                            {{ app.form.name }} - 
+                                            <span class="badge bg-{% if app.status == 'accepted' %}success{% elif app.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                                {{ app.status|title }}
+                                            </span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Actions -->
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'billing:parent_payment_single' data.child.invoices.first.id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            Pay Fees
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-child fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No children found in your parent profiles.</p>
+                        <p class="text-muted small">Please contact your school if this is incorrect.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    {% if recent_invoices %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Child</th>
+                                    <th>School</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in recent_invoices %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'billing:parent_invoices' %}" class="text-decoration-none">
+                                            {{ invoice.invoice_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ invoice.student.full_name }}</td>
+                                    <td>{{ invoice.school.name }}</td>
+                                    <td>₦{{ invoice.total_amount|floatformat:2|intcomma }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' %}danger{% else %}warning{% endif %}">
+                                            {{ invoice.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ invoice.created_at|date:"M j, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

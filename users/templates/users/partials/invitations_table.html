@@ -1,0 +1,63 @@
+<!-- templates/users/partials/invitations_table.html -->
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Invited By</th>
+                <th>Sent</th>
+                <th>Expires</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invitation in invitations %}
+            <tr>
+                <td>
+                    <strong>{{ invitation.email }}</strong>
+                    {% if invitation.message %}
+                    <div class="text-muted small">{{ invitation.message|truncatewords:10 }}</div>
+                    {% endif %}
+                </td>
+                <td>{{ invitation.role.name }}</td>
+                <td>{{ invitation.invited_by.get_full_name|default:invitation.invited_by.email }}</td>
+                <td>{{ invitation.created_at|date:"M d, Y" }}</td>
+                <td>
+                    <small class="{% if invitation.is_valid %}text-success{% else %}text-danger{% endif %}">
+                        {{ invitation.expires_at|date:"M d, Y" }}
+                    </small>
+                </td>
+                <td>
+                    <span class="badge bg-{% if invitation.status == 'pending' %}warning{% elif invitation.status == 'accepted' %}success{% else %}danger{% endif %}">
+                        {{ invitation.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        {% if invitation.status == 'pending' %}
+                        <a href="{% url 'users:cancel_invitation' invitation.id %}" 
+                           class="btn btn-outline-danger"
+                           onclick="return confirm('Cancel invitation to {{ invitation.email }}?')">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Pending Invitations</h5>
+                    <p class="text-muted">No staff invitations are currently pending.</p>
+                    <a href="{% url 'users:staff_invite' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Send First Invitation
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

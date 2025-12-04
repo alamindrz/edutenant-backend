@@ -1,0 +1,486 @@
+<!-- Mobile Menu Offcanvas -->
+<div class="offcanvas offcanvas-bottom" tabindex="-1" id="mobileMenuOffcanvas" aria-labelledby="mobileMenuOffcanvasLabel" style="height: 85vh; border-radius: 1rem 1rem 0 0;">
+    <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center w-100">
+            <div class="flex-shrink-0">
+                <i class="bi bi-person-circle fs-1 text-primary"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+                <h6 class="mb-0 fw-bold">{{ request.user.get_full_name|default:request.user.username }}</h6>
+                <small class="text-muted">
+                    {% if request.school %}
+                        {{ request.school.name }}
+                    {% else %}
+                        {% if user_profile.role %}{{ user_profile.role.name }}{% else %}User{% endif %}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div class="offcanvas-body p-0">
+        <!-- Quick Stats -->
+        {% if request.school %}
+        <div class="p-3 bg-light border-bottom">
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded">
+                        <div class="h6 mb-0 text-primary">
+                            {{ request.school.student_set.count|default:0 }}
+                        </div>
+                        <small class="text-muted">Students</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded">
+                        <div class="h6 mb-0 text-success">
+                            {{ request.school.staff_set.count|default:0 }}
+                        </div>
+                        <small class="text-muted">Staff</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded">
+                        <div class="h6 mb-0 text-info">
+                            {{ request.school.classgroup_set.count|default:0 }}
+                        </div>
+                        <small class="text-muted">Classes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Navigation Menu -->
+        <div class="list-group list-group-flush">
+            <!-- Quick Access - Always Visible -->
+            <div class="list-group-item border-0 py-1 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Quick Access</small>
+            </div>
+            
+            <a href="{% url 'users:dashboard' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-speedometer2 me-3 text-primary"></i>
+                Dashboard
+            </a>
+            
+            <a href="{% url 'school_discovery' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-search me-3 text-success"></i>
+                Discover Schools
+            </a>
+            
+            <!-- My Applications - For Teachers/Applicants Only -->
+            {% if not user_can_manage_admissions %}
+            <a href="{% url 'users:my_applications' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-file-earmark-person me-3 text-primary"></i>
+                My Applications
+                {% if my_pending_applications and my_pending_applications > 0 %}
+                <span class="badge bg-warning float-end">{{ my_pending_applications }}</span>
+                {% endif %}
+            </a>
+            {% endif %}
+
+            <!-- Admissions Management - For Principals/Admins Only -->
+            {% if user_can_manage_admissions %}
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Admissions</small>
+            </div>
+            
+            <a href="{% url 'admissions:dashboard' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-speedometer2 me-3 text-primary"></i>
+                Admissions Dashboard
+                {% if admission_pending_count and admission_pending_count > 0 %}
+                <span class="badge bg-warning float-end">{{ admission_pending_count }}</span>
+                {% endif %}
+            </a>
+            
+            <a href="{% url 'admissions:application_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-pencil-square me-3 text-info"></i>
+                Student Applications
+                {% if admission_pending_count and admission_pending_count > 0 %}
+                <span class="badge bg-danger float-end">{{ admission_pending_count }}</span>
+                {% endif %}
+            </a>
+            
+            <a href="{% url 'admissions:admission_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-person-check me-3 text-success"></i>
+                Admission Offers
+            </a>
+            
+            <a href="{% url 'admissions:manage_application_forms' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-file-earmark-text me-3 text-warning"></i>
+                Application Forms
+            </a>
+            {% endif %}
+
+            <!-- Staff Management - For Principals/Admins Only -->
+            {% if user_can_manage_staff %}
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Staff Management</small>
+            </div>
+            
+            <a href="{% url 'users:staff_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-person-badge me-3 text-primary"></i>
+                Staff Directory
+            </a>
+            
+            <a href="{% url 'users:school_applications' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-person-check me-3 text-info"></i>
+                Teacher Applications
+                {% if pending_applications_count and pending_applications_count > 0 %}
+                <span class="badge bg-danger float-end">{{ pending_applications_count }}</span>
+                {% endif %}
+            </a>
+            
+            <a href="{% url 'users:staff_create' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-person-plus me-3 text-success"></i>
+                Add Staff
+            </a>
+            
+            <a href="{% url 'users:role_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-shield-check me-3 text-warning"></i>
+                Role Management
+            </a>
+            {% endif %}
+
+            <!-- Student Management - For Teachers & Admins -->
+            {% if user_can_view_students %}
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Students</small>
+            </div>
+            
+            <a href="{% url 'students:student_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-people me-3 text-primary"></i>
+                All Students
+            </a>
+            
+            <a href="{% url 'students:parent_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-people-fill me-3 text-info"></i>
+                Parents
+            </a>
+            
+            {% if user_profile.role.system_role_type == 'parent' %}
+            <a href="{% url 'students:parent_dashboard' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-person-badge me-3 text-success"></i>
+                Parent Portal
+            </a>
+            {% endif %}
+            {% endif %}
+
+            <!-- Academic Management - For Teachers & Admins -->
+            {% if user_can_manage_academics %}
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Academic</small>
+            </div>
+            
+            <a href="{% url 'core:class_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-journal me-3 text-primary"></i>
+                Classes
+            </a>
+            
+            <a href="{% url 'core:subject_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-book me-3 text-success"></i>
+                Subjects
+            </a>
+            {% endif %}
+
+            <!-- Attendance - For Teachers & Admins -->
+            {% if user_can_manage_attendance %}
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Attendance</small>
+            </div>
+            
+            <a href="{% url 'attendance:dashboard' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-check-circle me-3 text-success"></i>
+                Attendance Dashboard
+            </a>
+            
+            <a href="{% url 'attendance:student_attendance_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-people me-3 text-primary"></i>
+                Student Attendance
+            </a>
+            
+            {% if user_can_manage_staff %}
+            <a href="{% url 'attendance:teacher_attendance_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-person-check me-3 text-info"></i>
+                Teacher Attendance
+            </a>
+            {% endif %}
+            
+            <a href="{% url 'attendance:reports' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-graph-up me-3 text-warning"></i>
+                Reports
+            </a>
+            {% endif %}
+
+            <!-- Billing - For Admins Only -->
+            {% if user_can_manage_finances %}
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">Billing</small>
+            </div>
+            
+            <a href="{% url 'billing:dashboard' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-credit-card me-3 text-primary"></i>
+                Billing Dashboard
+            </a>
+            
+            <a href="{% url 'billing:invoice_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-receipt me-3 text-info"></i>
+                Invoices
+            </a>
+            {% endif %}
+
+            <!-- System -->
+            <div class="list-group-item border-0 py-1 mt-3 bg-light">
+                <small class="text-uppercase text-muted fw-bold">System</small>
+            </div>
+            
+            <a href="{% url 'users:school_list' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-building me-3 text-secondary"></i>
+                My Schools
+            </a>
+            
+            <a href="{% url 'users:profile' %}" class="list-group-item list-group-item-action border-0 py-3">
+                <i class="bi bi-gear me-3 text-secondary"></i>
+                Settings
+            </a>
+            
+            <button class="list-group-item list-group-item-action border-0 py-3" onclick="toggleDarkMode()">
+                <i class="bi bi-moon me-3 text-secondary"></i>
+                <span id="theme-toggle-text">Dark Mode</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Footer Actions -->
+    <div class="offcanvas-footer border-top p-3">
+        <div class="d-grid gap-2">
+            <a href="{% url 'users:profile' %}" class="btn btn-outline-primary">
+                <i class="bi bi-person me-2"></i>My Profile
+            </a>
+            <a href="{% url 'account_logout' %}" class="btn btn-outline-danger">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modern CSS for Mobile Menu -->
+<style>
+.offcanvas-bottom {
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    background: var(--bs-body-bg);
+}
+
+.offcanvas-header {
+    padding: 1rem 1.5rem;
+    background: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+.offcanvas-body {
+    padding: 0;
+}
+
+.list-group-item {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-bottom: 1px solid var(--bs-border-color);
+    transition: all 0.2s ease;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item:hover, .list-group-item:focus {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    transform: translateX(4px);
+}
+
+.list-group-item.bg-light {
+    background-color: rgba(var(--bs-light-rgb), 0.8) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item.bg-light {
+    background-color: rgba(var(--bs-dark-rgb), 0.8) !important;
+}
+
+.offcanvas-footer {
+    background: rgba(var(--bs-light-rgb), 0.5);
+}
+
+[data-bs-theme="dark"] .offcanvas-footer {
+    background: rgba(var(--bs-dark-rgb), 0.5);
+}
+
+/* Badge styles */
+.list-group-item .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Quick stats cards */
+.bg-white {
+    background: white !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+    background: var(--bs-dark) !important;
+}
+
+/* Smooth animations */
+.offcanvas-bottom {
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.offcanvas-bottom.show {
+    transform: translateY(0);
+}
+
+/* Safe area support */
+@supports(padding: max(0px)) {
+    .offcanvas-bottom {
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Section headers */
+.text-uppercase {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* Loading animation for badges */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.list-group-item .badge {
+    animation: pulse 2s infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .list-group-item,
+    .offcanvas-bottom,
+    .list-group-item .badge {
+        transition: none;
+        animation: none;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update theme toggle text based on current theme
+    function updateThemeToggleText() {
+        const themeToggleText = document.getElementById('theme-toggle-text');
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+        if (themeToggleText) {
+            themeToggleText.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        }
+    }
+    
+    // Initialize theme text
+    updateThemeToggleText();
+    
+    // Add click handlers for better UX
+    const listItems = document.querySelectorAll('.list-group-item');
+    listItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Close offcanvas after clicking a link (except theme toggle)
+            if (!this.onclick) {
+                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('mobileMenuOffcanvas'));
+                if (offcanvas) {
+                    setTimeout(() => offcanvas.hide(), 300);
+                }
+            }
+        });
+    });
+    
+    // Enhanced dark mode toggle
+    window.toggleDarkMode = function() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-bs-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        // Apply theme
+        html.setAttribute('data-bs-theme', newTheme);
+        updateThemeToggleText();
+        
+        // Save to localStorage
+        localStorage.setItem('theme', newTheme);
+        
+        // Update navbar background
+        updateNavbarTheme(newTheme);
+        
+        // Close mobile menu after theme change
+        const mobileMenu = bootstrap.Offcanvas.getInstance(document.getElementById('mobileMenuOffcanvas'));
+        if (mobileMenu) {
+            setTimeout(() => mobileMenu.hide(), 500);
+        }
+    }
+    
+    function updateNavbarTheme(theme) {
+        const navbar = document.getElementById('main-header');
+        const mobileNav = document.getElementById('mobile-bottom-nav');
+        
+        if (navbar) {
+            if (theme === 'dark') {
+                navbar.classList.remove('navbar-light', 'bg-white');
+                navbar.classList.add('navbar-dark', 'bg-dark');
+            } else {
+                navbar.classList.remove('navbar-dark', 'bg-dark');
+                navbar.classList.add('navbar-light', 'bg-white');
+            }
+        }
+        
+        if (mobileNav) {
+            if (theme === 'dark') {
+                mobileNav.classList.remove('navbar-light', 'bg-white');
+                mobileNav.classList.add('navbar-dark', 'bg-dark');
+            } else {
+                mobileNav.classList.remove('navbar-dark', 'bg-dark');
+                mobileNav.classList.add('navbar-light', 'bg-white');
+            }
+        }
+    }
+
+    // Handle offcanvas events
+    const mobileMenu = document.getElementById('mobileMenuOffcanvas');
+    if (mobileMenu) {
+        mobileMenu.addEventListener('show.bs.offcanvas', function () {
+            // Add any pre-show logic here
+            document.body.style.overflow = 'hidden';
+        });
+
+        mobileMenu.addEventListener('hidden.bs.offcanvas', function () {
+            // Add any post-hide logic here
+            document.body.style.overflow = '';
+        });
+    }
+
+    // Keyboard navigation support
+    document.addEventListener('keydown', function(e) {
+        const mobileMenu = document.getElementById('mobileMenuOffcanvas');
+        if (mobileMenu && mobileMenu.classList.contains('show')) {
+            if (e.key === 'Escape') {
+                const offcanvas = bootstrap.Offcanvas.getInstance(mobileMenu);
+                offcanvas.hide();
+            }
+        }
+    });
+});
+
+// Auto-close menu when navigating (for SPA-like behavior)
+document.addEventListener('htmx:afterSwap', function() {
+    const mobileMenu = bootstrap.Offcanvas.getInstance(document.getElementById('mobileMenuOffcanvas'));
+    if (mobileMenu) {
+        mobileMenu.hide();
+    }
+});
+</script>

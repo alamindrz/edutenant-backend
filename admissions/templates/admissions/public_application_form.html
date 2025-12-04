@@ -1,0 +1,350 @@
+<!-- templates/admissions/public_application_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Application Form - {{ form.school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h1 class="h3 mb-1">Application Form</h1>
+                            <p class="text-muted mb-0">{{ form.school.name }} - {{ form.name }}</p>
+                        </div>
+                        <div class="btn-group">
+                            <a href="{% url 'admissions:public_application_start' form.slug %}" 
+                               class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Info
+                            </a>
+                            <a href="{% url 'school_discovery' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-search me-1"></i>Discover Schools
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" id="form-progress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>Parent Information</span>
+                        <span>Student Information</span>
+                        <span>Review & Submit</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Form -->
+            <form id="application-form" 
+                  method="POST" 
+                  action="{% url 'admissions:public_application_submit' form.slug %}"
+                  enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Parent Information Section -->
+                <div class="card mb-4" id="parent-section">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-person-vcard me-2"></i>Parent/Guardian Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" class="form-control" name="parent_first_name" required
+                                       value="{{ user.first_name|default:'' }}">
+                                <div class="invalid-feedback">Please enter your first name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" name="parent_last_name" required
+                                       value="{{ user.last_name|default:'' }}">
+                                <div class="invalid-feedback">Please enter your last name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" name="parent_email" required
+                                       value="{{ user.email|default:'' }}">
+                                <div class="invalid-feedback">Please enter a valid email address</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" name="parent_phone" required>
+                                <div class="invalid-feedback">Please enter your phone number</div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label">Address *</label>
+                                <textarea class="form-control" name="parent_address" rows="3" required></textarea>
+                                <div class="invalid-feedback">Please enter your address</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Relationship to Student</label>
+                                <select class="form-select" name="parent_relationship">
+                                    <option value="Parent">Parent</option>
+                                    <option value="Guardian">Guardian</option>
+                                    <option value="Relative">Relative</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Information Section -->
+                <div class="card mb-4" id="student-section">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-person me-2"></i>Student Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" class="form-control" name="student_first_name" required>
+                                <div class="invalid-feedback">Please enter student's first name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" name="student_last_name" required>
+                                <div class="invalid-feedback">Please enter student's last name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Gender *</label>
+                                <select class="form-select" name="student_gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </select>
+                                <div class="invalid-feedback">Please select gender</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Birth *</label>
+                                <input type="date" class="form-control" name="student_dob" required
+                                       max="{{ today|date:'Y-m-d' }}">
+                                <div class="invalid-feedback">Please enter date of birth</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Previous School</label>
+                                <input type="text" class="form-control" name="previous_school">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Previous Class</label>
+                                <input type="text" class="form-control" name="previous_class">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Apply to Class *</label>
+                                <select class="form-select" name="class_group" required>
+                                    <option value="">Select Class</option>
+                                    {% for class in available_classes %}
+                                    <option value="{{ class.id }}" 
+                                            {% if class.is_full %}disabled{% endif %}>
+                                        {{ class.name }} - {{ class.education_level.name }}
+                                        {% if class.is_full %}(Full){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Please select a class</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-chat-text me-2"></i>Additional Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes (Optional)</label>
+                            <textarea class="form-control" name="additional_notes" rows="4" 
+                                      placeholder="Any additional information you'd like to share..."></textarea>
+                        </div>
+                        
+                        <!-- Document Uploads -->
+                        {% if form.required_documents %}
+                        <div class="mb-3">
+                            <label class="form-label">Required Documents</label>
+                            {% for document in form.required_documents %}
+                            <div class="mb-2">
+                                <label class="form-label small">{{ document }}</label>
+                                <input type="file" class="form-control form-control-sm" 
+                                       name="document_{{ forloop.counter }}"
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fee Information -->
+                {% if form.application_fee > 0 %}
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-credit-card me-2"></i>Application Fee</h6>
+                    <p class="mb-2">
+                        Application fee: <strong>{{ form.currency }} {{ form.application_fee }}</strong>
+                    </p>
+                    {% if user.staff_profile and user.staff_profile.school == form.school %}
+                    <p class="mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Staff discount may apply to your application
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success btn-lg" id="submit-btn">
+                        <i class="bi bi-send me-2"></i>Submit Application
+                    </button>
+                    
+                    <p class="text-muted mt-3 small">
+                        By submitting this application, you agree to our 
+                        <a href="#" target="_blank">Terms of Service</a> and 
+                        <a href="#" target="_blank">Privacy Policy</a>
+                    </p>
+                </div>
+            </form>
+
+            <!-- Messages Container -->
+            <div id="form-messages" class="mt-4"></div>
+
+            <!-- Navigation -->
+            <div class="text-center mt-4">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'school_discovery' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-search me-1"></i>Discover Schools
+                    </a>
+                    <a href="{% url 'users:my_applications' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-file-earmark-person me-1"></i>My Applications
+                    </a>
+                    <a href="{% url 'users:dashboard' %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form progress tracking
+function updateProgress() {
+    const form = document.getElementById('application-form');
+    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+    const filled = Array.from(inputs).filter(input => input.value.trim() !== '').length;
+    const progress = (filled / inputs.length) * 100;
+    
+    document.getElementById('form-progress').style.width = `${progress}%`;
+}
+
+// Attach event listeners to all required fields
+document.addEventListener('DOMContentLoaded', function() {
+    const requiredFields = document.querySelectorAll('#application-form [required]');
+    requiredFields.forEach(field => {
+        field.addEventListener('input', updateProgress);
+        field.addEventListener('change', updateProgress);
+    });
+    
+    // Initialize progress
+    updateProgress();
+    
+    // Form submission handling
+    const form = document.getElementById('application-form');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submit-btn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting...';
+        submitBtn.disabled = true;
+        
+        // Submit form via AJAX
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                document.getElementById('form-messages').innerHTML = `
+                    <div class="alert alert-success">
+                        <h6><i class="bi bi-check-circle me-2"></i>Application Submitted!</h6>
+                        <p>${data.message}</p>
+                        <p>Redirecting to success page...</p>
+                    </div>
+                `;
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 2000);
+            } else {
+                // Show error
+                document.getElementById('form-messages').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle me-2"></i>Submission Failed</h6>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+                
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                // Scroll to error
+                document.getElementById('form-messages').scrollIntoView({ behavior: 'smooth' });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('form-messages').innerHTML = `
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-exclamation-triangle me-2"></i>Network Error</h6>
+                    <p>Please check your connection and try again.</p>
+                </div>
+            `;
+            
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,485 @@
+<!-- templates/admissions/application_detail.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ application.application_number }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with Quick Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}">Admissions</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'admissions:application_list' %}">Applications</a></li>
+                    <li class="breadcrumb-item active">{{ application.application_number }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-1">Application: {{ application.application_number }}</h1>
+            <p class="text-muted">Submitted {{ application.submitted_at|timesince }} ago</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#quickActionsModal">
+                <i class="fas fa-bolt"></i> Quick Actions
+            </button>
+            <a href="{% url 'admissions:application_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Application Header -->
+    <div id="application-header">
+        {% include 'admissions/partials/application_header.html' %}
+    </div>
+
+    <!-- Main Content -->
+    <div class="row mt-4">
+        <!-- Application Details -->
+        <div class="col-lg-8">
+            <!-- Application Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>Application Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Student Information -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Student Information</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">Full Name</dt>
+                                <dd class="col-sm-8">
+                                    {% if application.student %}
+                                    <a href="{% url 'students:student_detail' application.student.id %}" class="text-decoration-none">
+                                        {{ application.student.full_name }}
+                                    </a>
+                                    {% else %}
+                                    {{ application.data.first_name }} {{ application.data.last_name }}
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-4">Gender</dt>
+                                <dd class="col-sm-8">{{ application.data.gender|default:"Not specified"|title }}</dd>
+
+                                <dt class="col-sm-4">Date of Birth</dt>
+                                <dd class="col-sm-8">{{ application.data.date_of_birth|default:"Not specified" }}</dd>
+
+                                <dt class="col-sm-4">Applied Class</dt>
+                                <dd class="col-sm-8">
+                                    {% if application.applied_class %}
+                                    <span class="badge bg-primary">{{ application.applied_class.name }}</span>
+                                    {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+
+                        <!-- Parent Information -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Parent Information</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">Parent Name</dt>
+                                <dd class="col-sm-8">
+                                    <a href="{% url 'students:parent_detail' application.parent.id %}" class="text-decoration-none">
+                                        {{ application.parent.full_name }}
+                                    </a>
+                                </dd>
+
+                                <dt class="col-sm-4">Email</dt>
+                                <dd class="col-sm-8">
+                                    <a href="mailto:{{ application.parent.user.email }}" class="text-decoration-none">
+                                        {{ application.parent.user.email|default:"Not provided" }}
+                                    </a>
+                                </dd>
+
+                                <dt class="col-sm-4">Phone</dt>
+                                <dd class="col-sm-8">
+                                    <a href="tel:{{ application.parent.phone }}" class="text-decoration-none">
+                                        {{ application.parent.phone|default:"Not provided" }}
+                                    </a>
+                                </dd>
+
+                                <dt class="col-sm-4">Application Fee</dt>
+                                <dd class="col-sm-8">
+                                    {% if application.form.is_free %}
+                                    <span class="badge bg-success">Free</span>
+                                    {% else %}
+                                    <span class="badge {% if application.application_fee_paid %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ application.form.application_fee }} {{ application.form.currency }}
+                                        {% if application.application_fee_paid %}(Paid){% else %}(Pending){% endif %}
+                                    </span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Custom Form Data -->
+                    {% if application.data %}
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-3">Application Form Data</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    {% for key, value in application.data.items %}
+                                    {% if key not in "first_name,last_name,gender,date_of_birth" %}
+                                    <tr>
+                                        <th width="30%">{{ key|title|replace:"_, " }}</th>
+                                        <td>
+                                            {% if value is True %}Yes
+                                            {% elif value is False %}No
+                                            {% else %}{{ value|default:"Not provided" }}{% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Review & Actions Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Review & Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="review-messages"></div>
+                    
+                    <form id="review-form"
+                          hx-post="{% url 'admissions:application_update' application.id %}"
+                          hx-target="#application-header"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="if(event.detail.successful) { document.getElementById('review-messages').innerHTML = '<div class=\"alert alert-success alert-dismissible fade show\">Application updated successfully!<button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\"></button></div>'; }">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="review_notes" class="form-label">Review Notes</label>
+                            <textarea class="form-control" id="review_notes" name="review_notes" 
+                                      rows="3" placeholder="Add review notes...">{{ application.review_notes }}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" name="action" value="accept" 
+                                    class="btn btn-success"
+                                    {% if application.status == 'accepted' %}disabled{% endif %}>
+                                <i class="fas fa-check me-1"></i>
+                                {% if application.status == 'accepted' %}Accepted{% else %}Accept Application{% endif %}
+                            </button>
+
+                            <button type="submit" name="action" value="reject" 
+                                    class="btn btn-danger"
+                                    {% if application.status == 'rejected' %}disabled{% endif %}>
+                                <i class="fas fa-times me-1"></i>
+                                {% if application.status == 'rejected' %}Rejected{% else %}Reject Application{% endif %}
+                            </button>
+
+                            <button type="submit" name="action" value="waitlist" 
+                                    class="btn btn-warning"
+                                    {% if application.status == 'waitlisted' %}disabled{% endif %}>
+                                <i class="fas fa-clock me-1"></i>
+                                {% if application.status == 'waitlisted' %}Waitlisted{% else %}Waitlist{% endif %}
+                            </button>
+
+                            <button type="submit" name="action" value="assign_to_me" 
+                                    class="btn btn-outline-primary">
+                                <i class="fas fa-user-check me-1"></i>
+                                {% if application.assigned_to == request.user.staff_profile %}Assigned to You{% else %}Assign to Me{% endif %}
+                            </button>
+                            
+                            <button type="submit" name="action" value="save_notes" 
+                                    class="btn btn-outline-secondary">
+                                <i class="fas fa-save me-1"></i>Save Notes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Status & Timeline -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Status & Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Current Status:</strong>
+                        <span class="badge float-end 
+                            {% if application.status == 'submitted' %}bg-warning
+                            {% elif application.status == 'under_review' %}bg-info
+                            {% elif application.status == 'accepted' %}bg-success
+                            {% elif application.status == 'rejected' %}bg-danger
+                            {% elif application.status == 'waitlisted' %}bg-warning
+                            {% else %}bg-secondary{% endif %}">
+                            {{ application.status|title }}
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Priority:</strong>
+                        <span class="badge float-end 
+                            {% if application.priority == 'urgent' %}bg-danger
+                            {% elif application.priority == 'high' %}bg-warning
+                            {% elif application.priority == 'normal' %}bg-primary
+                            {% else %}bg-secondary{% endif %}">
+                            {{ application.priority|title }}
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Processing Time:</strong>
+                        <span class="float-end {% if application.is_overdue %}text-danger fw-bold{% endif %}">
+                            {{ application.processing_time }} days
+                            {% if application.is_overdue %}(Overdue){% endif %}
+                        </span>
+                    </div>
+
+                    <hr>
+
+                    <!-- Status History -->
+                    <h6 class="text-muted mb-3">Status History</h6>
+                    <div class="timeline">
+                        {% for history in application.status_history|slice:":5" %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <small class="text-muted">{{ history.changed_at|date:"M j, g:i A" }}</small>
+                                <div>Changed from <strong>{{ history.from_status|title }}</strong> to <strong>{{ history.to_status|title }}</strong></div>
+                                {% if history.notes %}
+                                <small class="text-muted">Note: {{ history.notes }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted text-center small">No status history</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Applications -->
+            {% if similar_applications %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Similar Applications</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for similar in similar_applications|slice:":5" %}
+                        <a href="{% url 'admissions:application_detail' similar.id %}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <strong class="mb-1">{{ similar.student.full_name|default:similar.data.first_name }}</strong>
+                                <span class="badge bg-{% if similar.status == 'accepted' %}success{% elif similar.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                    {{ similar.status|title }}
+                                </span>
+                            </div>
+                            <small class="text-muted">{{ similar.applied_class.name|default:"No class" }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Modal -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1" aria-labelledby="quickActionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickActionsModalLabel">Quick Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary"
+                            hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                            hx-vals='{"action": "assign_to_me"}'
+                            hx-target="#application-header"
+                            hx-swap="innerHTML"
+                            data-bs-dismiss="modal">
+                        <i class="fas fa-user-check me-2"></i>Assign to Me
+                    </button>
+                    
+                    <button class="btn btn-outline-warning"
+                            hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                            hx-vals='{"action": "mark_reviewed"}'
+                            hx-target="#application-header"
+                            hx-swap="innerHTML"
+                            data-bs-dismiss="modal">
+                        <i class="fas fa-check-circle me-2"></i>Mark as Reviewed
+                    </button>
+                    
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-flag me-2"></i>Set Priority
+                        </button>
+                        <ul class="dropdown-menu w-100">
+                            <li>
+                                <button class="dropdown-item"
+                                        hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                                        hx-vals='{"action": "change_priority", "priority": "urgent"}'
+                                        hx-target="#application-header"
+                                        hx-swap="innerHTML"
+                                        data-bs-dismiss="modal">
+                                    Urgent
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item"
+                                        hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                                        hx-vals='{"action": "change_priority", "priority": "high"}'
+                                        hx-target="#application-header"
+                                        hx-swap="innerHTML"
+                                        data-bs-dismiss="modal">
+                                    High
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item"
+                                        hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                                        hx-vals='{"action": "change_priority", "priority": "normal"}'
+                                        hx-target="#application-header"
+                                        hx-swap="innerHTML"
+                                        data-bs-dismiss="modal">
+                                    Normal
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh application header every 30 seconds
+setInterval(() => {
+    htmx.ajax('GET', '{% url "admissions:application_header_partial" application.id %}', {
+        target: '#application-header',
+        swap: 'innerHTML'
+    });
+}, 30000);
+
+// Handle form success/error messages
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.target.id === 'application-header') {
+        const messages = document.getElementById('review-messages');
+        if (event.detail.xhr.status === 200) {
+            messages.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show">
+                    Application updated successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            // Clear success message after 3 seconds
+            setTimeout(() => {
+                if (messages.querySelector('.alert')) {
+                    messages.innerHTML = '';
+                }
+            }, 3000);
+        } else if (event.detail.xhr.status >= 400) {
+            messages.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show">
+                    Error updating application. Please try again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+    }
+});
+
+// Clear form notes on successful submission
+document.addEventListener('htmx:beforeRequest', function(event) {
+    if (event.detail.elt.id === 'review-form') {
+        // Store current notes value
+        const reviewForm = event.detail.elt;
+        const notesField = reviewForm.querySelector('#review_notes');
+        if (notesField && event.detail.parameters.action !== 'save_notes') {
+            event.detail.notesValue = notesField.value;
+        }
+    }
+});
+
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.elt.id === 'review-form' && event.detail.successful) {
+        // Only clear notes if it wasn't just a save_notes action
+        if (event.detail.parameters.action !== 'save_notes') {
+            const notesField = document.getElementById('review_notes');
+            if (notesField) {
+                notesField.value = '';
+            }
+        }
+    }
+});
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -0.75rem;
+    top: 0.4rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    background-color: var(--bs-primary);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--bs-primary);
+}
+
+.timeline-content {
+    margin-left: 0.5rem;
+}
+
+/* Button group responsive adjustments */
+@media (max-width: 768px) {
+    .btn-group .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .timeline {
+        padding-left: 1rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,177 @@
+<!-- templates/students/education_level_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Education Levels - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Education Levels</h1>
+            <p class="text-muted">Manage education levels and structure for {{ school.name }}</p>
+        </div>
+        <a href="{% url 'students:education_level_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Level
+        </a>
+    </div>
+
+    <!-- Education Levels -->
+    <div class="row">
+        {% for level in education_levels %}
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ level.name }}</h5>
+                    <small class="text-muted">{{ level.get_level_display }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Level Information -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Display Order</label>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-secondary me-2">#{{ level.order }}</span>
+                            <small class="text-muted">in {{ level.get_level_display }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Class Groups Count -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Class Groups</label>
+                        {% with class_groups_count=level.classgroup_set.count %}
+                        {% if class_groups_count > 0 %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">{{ class_groups_count }} class{{ class_groups_count|pluralize:"es" }}</span>
+                            <a href="{% url 'students:class_group_list' %}?level={{ level.id }}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">No classes</span>
+                            <a href="{% url 'students:class_group_create' %}" class="btn btn-sm btn-outline-success">
+                                Create
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+
+                    <!-- Student Count -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Students</label>
+                        {% with students_count=level.student_set.count %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">{{ students_count }} student{{ students_count|pluralize }}</span>
+                            <a href="{% url 'students:student_list' %}?level={{ level.id }}" class="btn btn-sm btn-outline-info">
+                                View
+                            </a>
+                        </div>
+                        {% endwith %}
+                    </div>
+
+                    <!-- Description -->
+                    {% if level.description %}
+                    <div>
+                        <label class="form-label text-muted small mb-1">Description</label>
+                        <p class="small text-muted mb-0">{{ level.description|truncatewords:10 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        {% if level.student_set.count == 0 %}
+                        <form method="post" action="#" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                    onclick="return confirm('Are you sure you want to delete this education level?')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
+                        {% else %}
+                        <button class="btn btn-outline-secondary btn-sm" disabled title="Cannot delete level with students">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="text-muted">
+                        <i class="fas fa-graduation-cap fa-2x mb-3"></i>
+                        <p>No education levels configured yet.</p>
+                        <p class="small">Education levels define the structure of your school (Nursery, Primary, JSS, SSS)</p>
+                        <a href="{% url 'students:education_level_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create First Level
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Level Statistics -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Level Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary mb-0">{{ education_levels.count }}</h3>
+                            <small class="text-muted">Total Levels</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success mb-0">
+                                {% with total_classes=0 %}
+                                {% for level in education_levels %}
+                                {% with total_classes=total_classes|add:level.classgroup_set.count %}
+                                {% endwith %}
+                                {% endfor %}
+                                {{ total_classes }}
+                                {% endwith %}
+                            </h3>
+                            <small class="text-muted">Class Groups</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-info mb-0">
+                                {% with total_students=0 %}
+                                {% for level in education_levels %}
+                                {% with total_students=total_students|add:level.student_set.count %}
+                                {% endwith %}
+                                {% endfor %}
+                                {{ total_students }}
+                                {% endwith %}
+                            </h3>
+                            <small class="text-muted">Total Students</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-warning mb-0">
+                                {% for level in education_levels %}
+                                {% if forloop.first %}{{ level.get_level_display }}{% endif %}
+                                {% endfor %}
+                                -
+                                {% for level in education_levels %}
+                                {% if forloop.last %}{{ level.get_level_display }}{% endif %}
+                                {% endfor %}
+                            </h3>
+                            <small class="text-muted">Level Range</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

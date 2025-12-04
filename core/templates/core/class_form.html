@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-journal-plus me-2"></i>{{ page_title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Class Category -->
+                        <div class="col-md-6">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                Class Category <span class="text-danger">*</span>
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.category.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Select the category for this class</div>
+                        </div>
+
+                        <!-- Class Name -->
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                Class Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">e.g., SSS 1A, Primary 3B</div>
+                        </div>
+
+                        <!-- Class Code -->
+                        <div class="col-md-6">
+                            <label for="{{ form.code.id_for_label }}" class="form-label">
+                                Class Code
+                            </label>
+                            {{ form.code }}
+                            {% if form.code.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.code.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.code.help_text }}</div>
+                        </div>
+
+                        <!-- Academic Session -->
+                        <div class="col-md-6">
+                            <label for="{{ form.academic_session.id_for_label }}" class="form-label">
+                                Academic Session
+                            </label>
+                            {{ form.academic_session }}
+                            {% if form.academic_session.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.academic_session.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">e.g., 2024/2025</div>
+                        </div>
+
+                        <!-- Form Master -->
+                        <div class="col-md-6">
+                            <label for="{{ form.form_master.id_for_label }}" class="form-label">
+                                Form Master
+                            </label>
+                            {{ form.form_master }}
+                            {% if form.form_master.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.form_master.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Teacher responsible for this class</div>
+                        </div>
+
+                        <!-- Assistant Form Master -->
+                        <div class="col-md-6">
+                            <label for="{{ form.assistant_form_master.id_for_label }}" class="form-label">
+                                Assistant Form Master
+                            </label>
+                            {{ form.assistant_form_master }}
+                            {% if form.assistant_form_master.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.assistant_form_master.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Assistant teacher for this class</div>
+                        </div>
+
+                        <!-- Maximum Students -->
+                        <div class="col-md-6">
+                            <label for="{{ form.max_students.id_for_label }}" class="form-label">
+                                Maximum Students <span class="text-danger">*</span>
+                            </label>
+                            {{ form.max_students }}
+                            {% if form.max_students.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.max_students.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.max_students.help_text }}</div>
+                        </div>
+
+                        <!-- Room Number -->
+                        <div class="col-md-6">
+                            <label for="{{ form.room_number.id_for_label }}" class="form-label">
+                                Room Number
+                            </label>
+                            {{ form.room_number }}
+                            {% if form.room_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.room_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Classroom location</div>
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Active Class
+                                </label>
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.is_active.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.is_active.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Current Student Count (for update view) -->
+                    {% if class_instance and class_instance.student_count > 0 %}
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Note:</strong> This class currently has 
+                        <strong>{{ class_instance.student_count }}</strong> enrolled student{{ class_instance.student_count|pluralize }}.
+                        {% if class_instance.student_count > form.max_students.value %}
+                        <br><span class="text-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Current student count exceeds the maximum capacity.
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% if cancel_url %}{{ cancel_url }}{% else %}{% url 'core:class_list' %}{% endif %}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancel
+                                </a>
+                                <div class="btn-group">
+                                    {% if class_instance %}
+                                    <a href="{% url 'core:class_detail' class_instance.pk %}" class="btn btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>View Details
+                                    </a>
+                                    {% endif %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        {{ submit_text|default:"Create Class" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-format class code to uppercase
+    const codeInput = document.getElementById('{{ form.code.id_for_label }}');
+    if (codeInput) {
+        codeInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Real-time validation for maximum students
+    const maxStudentsInput = document.getElementById('{{ form.max_students.id_for_label }}');
+    if (maxStudentsInput) {
+        maxStudentsInput.addEventListener('blur', function() {
+            const value = parseInt(this.value);
+            if (value < 1) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

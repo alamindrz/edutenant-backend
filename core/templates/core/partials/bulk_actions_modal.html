@@ -1,0 +1,49 @@
+<!-- core/templates/core/partials/bulk_actions_modal.html -->
+<div class="modal-content">
+    <div class="modal-header">
+        <h5 class="modal-title">Bulk Class Actions</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <form hx-post="{% url 'core:class_bulk_actions' %}" 
+              hx-target="#class-table"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label class="form-label">Select Action</label>
+                <select name="action" class="form-select" required>
+                    <option value="">Choose action...</option>
+                    <option value="activate">Activate Selected</option>
+                    <option value="deactivate">Deactivate Selected</option>
+                    <option value="update_capacity">Update Capacity</option>
+                </select>
+            </div>
+            
+            <div id="capacity-field" class="mb-3" style="display: none;">
+                <label class="form-label">New Capacity</label>
+                <input type="number" name="capacity" class="form-control" min="1" max="100">
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Apply Action</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const actionSelect = document.querySelector('select[name="action"]');
+    const capacityField = document.getElementById('capacity-field');
+    
+    actionSelect.addEventListener('change', function() {
+        if (this.value === 'update_capacity') {
+            capacityField.style.display = 'block';
+        } else {
+            capacityField.style.display = 'none';
+        }
+    });
+});
+</script>

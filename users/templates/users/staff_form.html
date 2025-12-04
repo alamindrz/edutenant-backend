@@ -1,0 +1,235 @@
+<!-- templates/users/staff_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">{{ page_title }}</h1>
+                    <p class="text-muted">Add new staff member to {{ school.name }}</p>
+                </div>
+                <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Staff
+                </a>
+            </div>
+
+            <!-- Staff Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" 
+                          hx-post="{% if form.instance.id %}{% url 'users:staff_edit' form.instance.id %}{% else %}{% url 'users:staff_create' %}{% endif %}"
+                          hx-target="#form-messages"
+                          novalidate>
+                        {% csrf_token %}
+                        
+                        <div id="form-messages">
+                            {% if form.errors %}
+                            <div class="alert alert-danger">
+                                Please correct the errors below.
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Personal Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2">Personal Information</h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        First Name *
+                                    </label>
+                                    {{ form.first_name }}
+                                    <div class="form-errors text-danger small"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        Last Name *
+                                    </label>
+                                    {{ form.last_name }}
+                                    <div class="form-errors text-danger small"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.gender.id_for_label }}" class="form-label">
+                                        Gender
+                                    </label>
+                                    {{ form.gender }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">
+                                        Date of Birth
+                                    </label>
+                                    {{ form.date_of_birth }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employment Details -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2">Employment Details</h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.staff_id.id_for_label }}" class="form-label">
+                                        Staff ID *
+                                    </label>
+                                    {{ form.staff_id }}
+                                    <div class="form-text">Unique staff identification number</div>
+                                    <div class="form-errors text-danger small"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.position.id_for_label }}" class="form-label">
+                                        Position *
+                                    </label>
+                                    {{ form.position }}
+                                    <div class="form-errors text-danger small"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.employment_type.id_for_label }}" class="form-label">
+                                        Employment Type
+                                    </label>
+                                    {{ form.employment_type }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.date_joined.id_for_label }}" class="form-label">
+                                        Date Joined
+                                    </label>
+                                    {{ form.date_joined }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.department.id_for_label }}" class="form-label">
+                                        Department
+                                    </label>
+                                    {{ form.department }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2">Contact Information</h5>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        Email Address *
+                                    </label>
+                                    {{ form.email }}
+                                    <div class="form-errors text-danger small"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                        Phone Number
+                                    </label>
+                                    {{ form.phone_number }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.address.id_for_label }}" class="form-label">
+                                        Address
+                                    </label>
+                                    {{ form.address }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Account -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                {{ form.create_user_account }}
+                                <label class="form-check-label" for="{{ form.create_user_account.id_for_label }}">
+                                    Create user account for this staff member
+                                </label>
+                                <div class="form-text">
+                                    Staff will receive login credentials via email
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if form.instance.id %}Update Staff{% else %}Create Staff{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Real-time form validation with HTMX
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    // Validate on blur
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('blur', function() {
+            const fieldName = this.name;
+            const fieldValue = this.value;
+            
+            // Simple required field validation
+            if (this.hasAttribute('required') && !fieldValue.trim()) {
+                this.classList.add('is-invalid');
+                const errorDiv = this.closest('.mb-3').querySelector('.form-errors');
+                if (errorDiv) {
+                    errorDiv.textContent = 'This field is required.';
+                }
+            } else {
+                this.classList.remove('is-invalid');
+                const errorDiv = this.closest('.mb-3').querySelector('.form-errors');
+                if (errorDiv) {
+                    errorDiv.textContent = '';
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

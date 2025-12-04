@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Classes - {{ school.name }}{% endblock %}
+
+{% block page_title %}Classes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Filters Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ search_query }}" placeholder="Search classes...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"i" %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Classes Table Card -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-journal me-2"></i>All Classes
+                    <span class="badge bg-primary ms-2">{{ classes.count }}</span>
+                </h5>
+                <div class="btn-group">
+                    <a href="{% url 'core:class_create' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Create Class
+                    </a>
+                    <a href="{% url 'core:class_category_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-layers me-1"></i>Categories
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% include 'core/partials/class_table.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.capacity-bar {
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.capacity-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+</style>
+{% endblock %}

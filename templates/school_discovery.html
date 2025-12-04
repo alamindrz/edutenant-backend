@@ -1,0 +1,364 @@
+<!-- templates/school_discovery.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block page_title %}Discover Schools{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">Discover Schools</h1>
+                    <p class="text-muted">Find teaching opportunities and connect with schools in your area</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'users:school_onboarding' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create Your School
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary bg-opacity-10 border-0">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ schools.paginator.count }}</h4>
+                            <small class="text-muted">Total Schools</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-building text-primary fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success bg-opacity-10 border-0">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ hiring_schools_count }}</h4>
+                            <small class="text-muted">Schools Hiring</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-briefcase text-success fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info bg-opacity-10 border-0">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ total_open_positions }}</h4>
+                            <small class="text-muted">Open Positions</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-person-plus text-info fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning bg-opacity-10 border-0">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ new_this_week }}</h4>
+                            <small class="text-muted">New This Week</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-star text-warning fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{% url 'school_discovery' %}" id="school-filters">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Search Schools</label>
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Search by name, location, type..." 
+                               name="q"
+                               value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">School Type</label>
+                        <select class="form-select" name="type">
+                            <option value="">All Types</option>
+                            <option value="nursery" {% if school_type == 'nursery' %}selected{% endif %}>Nursery</option>
+                            <option value="primary" {% if school_type == 'primary' %}selected{% endif %}>Primary</option>
+                            <option value="secondary" {% if school_type == 'secondary' %}selected{% endif %}>Secondary</option>
+                            <option value="combined" {% if school_type == 'combined' %}selected{% endif %}>Combined</option>
+                            <option value="full" {% if school_type == 'full' %}selected{% endif %}>Full K-12</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Sort By</label>
+                        <select class="form-select" name="sort">
+                            <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                            <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most Popular</option>
+                            <option value="name" {% if sort == 'name' %}selected{% endif %}>Name A-Z</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i> Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- School Grid -->
+    <div class="row">
+        {% for school in schools %}
+        <div class="col-xl-4 col-lg-6 mb-4">
+            <div class="card school-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <!-- School Header -->
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="flex-shrink-0">
+                            {% if school.logo %}
+                            <img src="{{ school.logo.url }}" alt="{{ school.name }}" class="school-logo rounded">
+                            {% else %}
+                            <div class="school-logo bg-primary text-white d-flex align-items-center justify-content-center rounded">
+                                <i class="bi bi-building fs-4"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title mb-1">{{ school.name }}</h5>
+                            {% if school.address %}
+                            <p class="text-muted small mb-2">
+                                <i class="bi bi-geo-alt me-1"></i>
+                                {{ school.address|truncatewords:6 }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- School Info -->
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-primary">
+                            <i class="bi bi-mortarboard me-1"></i>
+                            {{ school.get_school_type_display }}
+                        </span>
+                        {% if school.student_count %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-people me-1"></i>{{ school.student_count }}
+                        </span>
+                        {% endif %}
+                        {% if school.open_positions_count %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-briefcase me-1"></i>{{ school.open_positions_count }} positions
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- School Description -->
+                    {% if school.description %}
+                    <p class="card-text text-muted small mb-3">
+                        {{ school.description|truncatewords:20 }}
+                    </p>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        {% if school.open_positions_count %}
+                        <a href="{% url 'users:apply_to_school' school.id %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-send me-1"></i>Apply Now
+                        </a>
+                        {% else %}
+                        <a href="#" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-eye me-1"></i>View School
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            Joined {{ school.created_at|date:"M Y" }}
+                        </small>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary follow-school" data-school-id="{{ school.id }}">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary share-school" data-school-id="{{ school.id }}">
+                                <i class="bi bi-share"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-building fs-1 text-muted mb-3"></i>
+                    <h4 class="text-muted mb-3">No schools found</h4>
+                    <p class="text-muted mb-4">Try adjusting your search criteria or explore different filters.</p>
+                    <a href="{% url 'school_discovery' %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Reset Filters
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if schools.has_other_pages %}
+    <nav aria-label="School pagination" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if schools.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ schools.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for i in schools.paginator.page_range %}
+                {% if schools.number == i %}
+                <li class="page-item active">
+                    <span class="page-link">{{ i }}</span>
+                </li>
+                {% elif i > schools.number|add:"-3" and i < schools.number|add:"3" %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        {{ i }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if schools.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ schools.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.school-logo {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border: 2px solid var(--bs-border-color);
+}
+
+.school-card {
+    transition: all 0.3s ease;
+}
+
+.school-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .school-logo {
+        width: 40px;
+        height: 40px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Follow school functionality
+    document.querySelectorAll('.follow-school').forEach(button => {
+        button.addEventListener('click', function() {
+            const schoolId = this.dataset.schoolId;
+            followSchool(schoolId, this);
+        });
+    });
+
+    // Share school functionality
+    document.querySelectorAll('.share-school').forEach(button => {
+        button.addEventListener('click', function() {
+            const schoolId = this.dataset.schoolId;
+            shareSchool(schoolId);
+        });
+    });
+
+    // Auto-submit form on filter changes
+    document.querySelectorAll('select[name="type"], select[name="sort"]').forEach(select => {
+        select.addEventListener('change', function() {
+            document.getElementById('school-filters').submit();
+        });
+    });
+});
+
+function followSchool(schoolId, button) {
+    // Implement follow functionality
+    console.log('Following school:', schoolId);
+    
+    // Visual feedback
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-check-lg"></i>';
+    button.classList.remove('btn-outline-secondary');
+    button.classList.add('btn-success');
+    
+    // You would typically make an AJAX call here
+    // fetch(`/follow-school/${schoolId}/`, { method: 'POST' })
+    
+    // Revert after 2 seconds for demo
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function shareSchool(schoolId) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this school on Edusuite',
+            text: 'I found an interesting school on Edusuite!',
+            url: window.location.href,
+        });
+    } else {
+        // Fallback: copy URL to clipboard
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            // Show toast notification
+            alert('Link copied to clipboard!');
+        });
+    }
+}
+</script>
+{% endblock %}

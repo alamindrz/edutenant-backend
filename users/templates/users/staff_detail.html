@@ -1,0 +1,337 @@
+<!-- templates/users/staff_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ staff.full_name }} - Staff Details{% endblock %}
+
+{% block content %}
+<div class="staff-detail-container">
+    <div class="page-header">
+        <div class="header-main">
+            <h1>{{ staff.full_name }}</h1>
+            <p class="staff-id">Staff ID: {{ staff.staff_id }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'users:staff_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Staff
+            </a>
+            {% if user_profile.role.can_manage_staff %}
+            <a href="#" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="staff-detail-content">
+        <div class="detail-grid">
+            <!-- Staff Information -->
+            <div class="detail-section">
+                <h3>Personal Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Full Name</label>
+                        <p>{{ staff.first_name }} {{ staff.last_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Gender</label>
+                        <p>{{ staff.get_gender_display }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Date of Birth</label>
+                        <p>{{ staff.date_of_birth|default:"Not set" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Email</label>
+                        <p><a href="mailto:{{ staff.email }}">{{ staff.email }}</a></p>
+                    </div>
+                    <div class="info-item">
+                        <label>Phone</label>
+                        <p>
+                            {% if staff.phone_number %}
+                                <a href="tel:{{ staff.phone_number }}">{{ staff.phone_number }}</a>
+                            {% else %}
+                                Not set
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="info-item">
+                        <label>Address</label>
+                        <p>{{ staff.address|default:"Not set"|linebreaks }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employment Information -->
+            <div class="detail-section">
+                <h3>Employment Details</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Position</label>
+                        <p>{{ staff.position }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Department</label>
+                        <p>{{ staff.department|default:"Not set" }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Employment Type</label>
+                        <p>{{ staff.get_employment_type_display }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Date Joined</label>
+                        <p>{{ staff.date_joined }}</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Status</label>
+                        <p>
+                            {% if staff.is_active %}
+                                <span class="status-badge status-active">Active</span>
+                            {% else %}
+                                <span class="status-badge status-inactive">Inactive</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="info-item">
+                        <label>User Account</label>
+                        <p>
+                            {% if staff.user %}
+                                <span class="status-badge status-active">Created</span>
+                            {% else %}
+                                <span class="status-badge status-inactive">Not Created</span>
+                            {% if user_profile.role.can_manage_staff %}
+                                <form method="post" action="{% url 'users:staff_create_account' staff.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-primary">Create Account</button>
+                                </form>
+                            {% endif %}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Role Assignments -->
+            <div class="detail-section">
+                <div class="section-header">
+                    <h3>Role Assignments</h3>
+                    {% if user_profile.role.can_manage_staff %}
+                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#assignRoleModal">
+                        <i class="fas fa-plus"></i> Assign Role
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if assignments %}
+                <div class="assignments-list">
+                    {% for assignment in assignments %}
+                    <div class="assignment-item">
+                        <div class="assignment-info">
+                            <h4>{{ assignment.role.name }}</h4>
+                            <p class="assignment-meta">
+                                Assigned by: {{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.email }}
+                                on {{ assignment.assigned_at|date:"M d, Y" }}
+                            </p>
+                            <p class="role-description">{{ assignment.role.description }}</p>
+                        </div>
+                        <div class="assignment-actions">
+                            {% if user_profile.role.can_manage_staff %}
+                            <a href="{% url 'users:remove_role_assignment' staff.id assignment.id %}" 
+                               class="btn btn-sm btn-danger" 
+                               onclick="return confirm('Are you sure you want to remove this role assignment?')">
+                                <i class="fas fa-times"></i> Remove
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No roles assigned to this staff member.</p>
+                    {% if user_profile.role.can_manage_staff %}
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#assignRoleModal">
+                        Assign First Role
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Qualifications -->
+            {% if staff.qualifications %}
+            <div class="detail-section">
+                <h3>Qualifications</h3>
+                <div class="qualifications-list">
+                    {% for qualification in staff.qualifications %}
+                    <div class="qualification-item">
+                        <strong>{{ qualification.degree }}</strong>
+                        <p>{{ qualification.institution }} ({{ qualification.year }})</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if staff.notes %}
+            <div class="detail-section">
+                <h3>Notes</h3>
+                <div class="notes-content">
+                    {{ staff.notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Assign Role Modal -->
+{% if user_profile.role.can_manage_staff and available_roles %}
+<div class="modal fade" id="assignRoleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Role to {{ staff.full_name }}</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form method="post" action="{% url 'users:assign_role' staff.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="roleSelect">Select Role</label>
+                        <select name="role_id" id="roleSelect" class="form-control" required>
+                            <option value="">Choose a role...</option>
+                            {% for role in available_roles %}
+                            <option value="{{ role.id }}">{{ role.name }} - {{ role.description }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-grid {
+    display: grid;
+    gap: 2rem;
+}
+
+.detail-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #666;
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.info-item p {
+    margin: 0;
+}
+
+.assignments-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.assignment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background: #f9fafb;
+}
+
+.assignment-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--school-primary);
+}
+
+.assignment-meta {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0 0 0.5rem 0;
+}
+
+.role-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+}
+
+.qualifications-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.qualification-item {
+    padding: 1rem;
+    border-left: 3px solid var(--school-primary);
+    background: #f8fafc;
+}
+
+.notes-content {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border-left: 3px solid var(--school-primary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('assignRoleModal');
+    if (modal) {
+        // Bootstrap modal would be better, but this works for now
+        modal.style.display = 'none';
+        
+        document.querySelector('[data-target="#assignRoleModal"]').addEventListener('click', function() {
+            modal.style.display = 'block';
+        });
+        
+        document.querySelector('.close').addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+<!-- core/templates/core/partials/subject_table.html -->
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Difficulty</th>
+                <th>Max Score</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject in subjects %}
+            <tr>
+                <td><strong>{{ subject.code }}</strong></td>
+                <td>{{ subject.name }}</td>
+                <td>
+                    <span class="badge bg-secondary">{{ subject.get_category_display }}</span>
+                </td>
+                <td>
+                    <span class="badge bg-info">{{ subject.get_difficulty_level_display }}</span>
+                </td>
+                <td>{{ subject.max_score }}</td>
+                <td>
+                    {% if subject.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'core:subject_detail' subject.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'core:subject_edit' subject.id %}" class="btn btn-outline-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'core:subject_delete' subject.id %}" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    No subjects found. <a href="{% url 'core:subject_create' %}">Create the first subject</a>.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

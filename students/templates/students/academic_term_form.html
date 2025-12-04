@@ -1,0 +1,151 @@
+<!-- templates/students/academic_term_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Create Academic Term" }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ title|default:"Create Academic Term" }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">Term Name</label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.term.id_for_label }}" class="form-label">Term</label>
+                                    {{ form.term }}
+                                    {% if form.term.errors %}
+                                    <div class="text-danger small">{{ form.term.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.academic_year.id_for_label }}" class="form-label">Academic Year</label>
+                                    {{ form.academic_year }}
+                                    <div class="form-text">Format: YYYY/YYYY e.g., 2024/2025</div>
+                                    {% if form.academic_year.errors %}
+                                    <div class="text-danger small">{{ form.academic_year.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.planned_weeks.id_for_label }}" class="form-label">Planned Weeks</label>
+                                    {{ form.planned_weeks }}
+                                    {% if form.planned_weeks.errors %}
+                                    <div class="text-danger small">{{ form.planned_weeks.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
+                                    {{ form.start_date }}
+                                    {% if form.start_date.errors %}
+                                    <div class="text-danger small">{{ form.start_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}
+                                    <div class="text-danger small">{{ form.end_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.mid_term_break_start.id_for_label }}" class="form-label">Mid-Term Break Start</label>
+                                    {{ form.mid_term_break_start }}
+                                    {% if form.mid_term_break_start.errors %}
+                                    <div class="text-danger small">{{ form.mid_term_break_start.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.mid_term_break_end.id_for_label }}" class="form-label">Mid-Term Break End</label>
+                                    {{ form.mid_term_break_end }}
+                                    {% if form.mid_term_break_end.errors %}
+                                    <div class="text-danger small">{{ form.mid_term_break_end.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if term %}{% url 'students:academic_term_detail' term.id %}{% else %}{% url 'students:academic_terms' %}{% endif %}" 
+                               class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if term %}Update Term{% else %}Create Term{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-calculate weeks when dates change
+    const startDate = document.getElementById('{{ form.start_date.id_for_label }}');
+    const endDate = document.getElementById('{{ form.end_date.id_for_label }}');
+    const plannedWeeks = document.getElementById('{{ form.planned_weeks.id_for_label }}');
+    
+    function calculateWeeks() {
+        if (startDate.value && endDate.value) {
+            const start = new Date(startDate.value);
+            const end = new Date(endDate.value);
+            const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
+            const weeks = Math.ceil(daysDiff / 7);
+            plannedWeeks.value = Math.max(12, weeks); // Minimum 12 weeks
+        }
+    }
+    
+    startDate.addEventListener('change', calculateWeeks);
+    endDate.addEventListener('change', calculateWeeks);
+});
+</script>
+{% endblock %}

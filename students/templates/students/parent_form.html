@@ -1,0 +1,165 @@
+<!-- templates/students/parent_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="parentForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Personal Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Personal Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        First Name *
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        Last Name *
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        Email Address *
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                        Phone Number *
+                                    </label>
+                                    {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                    <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address & Relationship -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Additional Information</h6>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.address.id_for_label }}" class="form-label">
+                                        Address *
+                                    </label>
+                                    {{ form.address }}
+                                    {% if form.address.errors %}
+                                    <div class="text-danger small">{{ form.address.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.relationship.id_for_label }}" class="form-label">
+                                        Relationship
+                                    </label>
+                                    {{ form.relationship }}
+                                    {% if form.relationship.errors %}
+                                    <div class="text-danger small">{{ form.relationship.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">e.g., Parent, Guardian, Relative</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        {{ form.create_user_account }}
+                                        <label class="form-check-label" for="{{ form.create_user_account.id_for_label }}">
+                                            Create user account for parent
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        Parent will receive login credentials to access the parent portal
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'students:parent_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back to List
+                                    </a>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> 
+                                            {% if parent %}Update Parent{% else %}Create Parent{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Phone number formatting
+document.getElementById('id_phone_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 0) {
+        value = value.match(/.{1,4}/g).join(' ');
+    }
+    e.target.value = value;
+});
+
+// Email validation
+document.getElementById('id_email').addEventListener('blur', function(e) {
+    const email = e.target.value;
+    if (email && !email.includes('@')) {
+        alert('Please enter a valid email address');
+        e.target.focus();
+    }
+});
+</script>
+{% endblock %}

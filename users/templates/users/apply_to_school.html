@@ -1,0 +1,271 @@
+<!-- templates/users/apply_to_school.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block page_title %}Apply to {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Application Header -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        {% if school.logo %}
+                        <img src="{{ school.logo.url }}" alt="{{ school.name }}" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-building fs-4"></i>
+                        </div>
+                        {% endif %}
+                        <div class="text-start">
+                            <h4 class="mb-1">{{ school.name }}</h4>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-geo-alt me-1"></i>
+                                {{ school.address|default:"Location not specified" }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <span class="badge bg-primary">
+                            <i class="bi bi-mortarboard me-1"></i>
+                            {{ school.get_school_type_display }}
+                        </span>
+                        {% if school.student_count %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-people me-1"></i>{{ school.student_count }} students
+                        </span>
+                        {% endif %}
+                        <span class="badge bg-info">
+                            <i class="bi bi-briefcase me-1"></i>{{ open_positions.count }} open positions
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Teacher Application Form
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Personal Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2 mb-3">Personal Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        First Name *
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        Last Name *
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">
+                                        Email Address *
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                        Phone Number
+                                    </label>
+                                    {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                    <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Professional Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2 mb-3">Professional Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.application_type.id_for_label }}" class="form-label">
+                                        Application Type *
+                                    </label>
+                                    {{ form.application_type }}
+                                    {% if form.application_type.errors %}
+                                    <div class="text-danger small">{{ form.application_type.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.years_of_experience.id_for_label }}" class="form-label">
+                                        Years of Experience *
+                                    </label>
+                                    {{ form.years_of_experience }}
+                                    {% if form.years_of_experience.errors %}
+                                    <div class="text-danger small">{{ form.years_of_experience.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.position_applied.id_for_label }}" class="form-label">
+                                        Position Applied For *
+                                    </label>
+                                    {{ form.position_applied }}
+                                    {% if form.position_applied.errors %}
+                                    <div class="text-danger small">{{ form.position_applied.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.qualification.id_for_label }}" class="form-label">
+                                        Highest Qualification *
+                                    </label>
+                                    {{ form.qualification }}
+                                    {% if form.qualification.errors %}
+                                    <div class="text-danger small">{{ form.qualification.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.specialization.id_for_label }}" class="form-label">
+                                        Area of Specialization
+                                    </label>
+                                    {{ form.specialization }}
+                                    <div class="form-text">e.g., Mathematics, Science, English, etc.</div>
+                                    {% if form.specialization.errors %}
+                                    <div class="text-danger small">{{ form.specialization.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cover Letter -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2 mb-3">Cover Letter</h6>
+                            <div class="mb-3">
+                                <label for="{{ form.cover_letter.id_for_label }}" class="form-label">
+                                    Why do you want to join {{ school.name }}?
+                                </label>
+                                {{ form.cover_letter }}
+                                <div class="form-text">Tell us about your teaching philosophy and why you're interested in this position.</div>
+                                {% if form.cover_letter.errors %}
+                                <div class="text-danger small">{{ form.cover_letter.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Documents -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2 mb-3">Documents (Optional)</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.resume.id_for_label }}" class="form-label">
+                                            Resume/CV
+                                        </label>
+                                        {{ form.resume }}
+                                        <div class="form-text">PDF, DOC, or DOCX files only (max 5MB)</div>
+                                        {% if form.resume.errors %}
+                                        <div class="text-danger small">{{ form.resume.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.certificates.id_for_label }}" class="form-label">
+                                            Certificates
+                                        </label>
+                                        {{ form.certificates }}
+                                        <div class="form-text">Teaching certificates or qualifications (max 10MB)</div>
+                                        {% if form.certificates.errors %}
+                                        <div class="text-danger small">{{ form.certificates.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'school_feed' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Schools
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Application Tips -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-lightbulb me-2 text-warning"></i>
+                        Application Tips
+                    </h6>
+                    <ul class="list-unstyled small text-muted mb-0">
+                        <li class="mb-1">• Tailor your cover letter to the specific school and position</li>
+                        <li class="mb-1">• Highlight relevant teaching experience and qualifications</li>
+                        <li class="mb-1">• Ensure your contact information is up to date</li>
+                        <li class="mb-1">• The school administration will contact you within 3-5 business days</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-label {
+    font-weight: 500;
+    color: var(--bs-dark);
+}
+
+.card-header {
+    background: rgba(var(--bs-primary-rgb), 0.05);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.border-bottom {
+    border-color: var(--bs-border-color) !important;
+}
+</style>
+{% endblock %}

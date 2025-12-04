@@ -1,0 +1,56 @@
+<!-- templates/emails/welcome_school.html - UPDATE for development -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #3B82F6, #1E40AF); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; }
+        .button { display: inline-block; padding: 12px 24px; background: #3B82F6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
+        .info-box { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #3B82F6; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Welcome to Edusuite!</h1>
+        <p>Your school <strong>{{ school.name }}</strong> is now live</p>
+    </div>
+    
+    <div class="content">
+        <h2>Hello {{ admin_user.first_name|default:admin_user.email }},</h2>
+        
+        <p>Congratulations! Your school has been successfully set up on Edusuite and is ready to use.</p>
+        
+        <div class="info-box">
+            <h3>🚀 Quick Start Information</h3>
+            <p><strong>Login URL:</strong> {{ login_url }}</p>
+            <p><strong>Your Email:</strong> {{ admin_user.email }}</p>
+            <p><strong>School Name:</strong> {{ school.name }}</p>
+        </div>
+        
+        <h3>🎯 Next Steps</h3>
+        <ol>
+            <li><strong>Add Staff Members:</strong> Go to Staff Management to add your teachers and staff</li>
+            <li><strong>Set Up Roles:</strong> Assign appropriate roles to your staff members</li>
+            <li><strong>Explore Features:</strong> Check out all the available modules in your dashboard</li>
+            <li><strong>Customize:</strong> Update your school's branding and settings</li>
+        </ol>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ login_url }}" class="button">Access Your School Dashboard</a>
+        </div>
+        
+        <p><strong>Need Help?</strong><br>
+        Our support team is here to help you get started. Contact us at support@edusuite.com</p>
+        
+        <p>You're currently on a <strong>30-day free trial</strong>. No payment required until your trial ends.</p>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; {% now "Y" %} Edusuite. All rights reserved.</p>
+        <p>Transform your school into a digital institution</p>
+    </div>
+</body>
+</html>

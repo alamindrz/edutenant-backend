@@ -1,0 +1,186 @@
+<!-- templates/admissions/dashboard.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admissions Dashboard - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Admissions Dashboard</h1>
+            <p class="text-muted">Manage applications and admissions for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'admissions:application_list' %}" class="btn btn-primary">
+                <i class="fas fa-list"></i> View All Applications
+            </a>
+            <button class="btn btn-outline-primary" hx-get="{% url 'admissions:admission_stats_partial' %}" hx-trigger="load, every 30s" hx-target="#stats-cards">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards (HTMX Loaded) -->
+    <div id="stats-cards" class="row mb-4">
+        <!-- Loading placeholder -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading admission statistics...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{% url 'admissions:application_list' %}?status=submitted" class="btn btn-warning w-100 text-start">
+                                <i class="fas fa-inbox me-2"></i>
+                                <strong>{{ admission_stats.pending_review|default:0 }}</strong> Pending Review
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admissions:application_list' %}?status=under_review" class="btn btn-info w-100 text-start">
+                                <i class="fas fa-eye me-2"></i>
+                                <strong>{{ admission_stats.under_review|default:0 }}</strong> Under Review
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admissions:admission_list' %}?status=pending" class="btn btn-success w-100 text-start">
+                                <i class="fas fa-user-graduate me-2"></i>
+                                <strong>{{ admission_stats.accepted|default:0 }}</strong> Accepted
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admissions:admission_list' %}" class="btn btn-primary w-100 text-start">
+                                <i class="fas fa-users me-2"></i>
+                                <strong>{{ admission_stats.admitted|default:0 }}</strong> Admitted
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Recent Applications -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Applications</h5>
+                    <a href="{% url 'admissions:application_list' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div id="recent-applications">
+                        {% include 'admissions/partials/application_table.html' with applications=recent_applications show_pagination=False %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Breakdown & Filters -->
+        <div class="col-lg-4">
+            <!-- Status Breakdown -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Application Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for status in status_breakdown %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="badge 
+                                {% if status.status == 'submitted' %}bg-warning
+                                {% elif status.status == 'under_review' %}bg-info
+                                {% elif status.status == 'accepted' %}bg-success
+                                {% elif status.status == 'rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ status.status|title }}
+                            </span>
+                            <span class="fw-bold">{{ status.count }}</span>
+                        </div>
+                        {% empty %}
+                        <div class="text-center text-muted py-3">
+                            No applications yet
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Filters -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div hx-get="{% url 'admissions:application_filters_partial' %}" hx-trigger="load">
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh stats every 30 seconds
+setInterval(() => {
+    htmx.trigger('#stats-cards', 'refreshStats');
+}, 30000);
+
+// Handle HTMX events
+document.addEventListener('htmx:afterSwap', function(event) {
+    // Add smooth animations for updated content
+    if (event.detail.target.id === 'stats-cards') {
+        event.detail.target.classList.add('fade-in');
+        setTimeout(() => {
+            event.detail.target.classList.remove('fade-in');
+        }, 500);
+    }
+});
+</script>
+
+<style>
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem;
+}
+</style>
+{% endblock %}

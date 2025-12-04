@@ -1,0 +1,21 @@
+<!-- navigation/templates/navigation/debug.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Template Debug</title>
+</head>
+<body>
+    <h1>Template Loading Debug</h1>
+    
+    <h2>Template Path: {{ template_path }}</h2>
+    <h2>Template Exists: {{ template_exists }}</h2>
+    <h2>Full Path: {{ template_full_path }}</h2>
+    
+    <h3>Template Directories:</h3>
+    <ul>
+    {% for dir in template_dirs %}
+        <li>{{ dir }}</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

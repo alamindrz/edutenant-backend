@@ -1,0 +1,225 @@
+<!-- templates/students/student_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Students - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Student Management</h1>
+            <p class="text-muted">Manage students for {{ school.name }}</p>
+        </div>
+        <a href="{% url 'students:student_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Student
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Name or admission number...">
+                </div>
+                <div class="col-md-2">
+                    <label for="level" class="form-label">Education Level</label>
+                    <select class="form-select" id="level" name="level">
+                        <option value="">All Levels</option>
+                        {% for level in education_levels %}
+                        <option value="{{ level.id }}" {% if level_filter == level.id|stringformat:"i" %}selected{% endif %}>
+                            {{ level.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="class_group" class="form-label">Class</label>
+                    <select class="form-select" id="class_group" name="class_group">
+                        <option value="">All Classes</option>
+                        {% for class in class_groups %}
+                        <option value="{{ class.id }}" {% if class_filter == class.id|stringformat:"i" %}selected{% endif %}>
+                            {{ class.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="">All</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">Filter</button>
+                    <a href="{% url 'students:student_list' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Students ({{ page_obj.paginator.count }})</h5>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-outline-secondary">Export</button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Admission No.</th>
+                            <th>Student Name</th>
+                            <th>Class</th>
+                            <th>Parent</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>
+                                <strong>{{ student.admission_number }}</strong>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary rounded-circle text-white d-flex align-items-center justify-content-center me-3">
+                                        {{ student.first_name|first }}{{ student.last_name|first }}
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'students:student_detail' student.id %}" class="text-dark fw-semibold">
+                                            {{ student.full_name }}
+                                        </a>
+                                        <small class="d-block text-muted">{{ student.gender }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if student.class_group %}
+                                <span class="badge bg-light text-dark">{{ student.class_group.name }}</span>
+                                {% else %}
+                                <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.parent %}
+                                <a href="{% url 'students:parent_detail' student.parent.id %}" class="text-dark">
+                                    {{ student.parent.full_name }}
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.parent %}
+                                <small class="text-muted d-block">{{ student.parent.phone_number }}</small>
+                                <small class="text-muted">{{ student.parent.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'students:student_detail' student.id %}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'students:student_edit' student.id %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-users fa-2x mb-3"></i>
+                                    <p>No students found. <a href="{% url 'students:student_create' %}">Add your first student</a></p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Student pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// AJAX class group filtering based on education level
+document.getElementById('level').addEventListener('change', function() {
+    const levelId = this.value;
+    const classSelect = document.getElementById('class_group');
+    
+    if (levelId) {
+        fetch(`/students/ajax/class-groups/${levelId}/`)
+            .then(response => response.json())
+            .then(data => {
+                classSelect.innerHTML = '<option value="">All Classes</option>';
+                data.forEach(classGroup => {
+                    const option = document.createElement('option');
+                    option.value = classGroup.id;
+                    option.textContent = classGroup.name;
+                    classSelect.appendChild(option);
+                });
+            });
+    } else {
+        classSelect.innerHTML = '<option value="">All Classes</option>';
+        {% for class in class_groups %}
+        const option = document.createElement('option');
+        option.value = '{{ class.id }}';
+        option.textContent = '{{ class.name }}';
+        classSelect.appendChild(option);
+        {% endfor %}
+    }
+});
+</script>
+{% endblock %}

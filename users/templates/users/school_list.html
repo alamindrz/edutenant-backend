@@ -1,0 +1,265 @@
+<!-- templates/users/school_list.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Schools - Edusuite{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">My Schools</h1>
+            <p class="text-muted">Manage access to your educational institutions</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'users:school_onboarding' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create New School
+            </a>
+            <a href="/school-feed/" class="btn btn-outline-primary">
+                <i class="fas fa-compass me-2"></i>Discover Schools
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ schools|length }}</h4>
+                            <small>Total Schools</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-school fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ active_schools_count }}</h4>
+                            <small>Active Access</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ admin_schools_count }}</h4>
+                            <small>Admin Roles</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-shield fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ teacher_schools_count }}</h4>
+                            <small>Teacher Roles</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chalkboard-teacher fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schools Grid -->
+    {% if schools %}
+    <div class="row">
+        {% for school in schools %}
+        {% with profile=user.profile_set.get school=school %}
+        <div class="col-xl-4 col-lg-6 mb-4">
+            <div class="card school-card h-100 border-{% if user.current_school == school %}primary{% else %}light{% endif %}">
+                <div class="card-header bg-{% if user.current_school == school %}primary text-white{% else %}light{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            {% if user.current_school == school %}
+                            <i class="fas fa-check-circle me-2"></i>
+                            {% endif %}
+                            {{ school.name }}
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-{% if user.current_school == school %}light{% else %}outline-secondary{% endif %} dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'users:switch_school' school.id %}">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Switch to School
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'users:dashboard' %}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-info" href="#">
+                                        <i class="fas fa-cog me-2"></i>School Settings
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- School Logo and Basic Info -->
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="flex-shrink-0">
+                            {% if school.logo %}
+                            <img src="{{ school.logo.url }}" alt="{{ school.name }}" 
+                                 class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px;">
+                                <i class="fas fa-school fa-lg"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-graduation-cap me-1"></i>{{ school.get_school_type_display }}
+                                </span>
+                                <span class="badge bg-{% if school.subdomain_status == 'active' %}success{% else %}warning{% endif %}">
+                                    {{ school.get_subdomain_status_display }}
+                                </span>
+                            </div>
+                            {% if school.subdomain %}
+                            <p class="text-muted small mb-1">
+                                <i class="fas fa-globe me-1"></i>{{ school.subdomain }}.edusuite.com
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    {% if school.address %}
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {{ school.address|truncatewords:8 }}
+                    </p>
+                    {% endif %}
+
+                    <!-- Role and Access Info -->
+                    <div class="border-top pt-3">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <small class="text-muted d-block">Your Role</small>
+                                <strong class="text-primary">{{ profile.role.name }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Access Level</small>
+                                <span class="badge bg-{% if profile.role.system_role_type == 'principal' %}danger{% elif profile.role.system_role_type == 'teacher' %}warning{% else %}info{% endif %}">
+                                    {{ profile.role.get_system_role_type_display|default:"Custom" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Info -->
+                    {% if school.contact_email or school.phone_number %}
+                    <div class="border-top pt-3 mt-3">
+                        <h6 class="small text-muted mb-2">Contact Information</h6>
+                        <div class="row">
+                            {% if school.contact_email %}
+                            <div class="col-12 mb-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-envelope me-1"></i>{{ school.contact_email }}
+                                </small>
+                            </div>
+                            {% endif %}
+                            {% if school.phone_number %}
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-phone me-1"></i>{{ school.phone_number }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer bg-transparent">
+                    <div class="d-grid gap-2">
+                        {% if user.current_school == school %}
+                        <button class="btn btn-success" disabled>
+                            <i class="fas fa-check-circle me-2"></i>Currently Active
+                        </button>
+                        {% else %}
+                        <a href="{% url 'users:switch_school' school.id %}" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Switch to School
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-school fa-4x text-muted mb-4"></i>
+            <h3 class="text-muted mb-3">No Schools Found</h3>
+            <p class="text-muted mb-4">You don't have access to any schools yet.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{% url 'users:school_onboarding' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Create Your First School
+                </a>
+                <a href="/school-feed/" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-compass me-2"></i>Discover Schools
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.school-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.school-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+.border-primary {
+    border-width: 2px !important;
+}
+.card-header.bg-primary {
+    border-bottom: none;
+}
+</style>
+{% endblock %}

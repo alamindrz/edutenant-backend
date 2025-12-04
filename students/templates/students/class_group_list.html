@@ -1,0 +1,146 @@
+<!-- templates/students/class_group_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Class Groups - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Class Group Management</h1>
+            <p class="text-muted">Manage class groups and assignments for {{ school.name }}</p>
+        </div>
+        <a href="{% url 'students:class_group_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Class Group
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="level" class="form-label">Filter by Education Level</label>
+                    <select class="form-select" id="level" name="level">
+                        <option value="">All Levels</option>
+                        {% for level in education_levels %}
+                        <option value="{{ level.id }}" {% if level_filter == level.id|stringformat:"i" %}selected{% endif %}>
+                            {{ level.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">Filter</button>
+                    <a href="{% url 'students:class_group_list' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Class Groups Grid -->
+    <div class="row">
+        {% for class_group in class_groups %}
+        <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ class_group.name }}</h5>
+                    <small class="text-muted">{{ class_group.education_level.name }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Class Teacher -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Class Teacher</label>
+                        {% if class_group.class_teacher %}
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm bg-info rounded-circle text-white d-flex align-items-center justify-content-center me-2">
+                                {{ class_group.class_teacher.user.first_name|first }}{{ class_group.class_teacher.user.last_name|first }}
+                            </div>
+                            <div>
+                                <small class="fw-semibold">{{ class_group.class_teacher.user.get_full_name }}</small>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Student Count -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Students</label>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">{{ class_group.student_count }} / {{ class_group.capacity }}</span>
+                            <div class="progress flex-grow-1 mx-2" style="height: 6px;">
+                                {% with percentage=class_group.student_count|divisible:class_group.capacity|multiply:100 %}
+                                <div class="progress-bar {% if percentage >= 90 %}bg-danger{% elif percentage >= 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                     style="width: {{ percentage }}%"></div>
+                                {% endwith %}
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {% if class_group.is_full %}
+                            <span class="text-danger">Class full</span>
+                            {% else %}
+                            {{ class_group.capacity|subtract:class_group.student_count }} seats available
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <!-- Additional Teachers -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small mb-1">Additional Teachers</label>
+                        {% with teachers_count=class_group.teachers.count %}
+                        {% if teachers_count > 1 %}
+                        <small class="text-muted">+{{ teachers_count|add:"-1" }} other{{ teachers_count|add:"-1"|pluralize }}</small>
+                        {% else %}
+                        <small class="text-muted">None</small>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <a href="{% url 'students:class_group_detail' class_group.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="text-muted">
+                        <i class="fas fa-chalkboard-teacher fa-2x mb-3"></i>
+                        <p>No class groups found. <a href="{% url 'students:class_group_create' %}">Create your first class group</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Custom template filters for calculations
+window.templateFilters = {
+    divisible: function(numerator, denominator) {
+        return (numerator / denominator) || 0;
+    },
+    multiply: function(value, multiplier) {
+        return value * multiplier;
+    },
+    subtract: function(value, subtractor) {
+        return value - subtractor;
+    }
+};
+</script>
+{% endblock %}

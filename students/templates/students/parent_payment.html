@@ -1,0 +1,258 @@
+<!-- templates/billing/parent_payment.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Pay Fees - Edusuite{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Pay School Fees</h1>
+                    <p class="text-muted">Secure payment for your children's education</p>
+                </div>
+                <a href="{% url 'billing:parent_invoices' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Invoices
+                </a>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="card-title">Payment Summary</h5>
+                            <p class="text-muted mb-0">
+                                You are paying for {{ invoices|length }} invoice{{ invoices|length|pluralize }} 
+                                across {{ parent_profiles|length }} school{{ parent_profiles|length|pluralize }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="h4 text-primary mb-0">₦{{ total_amount|floatformat:2|intcomma }}</div>
+                            <small class="text-muted">Total Amount Due</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Selection -->
+            <form method="post" id="paymentForm">
+                {% csrf_token %}
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Select Invoices to Pay</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        {% if is_multiple %}
+                                        <th width="50">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAll">
+                                            </div>
+                                        </th>
+                                        {% endif %}
+                                        <th>Invoice #</th>
+                                        <th>Child</th>
+                                        <th>School</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invoice in invoices %}
+                                    <tr>
+                                        {% if is_multiple %}
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input invoice-checkbox" type="checkbox" 
+                                                       name="selected_invoices" value="{{ invoice.id }}" checked>
+                                            </div>
+                                        </td>
+                                        {% endif %}
+                                        <td>
+                                            <strong>{{ invoice.invoice_number }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if invoice.student %}
+                                            {{ invoice.student.full_name }}
+                                            {% else %}
+                                            <span class="text-muted">General</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ invoice.school.name }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary text-capitalize">
+                                                {{ invoice.invoice_type|replace:"_, " }}
+                                            </span>
+                                        </td>
+                                        <td>₦{{ invoice.total_amount|floatformat:2|intcomma }}</td>
+                                        <td>
+                                            {{ invoice.due_date|date:"M j, Y" }}
+                                            {% if invoice.is_overdue %}
+                                            <br><small class="text-danger">({{ invoice.days_overdue }} days overdue)</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if invoice.status == 'overdue' %}danger{% else %}warning{% endif %}">
+                                                {{ invoice.status|title }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fee Breakdown -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Fee Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>What you're paying for:</h6>
+                                <ul class="list-unstyled">
+                                    <li class="d-flex justify-content-between py-1">
+                                        <span>School Fees & Charges</span>
+                                        <span>₦{{ total_amount|floatformat:2|intcomma }}</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between py-1 text-success">
+                                        <span>Platform Fee (1.5%)</span>
+                                        <span>Included</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between py-1 text-success">
+                                        <span>Paystack Processing Fee</span>
+                                        <span>Included</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-info-circle me-2"></i>Secure Payment
+                                    </h6>
+                                    <p class="mb-2 small">Your payment is processed securely through Paystack. All major payment methods are accepted.</p>
+                                    <div class="d-flex gap-2 mt-2">
+                                        <img src="{% static 'img/payment/visa.png' %}" alt="Visa" height="20">
+                                        <img src="{% static 'img/payment/mastercard.png' %}" alt="Mastercard" height="20">
+                                        <img src="{% static 'img/payment/verve.png' %}" alt="Verve" height="20">
+                                        <img src="{% static 'img/payment/bank-transfer.png' %}" alt="Bank Transfer" height="20">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Action -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Ready to Pay</h5>
+                                <p class="text-muted mb-0">
+                                    Click the button below to proceed to secure payment
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button type="submit" class="btn btn-primary btn-lg" id="payButton">
+                                    <i class="fas fa-lock me-2"></i>
+                                    Pay ₦<span id="displayAmount">{{ total_amount|floatformat:2|intcomma }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+    const payButton = document.getElementById('payButton');
+    const displayAmount = document.getElementById('displayAmount');
+    
+    // Select All functionality
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            invoiceCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateTotalAmount();
+        });
+    }
+    
+    // Update total amount when checkboxes change
+    if (invoiceCheckboxes.length > 0) {
+        invoiceCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateTotalAmount);
+        });
+    }
+    
+    function updateTotalAmount() {
+        let total = 0;
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const checkbox = row.querySelector('.invoice-checkbox');
+            if (!checkbox || checkbox.checked) {
+                const amountText = row.querySelector('td:nth-child(6)').textContent;
+                const amount = parseFloat(amountText.replace('₦', '').replace(/,/g, ''));
+                if (!isNaN(amount)) {
+                    total += amount;
+                }
+            }
+        });
+        
+        displayAmount.textContent = total.toLocaleString('en-NG', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        
+        // Update select all checkbox state
+        if (selectAllCheckbox) {
+            const allChecked = Array.from(invoiceCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(invoiceCheckboxes).some(cb => cb.checked);
+            
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+        }
+        
+        // Enable/disable pay button
+        payButton.disabled = total === 0;
+    }
+    
+    // Form submission handling
+    const paymentForm = document.getElementById('paymentForm');
+    paymentForm.addEventListener('submit', function(e) {
+        const selectedInvoices = document.querySelectorAll('.invoice-checkbox:checked');
+        if (selectedInvoices.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one invoice to pay.');
+            return;
+        }
+        
+        // Show loading state
+        payButton.disabled = true;
+        payButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    });
+});
+</script>
+{% endblock %}

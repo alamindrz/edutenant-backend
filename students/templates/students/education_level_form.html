@@ -1,0 +1,166 @@
+<!-- templates/students/education_level_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="educationLevelForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Level Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Level Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.level.id_for_label }}" class="form-label">
+                                        Level Category *
+                                    </label>
+                                    {{ form.level }}
+                                    {% if form.level.errors %}
+                                    <div class="text-danger small">{{ form.level.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Broad category (Nursery, Primary, JSS, SSS)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        Level Name *
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Specific name (e.g., Primary 1, JSS 2)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.order.id_for_label }}" class="form-label">
+                                        Display Order *
+                                    </label>
+                                    {{ form.order }}
+                                    {% if form.order.errors %}
+                                    <div class="text-danger small">{{ form.order.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Numerical order for sorting levels</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Additional Information</h6>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        Description
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Optional description of this education level</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Level Preview -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Level Preview</h6>
+                                <div class="alert alert-info">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="fas fa-info-circle fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="alert-heading">How levels work</h6>
+                                            <p class="mb-1">Levels define the educational structure of your school:</p>
+                                            <ul class="mb-0 small">
+                                                <li><strong>Level Category:</strong> Broad grouping (Nursery, Primary, etc.)</li>
+                                                <li><strong>Level Name:</strong> Specific class name within the category</li>
+                                                <li><strong>Display Order:</strong> Determines sorting in lists and reports</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'students:education_level_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back to List
+                                    </a>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> 
+                                            {% if education_level %}Update Level{% else %}Create Level{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-suggest level name based on category
+document.getElementById('id_level').addEventListener('change', function() {
+    const levelSelect = this;
+    const nameInput = document.getElementById('id_name');
+    const orderInput = document.getElementById('id_order');
+    
+    if (!nameInput.value) {
+        const levelNames = {
+            'nursery': ['Playgroup', 'Nursery 1', 'Nursery 2', 'Kindergarten'],
+            'primary': ['Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'],
+            'jss': ['JSS 1', 'JSS 2', 'JSS 3'],
+            'sss': ['SSS 1', 'SSS 2', 'SSS 3']
+        };
+        
+        const names = levelNames[levelSelect.value] || [];
+        if (names.length > 0) {
+            nameInput.placeholder = `e.g., ${names[0]}`;
+        }
+    }
+});
+
+// Set default order if empty
+document.getElementById('id_order').addEventListener('focus', function() {
+    if (!this.value) {
+        this.value = 0;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,339 @@
+<!-- templates/users/staff_list.html -->
+{% extends "base.html" %}
+
+{% block title %}Staff Management - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Staff Management</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'users:staff_create' %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-plus"></i> Add Staff
+            </a>
+            <a href="{% url 'users:staff_invite' %}" class="btn btn-sm btn-outline-success">
+                <i class="fas fa-envelope"></i> Invite Staff
+            </a>
+            <a href="{% url 'users:school_applications' %}" class="btn btn-sm btn-outline-info position-relative">
+                <i class="fas fa-user-check"></i> Applications
+                {% if pending_applications_count > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ pending_applications_count }}
+                    <span class="visually-hidden">pending applications</span>
+                </span>
+                {% endif %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h4 class="mb-0">{{ total_staff }}</h4>
+                        <small>Total Staff</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h4 class="mb-0">{{ active_staff }}</h4>
+                        <small>Active Staff</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-check fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h4 class="mb-0">{{ teaching_staff }}</h4>
+                        <small>Teaching Staff</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chalkboard-teacher fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h4 class="mb-0">{{ pending_applications_count }}</h4>
+                        <small>Pending Applications</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Application Alert -->
+{% if pending_applications_count > 0 %}
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="fas fa-info-circle me-2 fa-lg"></i>
+    <div class="flex-grow-1">
+        <strong>You have {{ pending_applications_count }} pending teacher application{{ pending_applications_count|pluralize }}</strong> waiting for review.
+        <a href="{% url 'users:school_applications' %}" class="alert-link ms-1">Review applications</a>
+    </div>
+    <a href="{% url 'users:school_applications' %}" class="btn btn-sm btn-outline-info">
+        Review Now
+    </a>
+</div>
+{% endif %}
+
+<!-- Management Tabs -->
+<ul class="nav nav-tabs mb-4" id="staffTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="current-staff-tab" data-bs-toggle="tab" data-bs-target="#current-staff" type="button" role="tab">
+            <i class="fas fa-users me-1"></i>
+            Current Staff
+            <span class="badge bg-primary ms-1">{{ total_staff }}</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="applications-tab" data-bs-toggle="tab" data-bs-target="#applications" type="button" role="tab">
+            <i class="fas fa-user-check me-1"></i>
+            Applications
+            {% if pending_applications_count > 0 %}
+            <span class="badge bg-danger ms-1">{{ pending_applications_count }}</span>
+            {% endif %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="invitations-tab" data-bs-toggle="tab" data-bs-target="#invitations" type="button" role="tab">
+            <i class="fas fa-envelope me-1"></i>
+            Invitations
+            <span class="badge bg-warning ms-1">{{ pending_invitations_count }}</span>
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="staffTabsContent">
+    <!-- Current Staff Tab -->
+    <div class="tab-pane fade show active" id="current-staff" role="tabpanel">
+        <!-- Filters and Search -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted mb-1">Search Staff</label>
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Search by name, email, position..." 
+                               name="search"
+                               hx-get="{% url 'users:staff_table_partial' %}"
+                               hx-target="#staff-table"
+                               hx-trigger="keyup changed delay:500ms"
+                               hx-include="[name='active']">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Status</label>
+                        <select class="form-select" name="active"
+                                hx-get="{% url 'users:staff_table_partial' %}"
+                                hx-target="#staff-table"
+                                hx-trigger="change">
+                            <option value="">All Status</option>
+                            <option value="true">Active Only</option>
+                            <option value="false">Inactive Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted mb-1">Department</label>
+                        <select class="form-select" name="department"
+                                hx-get="{% url 'users:staff_table_partial' %}"
+                                hx-target="#staff-table"
+                                hx-trigger="change">
+                            <option value="">All Departments</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept }}">{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100"
+                                hx-get="{% url 'users:staff_table_partial' %}"
+                                hx-target="#staff-table">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Table -->
+        <div id="staff-table" hx-get="{% url 'users:staff_table_partial' %}" hx-trigger="load">
+            <!-- Loading staff table... -->
+        </div>
+    </div>
+
+    <!-- Applications Tab -->
+    <div class="tab-pane fade" id="applications" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-check me-2"></i>
+                    Teacher Applications
+                </h5>
+                <div class="btn-group">
+                    <a href="{% url 'users:manage_open_positions' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-briefcase me-1"></i> Manage Open Positions
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="applications-table" hx-get="{% url 'users:applications_table_partial' %}" hx-trigger="load">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading applications...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invitations Tab -->
+    <div class="tab-pane fade" id="invitations" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-envelope me-2"></i>
+                    Staff Invitations
+                </h5>
+                <a href="{% url 'users:staff_invite' %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-plus me-1"></i> New Invitation
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="invitations-table" hx-get="{% url 'users:invitations_table_partial' %}" hx-trigger="load">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading invitations...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Card -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="card-title mb-0">
+            <i class="fas fa-bolt me-2"></i>Quick Actions
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a href="{% url 'users:staff_create' %}" class="btn btn-outline-primary w-100 h-100 py-3">
+                    <i class="fas fa-user-plus fa-2x mb-2"></i><br>
+                    Add New Staff
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'users:staff_invite' %}" class="btn btn-outline-success w-100 h-100 py-3">
+                    <i class="fas fa-envelope fa-2x mb-2"></i><br>
+                    Invite Staff
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'users:manage_open_positions' %}" class="btn btn-outline-info w-100 h-100 py-3">
+                    <i class="fas fa-briefcase fa-2x mb-2"></i><br>
+                    Post Job Openings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh applications count every 30 seconds
+    setInterval(function() {
+        // You can implement HTMX to refresh the counts
+        htmx.trigger('#staff-table', 'refresh');
+    }, 30000);
+
+    // Tab persistence
+    const staffTabs = document.getElementById('staffTabs');
+    if (staffTabs) {
+        staffTabs.addEventListener('shown.bs.tab', function(event) {
+            const activeTab = event.target.getAttribute('data-bs-target');
+            localStorage.setItem('activeStaffTab', activeTab);
+        });
+
+        // Restore active tab
+        const savedTab = localStorage.getItem('activeStaffTab');
+        if (savedTab) {
+            const tabTrigger = document.querySelector(`[data-bs-target="${savedTab}"]`);
+            if (tabTrigger) {
+                new bootstrap.Tab(tabTrigger).show();
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.nav-tabs .nav-link {
+    font-weight: 500;
+    border: none;
+    padding: 0.75rem 1rem;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom: 3px solid var(--bs-primary);
+    background: transparent;
+}
+
+.quick-action-btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

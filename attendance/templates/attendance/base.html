@@ -1,0 +1,17 @@
+<!-- templates/attendance/base.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Attendance - {{ school.name }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/attendance.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<!-- Content will be overridden by child templates -->
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/attendance.js' %}"></script>
+{% endblock %}

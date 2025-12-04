@@ -1,0 +1,67 @@
+<!-- templates/users/partials/staff_row.html -->
+<tr>
+    <td>
+        <input type="checkbox" class="form-check-input staff-checkbox" name="staff_ids" value="{{ staff.id }}">
+    </td>
+    <td>
+        <strong>{{ staff.staff_id }}</strong>
+    </td>
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="avatar-sm bg-primary rounded-circle text-white d-flex align-items-center justify-content-center me-2"
+                 style="width: 32px; height: 32px;">
+                {{ staff.first_name|first }}{{ staff.last_name|first }}
+            </div>
+            <div>
+                <strong>{{ staff.full_name }}</strong>
+                {% if staff.user %}
+                <small class="text-muted d-block">User account</small>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td>
+        <span class="editable"
+              hx-post="{% url 'users:staff_quick_edit' staff.id %}"
+              hx-vals='{"field": "position"}'
+              hx-trigger="change"
+              hx-target="closest tr">
+            <select class="form-select form-select-sm" name="value">
+                <option value="Teacher" {% if staff.position == "Teacher" %}selected{% endif %}>Teacher</option>
+                <option value="Head Teacher" {% if staff.position == "Head Teacher" %}selected{% endif %}>Head Teacher</option>
+                <option value="Administrator" {% if staff.position == "Administrator" %}selected{% endif %}>Administrator</option>
+                <option value="Accountant" {% if staff.position == "Accountant" %}selected{% endif %}>Accountant</option>
+                <option value="Support Staff" {% if staff.position == "Support Staff" %}selected{% endif %}>Support Staff</option>
+            </select>
+        </span>
+    </td>
+    <td>
+        <span class="editable"
+              hx-post="{% url 'users:staff_quick_edit' staff.id %}"
+              hx-vals='{"field": "department"}'
+              hx-trigger="change"
+              hx-target="closest tr">
+            <input type="text" class="form-control form-control-sm" value="{{ staff.department|default:'' }}" 
+                   name="value" placeholder="Department">
+        </span>
+    </td>
+    <td>{{ staff.email }}</td>
+    <td>
+        <span class="badge {% if staff.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+            {% if staff.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+    </td>
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'users:staff_detail' staff.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-eye"></i>
+            </a>
+            <button class="btn {% if staff.is_active %}btn-warning{% else %}btn-success{% endif %}"
+                    hx-post="{% url 'users:staff_toggle_active' staff.id %}"
+                    hx-target="closest tr"
+                    hx-confirm="{% if staff.is_active %}Deactivate this staff member?{% else %}Activate this staff member?{% endif %}">
+                <i class="fas {% if staff.is_active %}fa-times{% else %}fa-check{% endif %}"></i>
+            </button>
+        </div>
+    </td>
+</tr>

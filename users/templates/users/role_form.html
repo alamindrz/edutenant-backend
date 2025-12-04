@@ -1,0 +1,181 @@
+<!-- templates/users/role_form.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - {{ current_school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">{{ page_title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="roleForm">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Basic Role Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Basic Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        Role Name *
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.category.id_for_label }}" class="form-label">
+                                        Category *
+                                    </label>
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                    <div class="text-danger small">{{ form.category.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        Description
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Describe the responsibilities and purpose of this role</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Permissions -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Permissions</h6>
+                                <p class="text-muted mb-3">Select the permissions this role should have:</p>
+                            </div>
+                            
+                            <!-- Management Permissions -->
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Management Permissions</h6>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_roles }}
+                                            <label class="form-check-label" for="{{ form.can_manage_roles.id_for_label }}">
+                                                Manage Roles & Permissions
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_staff }}
+                                            <label class="form-check-label" for="{{ form.can_manage_staff.id_for_label }}">
+                                                Manage Staff Members
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_students }}
+                                            <label class="form-check-label" for="{{ form.can_manage_students.id_for_label }}">
+                                                Manage Students & Parents
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_manage_academics }}
+                                            <label class="form-check-label" for="{{ form.can_manage_academics.id_for_label }}">
+                                                Manage Academic Records
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            {{ form.can_manage_finances }}
+                                            <label class="form-check-label" for="{{ form.can_manage_finances.id_for_label }}">
+                                                Manage Financial Records
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Access Permissions -->
+                            <div class="col-md-6">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Access Permissions</h6>
+                                        <div class="form-check mb-2">
+                                            {{ form.can_view_reports }}
+                                            <label class="form-check-label" for="{{ form.can_view_reports.id_for_label }}">
+                                                View Reports & Analytics
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            {{ form.can_communicate }}
+                                            <label class="form-check-label" for="{{ form.can_communicate.id_for_label }}">
+                                                Send Communications
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Permission Preview -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2">Permission Preview</h6>
+                                <div class="alert alert-info">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            <i class="fas fa-info-circle fa-2x"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="alert-heading">How permissions work</h6>
+                                            <p class="mb-1">Selected permissions will determine what actions users with this role can perform:</p>
+                                            <ul class="mb-0 small">
+                                                <li><strong>Management permissions:</strong> Create, edit, delete records</li>
+                                                <li><strong>Access permissions:</strong> View data and send communications</li>
+                                                <li><strong>System roles:</strong> Pre-defined permissions that cannot be modified</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back to List
+                                    </a>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> 
+                                            {% if role %}Update Role{% else %}Create Role{% endif %}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

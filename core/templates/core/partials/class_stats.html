@@ -1,0 +1,49 @@
+<!-- core/templates/core/partials/class_stats.html -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h4 class="card-title">{{ total_classes }}</h4>
+                <p class="card-text">Total Classes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h4 class="card-title">{{ total_students }}</h4>
+                <p class="card-text">Total Students</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h4 class="card-title">
+                    {% if total_classes > 0 %}
+                        {{ total_students|floatformat:0 }}/{{ total_classes }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h4>
+                <p class="card-text">Avg. per Class</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if classes_by_category %}
+<div class="mt-4">
+    <h5>Classes by Category</h5>
+    <div class="list-group">
+        {% for category in classes_by_category %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            {{ category.category__name }}
+            <span class="badge bg-primary rounded-pill">
+                {{ category.count }} classes, {{ category.total_students }} students
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
