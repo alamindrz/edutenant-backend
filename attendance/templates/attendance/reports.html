@@ -10,52 +10,103 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-1">Attendance Reports</h1>
-            <p class="text-muted">Generate detailed attendance reports and analytics</p>
+            <p class="text-muted">Generate detailed attendance reports and analytics for {{ school.name }}</p>
         </div>
         <div class="btn-group">
             <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
             </a>
+            {% if user_profile.role.can_manage_attendance %}
+            <a href="#" class="btn btn-outline-success" id="exportReport">
+                <i class="fas fa-file-export me-2"></i>Export
+            </a>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Current Term Info -->
+    {% if current_term %}
+    <div class="alert alert-info mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-calendar-alt me-2"></i>
+                <strong>Current Term:</strong> {{ current_term.name }} • {{ current_term.academic_year }}
+                <span class="ms-3">
+                    <strong>Period:</strong> {{ current_term.start_date|date:"M j" }} - {{ current_term.end_date|date:"M j, Y" }}
+                </span>
+            </div>
+            <a href="{% url 'students:academic_term_detail' current_term.id %}" class="btn btn-sm btn-outline-info">
+                View Term Details
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Report Filters -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="card-title mb-0">Report Parameters</h5>
+            <h5 class="card-title mb-0">
+                <i class="fas fa-filter me-2"></i>Report Parameters
+            </h5>
         </div>
         <div class="card-body">
-            <form method="get" class="row g-3">
+            <form method="get" id="reportForm" class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Report Type</label>
-                    <select name="report_type" class="form-select">
+                    <select name="report_type" class="form-select" id="reportType">
                         <option value="student" {% if report_type == 'student' %}selected{% endif %}>Student Attendance</option>
                         <option value="teacher" {% if report_type == 'teacher' %}selected{% endif %}>Teacher Attendance</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Period</label>
-                    <select name="period" class="form-select">
+                    <select name="period" class="form-select" id="periodSelect">
                         <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily</option>
                         <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly</option>
                         <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly</option>
+                        <option value="term" {% if period == 'term' %}selected{% endif %}>Term</option>
+                        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Range</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Date From</label>
-                    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control">
+                    <input type="date" 
+                           name="date_from" 
+                           value="{{ date_from|date:'Y-m-d' }}" 
+                           class="form-control date-field"
+                           max="{{ today|date:'Y-m-d' }}"
+                           {% if period != 'custom' %}readonly{% endif %}>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Date To</label>
-                    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control">
+                    <input type="date" 
+                           name="date_to" 
+                           value="{{ date_to|date:'Y-m-d' }}" 
+                           class="form-control date-field"
+                           max="{{ today|date:'Y-m-d' }}"
+                           {% if period != 'custom' %}readonly{% endif %}>
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-primary w-100">
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100" id="generateReport">
                         <i class="fas fa-chart-bar"></i>
                     </button>
                 </div>
             </form>
+
+            <!-- Quick Date Presets -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <small class="text-muted me-3">Quick Presets:</small>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-secondary preset-btn" data-days="7">Last 7 Days</button>
+                        <button type="button" class="btn btn-outline-secondary preset-btn" data-days="30">Last 30 Days</button>
+                        <button type="button" class="btn btn-outline-secondary preset-btn" data-period="month">This Month</button>
+                        {% if current_term %}
+                        <button type="button" class="btn btn-outline-info preset-btn" data-period="term">This Term</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -64,28 +115,77 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Report Summary</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Report Summary
+                        <small class="text-muted ms-2">
+                            {{ date_from|date:"M j, Y" }} to {{ date_to|date:"M j, Y" }}
+                            ({{ date_from|timesince:date_to }})
+                        </small>
+                    </h5>
+                    <div class="btn-group btn-group-sm">
+                        <a href="#" class="btn btn-outline-primary" onclick="window.print()">
+                            <i class="fas fa-print me-1"></i>Print
+                        </a>
+                        <a href="#" class="btn btn-outline-success" id="downloadCSV">
+                            <i class="fas fa-file-csv me-1"></i>CSV
+                        </a>
+                        <a href="#" class="btn btn-outline-success" id="downloadPDF">
+                            <i class="fas fa-file-pdf me-1"></i>PDF
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-md-3">
-                            <div class="h2 text-primary mb-1">{{ summary.total_records }}</div>
+                            <div class="h2 text-primary mb-1">{{ summary.total_records|default:0 }}</div>
                             <small class="text-muted">Total Records</small>
                         </div>
                         <div class="col-md-3">
-                            <div class="h2 text-success mb-1">{{ summary.present_count }}</div>
+                            <div class="h2 text-success mb-1">{{ summary.present_count|default:0 }}</div>
                             <small class="text-muted">Present</small>
                         </div>
                         <div class="col-md-3">
-                            <div class="h2 text-danger mb-1">{{ summary.absent_count|default:summary.absent_today }}</div>
+                            <div class="h2 text-danger mb-1">{{ summary.absent_count|default:0 }}</div>
                             <small class="text-muted">Absent</small>
                         </div>
                         <div class="col-md-3">
-                            <div class="h2 text-info mb-1">{{ summary.signed_in_count|default:0 }}</div>
-                            <small class="text-muted">{% if report_type == 'teacher' %}Signed In{% else %}Late Arrivals{% endif %}</small>
+                            <div class="h2 text-info mb-1">
+                                {% if report_type == 'teacher' %}
+                                    {{ summary.signed_in_count|default:0 }}
+                                {% else %}
+                                    {{ summary.late_count|default:0 }}
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">
+                                {% if report_type == 'teacher' %}Signed In{% else %}Late Arrivals{% endif %}
+                            </small>
                         </div>
                     </div>
+                    
+                    <!-- Attendance Rate Progress -->
+                    {% with total=summary.present_count|add:summary.absent_count|add:summary.late_count %}
+                    {% if total > 0 %}
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Overall Attendance Rate</small>
+                            <small class="text-muted">
+                                {% widthratio summary.present_count total 100 %}%
+                                ({{ summary.present_count|default:0 }} of {{ total }})
+                            </small>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 style="width: {% widthratio summary.present_count total 100 %}%"
+                                 aria-valuenow="{% widthratio summary.present_count total 100 %}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
                 </div>
             </div>
         </div>
@@ -97,23 +197,38 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
+                <i class="fas fa-table me-2"></i>
                 {{ report_type|title }} Attendance Report
-                <small class="text-muted ms-2">{{ date_from|date:"M j, Y" }} to {{ date_to|date:"M j, Y" }}</small>
+                <small class="text-muted ms-2">
+                    {{ attendance_data|length }} records • 
+                    {{ date_from|date:"M j, Y" }} to {{ date_to|date:"M j, Y" }}
+                </small>
             </h5>
-            <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
-                <i class="fas fa-print me-2"></i>Print Report
-            </button>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog me-1"></i>Options
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="window.print()"><i class="fas fa-print me-2"></i>Print Report</a></li>
+                    <li><a class="dropdown-item" href="#" id="exportData"><i class="fas fa-file-export me-2"></i>Export Data</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="fas fa-filter me-2"></i>Advanced Filters</a></li>
+                </ul>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped mb-0">
+                <table class="table table-striped mb-0" id="reportTable">
                     <thead class="table-dark">
                         <tr>
                             {% if report_type == 'student' %}
                             <th>Student Name</th>
                             <th>Class</th>
+                            <th>Admission No.</th>
                             {% else %}
                             <th>Teacher Name</th>
+                            <th>Position</th>
+                            <th>Staff ID</th>
                             {% endif %}
                             <th class="text-center">Present</th>
                             <th class="text-center">Absent</th>
@@ -129,36 +244,65 @@
                             <td>
                                 <strong>{{ item.student__first_name }} {{ item.student__last_name }}</strong>
                             </td>
-                            <td>{{ item.student__class_group__name|default:"-" }}</td>
+                            <td>
+                                {% if item.student__current_class__name %}
+                                <span class="badge bg-secondary">{{ item.student__current_class__name }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code>{{ item.student__admission_number|default:"-" }}</code>
+                            </td>
                             {% else %}
                             <td>
                                 <strong>{{ item.staff__first_name }} {{ item.staff__last_name }}</strong>
                             </td>
+                            <td>{{ item.staff__position|default:"Teacher" }}</td>
+                            <td>
+                                <code>{{ item.staff__staff_id|default:"-" }}</code>
+                            </td>
                             {% endif %}
+                            
+                            {% comment %}
+                            Note: The data structure depends on your view's aggregation.
+                            Adjust field names based on your actual data structure.
+                            {% endcomment %}
+                            
                             <td class="text-center">
-                                <span class="badge bg-success">{{ item.present_count|default:0 }}</span>
+                                <span class="badge bg-success">{{ item.present|default:item.present_count|default:0 }}</span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-danger">{{ item.absent_count|default:0 }}</span>
+                                <span class="badge bg-danger">{{ item.absent|default:item.absent_count|default:0 }}</span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-warning">{{ item.late_count|default:0 }}</span>
+                                <span class="badge bg-warning">{{ item.late|default:item.late_count|default:0 }}</span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-info">{{ item.excused_count|default:0 }}</span>
+                                <span class="badge bg-info">{{ item.excused|default:item.excused_count|default:0 }}</span>
                             </td>
                             <td class="text-center">
-                                {% with total=item.present_count|add:item.absent_count|add:item.late_count|add:item.excused_count %}
+                                {% with present=item.present|default:item.present_count|default:0 %}
+                                {% with absent=item.absent|default:item.absent_count|default:0 %}
+                                {% with late=item.late|default:item.late_count|default:0 %}
+                                {% with excused=item.excused|default:item.excused_count|default:0 %}
+                                {% with total=present|add:absent|add:late|add:excused %}
                                 {% if total > 0 %}
-                                {% with rate=item.present_count|default:0|divisibleby:total|floatformat:1 %}
-                                <div class="progress" style="height: 20px; width: 100px; margin: 0 auto;">
-                                    <div class="progress-bar bg-success" style="width: {{ rate }}%"></div>
+                                {% with rate=present|divisibleby:total|floatformat:1 %}
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 8px; max-width: 80px;">
+                                        <div class="progress-bar bg-success" style="width: {% widthratio present total 100 %}%"></div>
+                                    </div>
+                                    <small class="text-muted">{% widthratio present total 100 %}%</small>
                                 </div>
-                                <small class="text-muted">{{ rate }}%</small>
                                 {% endwith %}
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
+                                {% endwith %}
+                                {% endwith %}
+                                {% endwith %}
+                                {% endwith %}
                                 {% endwith %}
                             </td>
                         </tr>
@@ -166,6 +310,39 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination -->
+            {% if attendance_data.has_other_pages %}
+            <div class="card-footer">
+                <nav aria-label="Report pagination">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if attendance_data.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&{{ query_params }}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_data.previous_page_number }}&{{ query_params }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ attendance_data.number }} of {{ attendance_data.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if attendance_data.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_data.next_page_number }}&{{ query_params }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ attendance_data.paginator.num_pages }}&{{ query_params }}">Last</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% elif summary %}
@@ -173,15 +350,235 @@
         <div class="card-body text-center py-5">
             <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
             <p class="text-muted">No detailed data available for the selected parameters</p>
+            <p class="text-muted small">Try adjusting your date range or report type</p>
         </div>
     </div>
     {% else %}
     <div class="card">
         <div class="card-body text-center py-5">
             <i class="fas fa-sliders-h fa-3x text-muted mb-3"></i>
-            <p class="text-muted">Select report parameters and generate a report</p>
+            <p class="text-muted">Configure report parameters and click "Generate Report"</p>
+            <p class="text-muted small">
+                <i class="fas fa-lightbulb me-1"></i>
+                Tip: Use quick presets for common date ranges
+            </p>
         </div>
     </div>
     {% endif %}
+    <!-- Advanced Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Advanced Filters</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="advancedFilters">
+                        <div class="mb-3">
+                            <label class="form-label">Minimum Attendance Rate (%)</label>
+                            <input type="range" class="form-range" min="0" max="100" value="0" id="attendanceRateRange">
+                            <div class="d-flex justify-content-between">
+                                <small>0%</small>
+                                <small id="rateValue">0%</small>
+                                <small>100%</small>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status Filter</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="present" id="filterPresent" checked>
+                                <label class="form-check-label" for="filterPresent">Include Present</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="absent" id="filterAbsent" checked>
+                                <label class="form-check-label" for="filterAbsent">Include Absent</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="late" id="filterLate" checked>
+                                <label class="form-check-label" for="filterLate">Include Late</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="applyFilters">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Date presets
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const days = this.getAttribute('data-days');
+            const period = this.getAttribute('data-period');
+            const today = new Date();
+            const dateTo = today.toISOString().split('T')[0];
+            let dateFrom;
+            
+            if (days) {
+                const fromDate = new Date();
+                fromDate.setDate(today.getDate() - parseInt(days));
+                dateFrom = fromDate.toISOString().split('T')[0];
+                document.querySelector('select[name="period"]').value = 'custom';
+            } else if (period === 'month') {
+                dateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                document.querySelector('select[name="period"]').value = 'monthly';
+            } else if (period === 'term' && '{{ current_term.start_date|date:"Y-m-d" }}') {
+                dateFrom = '{{ current_term.start_date|date:"Y-m-d" }}';
+                dateTo = '{{ current_term.end_date|date:"Y-m-d" }}';
+                document.querySelector('select[name="period"]').value = 'term';
+            }
+            
+            if (dateFrom && dateTo) {
+                document.querySelector('input[name="date_from"]').value = dateFrom;
+                document.querySelector('input[name="date_to"]').value = dateTo;
+                document.getElementById('reportForm').submit();
+            }
+        });
+    });
+
+    // Period selector logic
+    const periodSelect = document.getElementById('periodSelect');
+    const dateFields = document.querySelectorAll('.date-field');
+    
+    periodSelect.addEventListener('change', function() {
+        const isCustom = this.value === 'custom';
+        dateFields.forEach(field => {
+            field.readOnly = !isCustom;
+            if (!isCustom) {
+                // Auto-set dates based on period
+                const today = new Date();
+                let dateFrom = new Date();
+                
+                switch(this.value) {
+                    case 'daily':
+                        dateFrom = today;
+                        break;
+                    case 'weekly':
+                        dateFrom.setDate(today.getDate() - 7);
+                        break;
+                    case 'monthly':
+                        dateFrom.setDate(today.getDate() - 30);
+                        break;
+                    case 'term':
+                        // Will be handled by preset button
+                        return;
+                }
+                
+                if (this.value !== 'term') {
+                    document.querySelector('input[name="date_from"]').value = dateFrom.toISOString().split('T')[0];
+                    document.querySelector('input[name="date_to"]').value = today.toISOString().split('T')[0];
+                }
+            }
+        });
+    });
+
+    // Attendance rate range
+    const rateRange = document.getElementById('attendanceRateRange');
+    const rateValue = document.getElementById('rateValue');
+    
+    if (rateRange) {
+        rateRange.addEventListener('input', function() {
+            rateValue.textContent = this.value + '%';
+        });
+    }
+
+    // Export functionality
+    document.getElementById('exportData')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('Export functionality would be implemented here. This could generate CSV/Excel files.');
+        // In production: window.location = '{% url "attendance:export_report" %}?' + new URLSearchParams(window.location.search);
+    });
+
+    document.getElementById('downloadCSV')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Implement CSV download
+        console.log('CSV download requested');
+    });
+
+    document.getElementById('downloadPDF')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Implement PDF download
+        console.log('PDF download requested');
+    });
+
+    // Table sorting (basic client-side)
+    const table = document.getElementById('reportTable');
+    if (table) {
+        const headers = table.querySelectorAll('th');
+        headers.forEach((header, index) => {
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', function() {
+                sortTable(index);
+            });
+        });
+    }
+
+    function sortTable(column) {
+        const table = document.getElementById('reportTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            const aText = a.children[column].textContent.trim();
+            const bText = b.children[column].textContent.trim();
+            
+            // Handle numbers in badges
+            const aMatch = aText.match(/\d+/);
+            const bMatch = bText.match(/\d+/);
+            
+            if (aMatch && bMatch) {
+                return parseInt(bMatch[0]) - parseInt(aMatch[0]); // Descending for counts
+            }
+            
+            return aText.localeCompare(bText);
+        });
+        
+        // Re-append rows in sorted order
+        rows.forEach(row => tbody.appendChild(row));
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.preset-btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
+.table th[style*="cursor: pointer"]:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+.progress {
+    background-color: #e9ecef;
+}
+.card-header {
+    background-color: #f8f9fa;
+}
+.badge {
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+}
+@media print {
+    .btn, .alert, .modal, .dropdown, .preset-btn {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #dee2e6 !important;
+    }
+    .table-dark {
+        background-color: #343a40 !important;
+        color: white !important;
+    }
+}
+</style>
 {% endblock %}

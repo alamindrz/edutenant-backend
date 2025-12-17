@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'billing',
     'admissions',
     'attendance',
-    'navigation',
+    'shared',
+    'mathfilters',
 ]
 
 SITE_ID = 1
@@ -85,10 +86,10 @@ TEMPLATES = [
                 'django.template.context_processors.request',  # Required by allauth
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'core.context_processors.school_context',
+                'core.context_processors_unified.unified_context',
                 'core.context_processors.billing_context',
-                'navigation.context_processors.navigation_menu',
-                'config.context_processors.navigation_permissions',
+                'users.context_processors.navigation_context',
+                
             ],
         },
     },

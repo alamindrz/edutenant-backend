@@ -1,0 +1,209 @@
+<!-- core/templates/core/partials/class_row.html -->
+<tr>
+    <!-- Bulk Selection Checkbox -->
+    <td class="bulk-select-cell">
+        <input type="checkbox" name="class_ids" value="{{ class_instance.id }}" 
+               class="form-check-input bulk-select-checkbox">
+    </td>
+    
+    <!-- Class Name -->
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+                <i class="bi 
+                    {% if class_instance.class_type == 'academic' %}bi-journal-text text-primary
+                    {% elif class_instance.class_type == 'club' %}bi-people-fill text-success
+                    {% elif class_instance.class_type == 'tutorial' %}bi-book text-info
+                    {% else %}bi-journal text-secondary{% endif %}
+                    me-2"></i>
+            </div>
+            <div class="flex-grow-1">
+                <strong>
+                    <a href="{% url 'core:class_detail' class_instance.id %}" class="text-decoration-none">
+                        {{ class_instance.name }}
+                    </a>
+                </strong>
+                <div>
+                    <small class="text-muted">
+                        {% if class_instance.class_type != 'academic' %}
+                        <span class="badge bg-light text-dark border">
+                            {{ class_instance.class_type|title }}
+                        </span>
+                        {% endif %}
+                        {% if class_instance.education_level %}
+                        <span class="ms-1">{{ class_instance.education_level.name }}</span>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </td>
+    
+    <!-- Category -->
+    <td>
+        {% if class_instance.category %}
+            <span class="badge {% if class_instance.category.section == 'primary' %}bg-primary
+                               {% elif class_instance.category.section == 'secondary' %}bg-secondary
+                               {% elif class_instance.category.section == 'jss' %}bg-info
+                               {% elif class_instance.category.section == 'sss' %}bg-success
+                               {% else %}bg-dark{% endif %}">
+                {{ class_instance.category.name }}
+            </span>
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    
+    <!-- Form Master -->
+    <td>
+        {% if class_instance.form_master %}
+            <div class="d-flex align-items-center">
+                <i class="bi bi-person-circle text-muted me-2"></i>
+                <div>
+                    <div class="fw-medium">
+                        {{ class_instance.form_master.get_full_name|default:class_instance.form_master.user.username }}
+                    </div>
+                    {% if class_instance.assistant_form_master %}
+                    <small class="text-muted d-block">
+                        Asst: {{ class_instance.assistant_form_master.get_full_name|default:class_instance.assistant_form_master.user.username }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <span class="text-danger small">
+                <i class="bi bi-exclamation-triangle me-1"></i>Not assigned
+            </span>
+        {% endif %}
+    </td>
+    
+    <!-- Students -->
+    <td>
+        <div class="d-flex align-items-center">
+            <span class="badge 
+                {% if class_instance.current_strength >= class_instance.max_students %}bg-danger
+                {% elif class_instance.current_strength == 0 %}bg-secondary
+                {% elif class_instance.capacity_percentage >= 90 %}bg-warning
+                {% else %}bg-success{% endif %} me-2">
+                {{ class_instance.current_strength }}
+            </span>
+            <small class="text-muted">of {{ class_instance.max_students }}</small>
+        </div>
+    </td>
+    
+    <!-- Capacity -->
+    <td>
+        <div class="d-flex align-items-center">
+            <div class="flex-grow-1 me-3">
+                <div class="capacity-bar">
+                    <div class="capacity-fill 
+                        {% if class_instance.capacity_percentage >= 90 %}capacity-high
+                        {% elif class_instance.capacity_percentage >= 70 %}capacity-medium
+                        {% else %}capacity-low{% endif %}" 
+                         style="width: {{ class_instance.capacity_percentage }}%"></div>
+                </div>
+            </div>
+            <small class="text-muted">{{ class_instance.capacity_percentage|floatformat:0 }}%</small>
+        </div>
+    </td>
+    
+    <!-- Room -->
+    <td>
+        {% if class_instance.room_number %}
+            <span class="badge bg-info">{{ class_instance.room_number }}</span>
+        {% else %}
+            <span class="text-muted">—</span>
+        {% endif %}
+    </td>
+    
+    <!-- Status -->
+    <td>
+        {% if class_instance.is_active %}
+            <span class="badge bg-success">
+                <i class="bi bi-check-circle me-1"></i>Active
+            </span>
+        {% else %}
+            <span class="badge bg-secondary">
+                <i class="bi bi-x-circle me-1"></i>Inactive
+            </span>
+        {% endif %}
+    </td>
+    
+    <!-- Actions -->
+    <td>
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'core:class_detail' class_instance.id %}" 
+               class="btn btn-outline-primary" 
+               title="View Details"
+               data-bs-toggle="tooltip">
+                <i class="bi bi-eye"></i>
+            </a>
+            <a href="{% url 'core:class_update' class_instance.id %}" 
+               class="btn btn-outline-secondary" 
+               title="Edit"
+               data-bs-toggle="tooltip">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <div class="btn-group">
+                <button type="button" 
+                        class="btn btn-outline-info dropdown-toggle dropdown-toggle-split" 
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                    <span class="visually-hidden">More Actions</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" 
+                           href="{% url 'students:student_list' %}?class={{ class_instance.id }}">
+                            <i class="bi bi-people me-2"></i>View Students
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" 
+                           href="{% url 'core:class_subject_add' class_instance.id %}">
+                            <i class="bi bi-book me-2"></i>Add Subject
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" 
+                           href="{% url 'core:class_monitor_assign' class_instance.id %}">
+                            <i class="bi bi-award me-2"></i>Assign Monitor
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        {% if class_instance.is_active %}
+                            <a class="dropdown-item text-danger" 
+                               href="{% url 'core:class_delete' class_instance.id %}">
+                                <i class="bi bi-trash me-2"></i>Deactivate
+                            </a>
+                        {% else %}
+                            <form method="post" 
+                                  action="{% url 'core:class_bulk_actions' %}"
+                                  style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="activate">
+                                <input type="hidden" name="class_ids" value="{{ class_instance.id }}">
+                                <button type="submit" class="dropdown-item">
+                                    <i class="bi bi-check-circle me-2"></i>Activate
+                                </button>
+                            </form>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </td>
+</tr>
+
+{% if forloop.last %}
+<!-- Initialize tooltips after last row is rendered -->
+<script>
+    if (typeof bootstrap !== 'undefined') {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+</script>
+{% endif %}

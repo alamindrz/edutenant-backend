@@ -1,79 +1,397 @@
-<!-- core/templates/core/class_category_list.html -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Class Categories - {{ school.name }}{% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Class Categories</h1>
-        <a href="{% url 'core:class_category_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create Category
-        </a>
-    </div>
+{% block page_title %}Class Categories{% endblock %}
 
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Section</th>
-                            <th>Classes</th>
-                            <th>Display Order</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for category in categories %}
-                        <tr>
-                            <td>
-                                <strong>{{ category.name }}</strong>
-                                {% if category.description %}
-                                <br><small class="text-muted">{{ category.description }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-info">{{ category.get_section_display }}</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-primary">{{ category.class_count }}</span>
-                            </td>
-                            <td>{{ category.display_order }}</td>
-                            <td>
-                                {% if category.is_active %}
-                                <span class="badge bg-success">Active</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'core:class_category_edit' category.id %}" class="btn btn-outline-warning">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    {% if category.class_count == 0 %}
-                                    <a href="{% url 'core:class_category_delete' category.id %}" class="btn btn-outline-danger">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                No class categories found. 
-                                <a href="{% url 'core:class_category_create' %}">Create the first category</a>.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:class_list' %}">Classes</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Class Categories</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-layers me-2"></i>Class Categories
+                        </h5>
+                        <p class="text-muted mb-0">
+                            Organize classes into categories for better management
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-md-end align-items-center gap-2">
+                            <a href="{% url 'core:class_list' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-journal me-1"></i>View Classes
+                            </a>
+                            <a href="{% url 'core:class_category_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>Create Category
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Categories Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Categories</h6>
+                                <h3 class="mb-0">{{ categories.count }}</h3>
+                            </div>
+                            <div class="avatar-sm bg-primary rounded-circle">
+                                <i class="bi bi-layers text-white fs-4"></i>
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ categories.filter.is_active|length }} active
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-body py-2">
+                        <div class="row">
+                            <div class="col-md-3 border-end text-center">
+                                <small class="text-muted d-block">Primary</small>
+                                <h4 class="mb-0">
+                                    {{ categories.filter.section='primary'|length }}
+                                </h4>
+                            </div>
+                            <div class="col-md-3 border-end text-center">
+                                <small class="text-muted d-block">Secondary</small>
+                                <h4 class="mb-0">
+                                    {{ categories.filter.section='secondary'|length }}
+                                </h4>
+                            </div>
+                            <div class="col-md-3 border-end text-center">
+                                <small class="text-muted d-block">JSS</small>
+                                <h4 class="mb-0">
+                                    {{ categories.filter.section='jss'|length }}
+                                </h4>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <small class="text-muted d-block">Nursery</small>
+                                <h4 class="mb-0">
+                                    {{ categories.filter.section='nursery'|length }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Table Card -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-task me-2"></i>All Categories
+                    <span class="badge bg-primary ms-2">{{ categories.count }}</span>
+                </h5>
+                <div class="btn-group">
+                    <a href="{% url 'core:class_list' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-journal me-1"></i>View Classes
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="dropdown">
+                        <i class="bi bi-filter me-1"></i>Filter
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="?">All Categories</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="?status=active">Active Only</a></li>
+                        <li><a class="dropdown-item" href="?status=inactive">Inactive Only</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Section</th>
+                                <th>Classes</th>
+                                <th>Order</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <!-- Name -->
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="bi bi-folder text-primary me-2"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <strong>{{ category.name }}</strong>
+                                            {% if category.description %}
+                                            <br>
+                                            <small class="text-muted">{{ category.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <!-- Section -->
+                                <td>
+                                    <span class="badge 
+                                        {% if category.section == 'primary' %}bg-primary
+                                        {% elif category.section == 'secondary' %}bg-secondary
+                                        {% elif category.section == 'jss' %}bg-info
+                                        {% elif category.section == 'sss' %}bg-success
+                                        {% elif category.section == 'nursery' %}bg-warning
+                                        {% else %}bg-dark{% endif %}">
+                                        {{ category.get_section_display }}
+                                    </span>
+                                </td>
+                                
+                                <!-- Classes Count -->
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge 
+                                            {% if category.class_count == 0 %}bg-secondary
+                                            {% elif category.class_count > 10 %}bg-success
+                                            {% else %}bg-primary{% endif %} me-2">
+                                            {{ category.class_count }}
+                                        </span>
+                                        <small class="text-muted">classes</small>
+                                    </div>
+                                </td>
+                                
+                                <!-- Display Order -->
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ category.display_order }}
+                                    </span>
+                                </td>
+                                
+                                <!-- Status -->
+                                <td>
+                                    <span class="badge {% if category.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ category.is_active|yesno:"Active,Inactive" }}
+                                    </span>
+                                </td>
+                                
+                                <!-- Actions -->
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'core:class_category_edit' category.id %}" 
+                                           class="btn btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'core:class_list' %}?category={{ category.id }}" 
+                                           class="btn btn-outline-info" title="View Classes">
+                                            <i class="bi bi-journal"></i>
+                                        </a>
+                                        {% if category.class_count == 0 %}
+                                        <a href="{% url 'core:class_category_delete' category.id %}" 
+                                           class="btn btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        {% else %}
+                                        <button class="btn btn-outline-secondary" disabled title="Cannot delete (has classes)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="bi bi-layers text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted mt-3">No Class Categories Found</h5>
+                                    <p class="text-muted mb-4">Organize your classes by creating categories.</p>
+                                    <a href="{% url 'core:class_category_create' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>Create First Category
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Empty State Help -->
+                {% if categories.count == 0 %}
+                <div class="card-footer bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-1">What are Class Categories?</h6>
+                            <p class="text-muted mb-0 small">
+                                Categories help organize classes into logical groups like "Primary", "Secondary", 
+                                "JSS", etc. Each class belongs to one category for better filtering and organization.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'core:class_category_create' %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>Get Started
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Tips -->
+        {% if categories.count > 0 %}
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card border-info">
+                    <div class="card-header bg-info bg-opacity-10 border-info">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-lightbulb me-2 text-info"></i>Category Tips
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li class="mb-2">Use categories to group classes by academic level or department</li>
+                            <li class="mb-2">Categories with 0 classes can be safely deleted</li>
+                            <li class="mb-2">Use display order to control how categories appear in lists</li>
+                            <li>Inactive categories won't appear in new class creation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary bg-opacity-10 border-primary">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-arrow-right-circle me-2 text-primary"></i>Quick Actions
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'core:class_create' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-journal-plus me-1"></i>Create New Class
+                            </a>
+                            <a href="{% url 'core:class_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-journal-text me-1"></i>View All Classes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .card-header .btn-group {
+        margin-top: 1rem;
+        align-self: flex-end;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips to action buttons
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    if (typeof bootstrap !== 'undefined') {
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'hover'
+            });
+        });
+    }
+    
+    // Confirm delete for categories with classes (if somehow accessible)
+    const deleteButtons = document.querySelectorAll('a[href*="delete"]');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const row = this.closest('tr');
+            const categoryName = row.querySelector('strong').textContent;
+            const classCount = row.querySelector('.badge.me-2').textContent;
+            
+            if (parseInt(classCount) > 0) {
+                e.preventDefault();
+                alert(`Cannot delete "${categoryName}" - it has ${classCount} classes assigned. ` +
+                      `Please reassign or delete those classes first.`);
+            } else {
+                if (!confirm(`Are you sure you want to delete "${categoryName}"?`)) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+    
+    // Auto-close alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+        alerts.forEach(function(alert) {
+            if (typeof bootstrap !== 'undefined') {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }
+        });
+    }, 5000);
+});
+</script>
 {% endblock %}

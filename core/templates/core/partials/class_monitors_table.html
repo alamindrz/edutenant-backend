@@ -1,0 +1,83 @@
+<!-- core/templates/core/partials/class_monitors_table.html -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0">Class Monitors for {{ class_instance.name }}</h6>
+    <div class="btn-group">
+        <a href="{% url 'core:class_monitor_assign' class_instance.id %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Assign Monitor
+        </a>
+    </div>
+</div>
+
+{% if class_monitors %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Position</th>
+                <th>Role</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for monitor in class_monitors %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                            <i class="bi bi-person text-success"></i>
+                        </div>
+                        <div>
+                            <div class="fw-medium">{{ monitor.student.full_name }}</div>
+                            <small class="text-muted">{{ monitor.student.admission_number|default:"" }}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="fw-medium">{{ monitor.position|default:"—" }}</span>
+                </td>
+                <td>
+                    <span class="badge bg-primary">{{ monitor.get_role_display }}</span>
+                </td>
+                <td>
+                    <small>
+                        {{ monitor.start_date|date:"M d, Y" }}
+                        {% if monitor.end_date %}
+                            - {{ monitor.end_date|date:"M d, Y" }}
+                        {% endif %}
+                    </small>
+                    <br>
+                    <small class="text-muted">{{ monitor.duration_days }} days</small>
+                </td>
+                <td>
+                    <span class="badge {% if monitor.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ monitor.is_active|yesno:"Active,Inactive" }}
+                    </span>
+                </td>
+                <td>
+                    {% if monitor.is_active %}
+                    <a href="{% url 'core:class_monitor_remove' class_instance.id monitor.id %}" 
+                       class="btn btn-sm btn-outline-danger" title="Remove">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                    {% else %}
+                    <span class="text-muted small">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-award text-muted" style="font-size: 3rem;"></i>
+    <h5 class="text-muted mt-3">No Class Monitors</h5>
+    <p class="text-muted">Assign students as class monitors to help manage the class.</p>
+    <a href="{% url 'core:class_monitor_assign' class_instance.id %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Assign First Monitor
+    </a>
+</div>
+{% endif %}

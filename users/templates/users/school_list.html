@@ -16,7 +16,7 @@
             <a href="{% url 'users:school_onboarding' %}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>Create New School
             </a>
-            <a href="/school-feed/" class="btn btn-outline-primary">
+            <a href="{% url 'users:school_discovery' %}" class="btn btn-outline-primary">
                 <i class="fas fa-compass me-2"></i>Discover Schools
             </a>
         </div>
@@ -236,7 +236,7 @@
                 <a href="{% url 'users:school_onboarding' %}" class="btn btn-primary btn-lg">
                     <i class="fas fa-plus me-2"></i>Create Your First School
                 </a>
-                <a href="/school-feed/" class="btn btn-outline-primary btn-lg">
+                <a href="{% url 'users:school_discovery' %}" class="btn btn-outline-primary btn-lg">
                     <i class="fas fa-compass me-2"></i>Discover Schools
                 </a>
             </div>

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - {{ school.name }}{% endblock %}
+{% block title %}{{ page_title|default:"Subject Form" }} - {{ school.name }}{% endblock %}
 
-{% block page_title %}{{ title }}{% endblock %}
+{% block page_title %}{{ page_title|default:"Subject Form" }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -11,7 +11,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-bottom">
                 <h5 class="card-title mb-0">
-                    <i class="bi bi-pencil me-2 text-primary"></i>{{ title }}
+                    <i class="bi bi-book me-2 text-primary"></i>{{ page_title|default:"Subject Form" }}
                 </h5>
             </div>
             <div class="card-body">
@@ -30,18 +30,12 @@
                     <div class="row g-3">
                         <!-- Subject Name -->
                         <div class="col-md-6">
-                            <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
+                            <label for="id_name" class="form-label fw-semibold">
                                 Subject Name <span class="text-danger">*</span>
                             </label>
-                            <input type="text" 
-                                   class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
-                                   id="{{ form.name.id_for_label }}" 
-                                   name="{{ form.name.name }}" 
-                                   value="{{ form.name.value|default:'' }}"
-                                   placeholder="e.g., Mathematics, Science, English"
-                                   required>
+                            {{ form.name }}
                             {% if form.name.errors %}
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     {% for error in form.name.errors %}
                                         {{ error }}
                                     {% endfor %}
@@ -52,44 +46,28 @@
 
                         <!-- Subject Code -->
                         <div class="col-md-6">
-                            <label for="{{ form.code.id_for_label }}" class="form-label fw-semibold">
-                                Subject Code
+                            <label for="id_code" class="form-label fw-semibold">
+                                Subject Code <span class="text-danger">*</span>
                             </label>
-                            <input type="text" 
-                                   class="form-control {% if form.code.errors %}is-invalid{% endif %}" 
-                                   id="{{ form.code.id_for_label }}" 
-                                   name="{{ form.code.name }}" 
-                                   value="{{ form.code.value|default:'' }}"
-                                   placeholder="e.g., MATH, SCI, ENG"
-                                   maxlength="10">
+                            {{ form.code }}
                             {% if form.code.errors %}
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     {% for error in form.code.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text text-muted">Short code for the subject (optional)</div>
+                            <div class="form-text text-muted">Short unique code (e.g., MATH, ENG, BIO)</div>
                         </div>
 
                         <!-- Category -->
                         <div class="col-md-6">
-                            <label for="{{ form.category.id_for_label }}" class="form-label fw-semibold">
-                                Category
+                            <label for="id_category" class="form-label fw-semibold">
+                                Category <span class="text-danger">*</span>
                             </label>
-                            <select class="form-select {% if form.category.errors %}is-invalid{% endif %}" 
-                                    id="{{ form.category.id_for_label }}" 
-                                    name="{{ form.category.name }}">
-                                <option value="">Select Category</option>
-                                <option value="core" {% if form.category.value == "core" %}selected{% endif %}>Core Academic</option>
-                                <option value="elective" {% if form.category.value == "elective" %}selected{% endif %}>Elective</option>
-                                <option value="language" {% if form.category.value == "language" %}selected{% endif %}>Language</option>
-                                <option value="arts" {% if form.category.value == "arts" %}selected{% endif %}>Arts & Music</option>
-                                <option value="physical" {% if form.category.value == "physical" %}selected{% endif %}>Physical Education</option>
-                                <option value="technical" {% if form.category.value == "technical" %}selected{% endif %}>Technical/Vocational</option>
-                            </select>
+                            {{ form.category }}
                             {% if form.category.errors %}
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     {% for error in form.category.errors %}
                                         {{ error }}
                                     {% endfor %}
@@ -98,16 +76,76 @@
                             <div class="form-text text-muted">Subject category for organization</div>
                         </div>
 
-                        <!-- Status -->
+                        <!-- Difficulty Level -->
+                        <div class="col-md-6">
+                            <label for="id_difficulty_level" class="form-label fw-semibold">
+                                Difficulty Level
+                            </label>
+                            {{ form.difficulty_level }}
+                            {% if form.difficulty_level.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.difficulty_level.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Difficulty level of the subject</div>
+                        </div>
+
+                        <!-- Maximum Score -->
+                        <div class="col-md-6">
+                            <label for="id_max_score" class="form-label fw-semibold">
+                                Maximum Score
+                            </label>
+                            {{ form.max_score }}
+                            {% if form.max_score.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.max_score.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Maximum score for this subject (default: 100)</div>
+                        </div>
+
+                        <!-- Pass Score -->
+                        <div class="col-md-6">
+                            <label for="id_pass_score" class="form-label fw-semibold">
+                                Passing Score
+                            </label>
+                            {{ form.pass_score }}
+                            {% if form.pass_score.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.pass_score.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Minimum passing score (default: 40)</div>
+                        </div>
+
+                        <!-- Display Order -->
+                        <div class="col-md-6">
+                            <label for="id_display_order" class="form-label fw-semibold">
+                                Display Order
+                            </label>
+                            {{ form.display_order }}
+                            {% if form.display_order.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.display_order.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text text-muted">Order in lists (lower numbers appear first)</div>
+                        </div>
+
+                        <!-- Active Status -->
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Status</label>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" 
-                                       type="checkbox" 
-                                       id="{{ form.is_active.id_for_label }}" 
-                                       name="{{ form.is_active.name }}" 
-                                       {% if form.is_active.value %}checked{% endif %}>
-                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="id_is_active">
                                     Active Subject
                                 </label>
                             </div>
@@ -116,16 +154,12 @@
 
                         <!-- Description -->
                         <div class="col-12">
-                            <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">
+                            <label for="id_description" class="form-label fw-semibold">
                                 Description
                             </label>
-                            <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
-                                      id="{{ form.description.id_for_label }}" 
-                                      name="{{ form.description.name }}" 
-                                      rows="4"
-                                      placeholder="Describe the subject, learning objectives, or any important notes...">{{ form.description.value|default:'' }}</textarea>
+                            {{ form.description }}
                             {% if form.description.errors %}
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     {% for error in form.description.errors %}
                                         {{ error }}
                                     {% endfor %}
@@ -139,16 +173,20 @@
                     <div class="row mt-4">
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ cancel_url }}" class="btn btn-outline-secondary">
+                                <a href="{% if cancel_url %}{{ cancel_url }}{% else %}{% url 'core:subject_list' %}{% endif %}" 
+                                   class="btn btn-outline-secondary">
                                     <i class="bi bi-arrow-left me-1"></i>Cancel
                                 </a>
                                 <div class="btn-group">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-check-circle me-1"></i>{{ submit_text }}
-                                    </button>
+                                    {% if subject and action == 'edit' %}
                                     <a href="{% url 'core:subject_detail' subject.id %}" class="btn btn-outline-primary">
                                         <i class="bi bi-eye me-1"></i>View Details
                                     </a>
+                                    {% endif %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        {% if action == 'edit' %}Update Subject{% else %}Create Subject{% endif %}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -158,7 +196,7 @@
         </div>
 
         <!-- Associated Classes Warning -->
-        {% if subject.class_set.exists %}
+        {% if subject and subject.class_offerings.exists %}
         <div class="card border-warning border-0 bg-warning bg-opacity-10 mt-4">
             <div class="card-header bg-warning bg-opacity-25 border-warning">
                 <h6 class="card-title mb-0">
@@ -166,23 +204,30 @@
                 </h6>
             </div>
             <div class="card-body">
-                <p class="mb-2">This subject is currently used by <strong>{{ subject.class_set.count }}</strong> class{{ subject.class_set.count|pluralize:"es" }}:</p>
+                <p class="mb-2">This subject is currently offered in <strong>{{ subject.class_offerings.count }}</strong> class{{ subject.class_offerings.count|pluralize:"es" }}:</p>
                 <div class="list-group list-group-flush">
-                    {% for class in subject.class_set.all %}
+                    {% for class_subject in subject.class_offerings.all|slice:":5" %}
                     <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-journal text-primary me-3"></i>
                             <div>
-                                <strong class="text-body">{{ class.name }}</strong>
-                                <div class="text-muted small">{{ class.category.name }}</div>
+                                <strong class="text-body">{{ class_subject.class_instance.name }}</strong>
+                                <div class="text-muted small">{{ class_subject.class_instance.category.name|default:"No Category" }}</div>
                             </div>
                         </div>
-                        <a href="{% url 'core:class_detail' class.pk %}" class="btn btn-sm btn-outline-primary">
+                        <a href="{% url 'core:class_detail' class_subject.class_instance.id %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye me-1"></i>View
                         </a>
                     </div>
                     {% endfor %}
                 </div>
+                
+                {% if subject.class_offerings.count > 5 %}
+                <div class="text-center mt-2">
+                    <small class="text-muted">... and {{ subject.class_offerings.count|add:"-5" }} more classes</small>
+                </div>
+                {% endif %}
+                
                 <div class="alert alert-info mt-3 mb-0">
                     <i class="bi bi-info-circle me-2"></i>
                     <strong>Note:</strong> Changes to this subject will affect all associated classes.
@@ -197,8 +242,8 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-format class code to uppercase
-    const codeInput = document.getElementById('{{ form.code.id_for_label }}');
+    // Auto-format subject code to uppercase
+    const codeInput = document.getElementById('id_code');
     if (codeInput) {
         codeInput.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
@@ -206,17 +251,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Real-time validation for subject name
-    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    const nameInput = document.getElementById('id_name');
     if (nameInput) {
         nameInput.addEventListener('blur', function() {
             const value = this.value.trim();
             if (value.length < 2) {
                 this.classList.add('is-invalid');
-                this.focus();
             } else {
                 this.classList.remove('is-invalid');
             }
         });
+    }
+    
+    // Real-time validation for scores
+    const maxScoreInput = document.getElementById('id_max_score');
+    const passScoreInput = document.getElementById('id_pass_score');
+    
+    function validateScores() {
+        if (maxScoreInput && passScoreInput) {
+            const maxScore = parseInt(maxScoreInput.value) || 0;
+            const passScore = parseInt(passScoreInput.value) || 0;
+            
+            if (maxScore < 1) {
+                maxScoreInput.classList.add('is-invalid');
+                return false;
+            } else {
+                maxScoreInput.classList.remove('is-invalid');
+            }
+            
+            if (passScore < 0 || passScore > maxScore) {
+                passScoreInput.classList.add('is-invalid');
+                return false;
+            } else {
+                passScoreInput.classList.remove('is-invalid');
+            }
+            
+            return true;
+        }
+        return true;
+    }
+    
+    if (maxScoreInput) {
+        maxScoreInput.addEventListener('blur', validateScores);
+    }
+    
+    if (passScoreInput) {
+        passScoreInput.addEventListener('blur', validateScores);
     }
     
     // Enhanced form submission
@@ -232,25 +312,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 isValid = false;
             }
             
+            // Validate scores
+            if (!validateScores()) {
+                isValid = false;
+            }
+            
             if (!isValid) {
                 e.preventDefault();
                 
                 // Show error message
-                const toast = document.createElement('div');
-                toast.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-                toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-                toast.innerHTML = `
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Error:</strong> Please fix the validation errors above.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.body.appendChild(toast);
-                
-                setTimeout(() => {
-                    if (toast.parentNode) toast.remove();
-                }, 5000);
+                showToast('Error: Please fix the validation errors above.', 'danger');
             }
         });
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="bi ${type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 5000);
     }
 });
 </script>

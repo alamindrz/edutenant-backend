@@ -1,0 +1,72 @@
+<!-- admissions/templates/admissions/payment_required.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-credit-card me-2"></i>Application Fee Payment Required</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Application Fee: ₦{{ invoice.total_amount|floatformat:2 }}</h5>
+                        <p class="mb-0">
+                            To complete your application, please pay the application fee. 
+                            Your application will be submitted automatically after successful payment.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Invoice Details:</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Invoice Number:</span>
+                                <strong>{{ invoice.invoice_number }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Amount:</span>
+                                <strong>₦{{ invoice.total_amount|floatformat:2 }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>School:</span>
+                                <strong>{{ invoice.school.name }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Due Date:</span>
+                                <strong>{{ invoice.due_date|date:"F d, Y" }}</strong>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center">
+                        <a href="{{ payment_data.authorization_url }}" class="btn btn-success btn-lg">
+                            <i class="fas fa-lock me-2"></i>Pay ₦{{ invoice.total_amount|floatformat:2 }} via Paystack
+                        </a>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Secure payment powered by Paystack
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-top">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-info-circle me-2"></i>Important Information:</h6>
+                            <ul class="mb-0">
+                                <li>Your application will be saved as draft until payment is completed</li>
+                                <li>Payment must be completed within 7 days</li>
+                                <li>You will receive a confirmation email after successful payment</li>
+                                <li>For payment issues, contact: {{ invoice.school.contact_email }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

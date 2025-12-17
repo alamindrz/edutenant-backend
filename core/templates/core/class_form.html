@@ -28,20 +28,20 @@
                     {% endif %}
 
                     <div class="row g-3">
-                        <!-- Class Category -->
+                        <!-- Class Type -->
                         <div class="col-md-6">
-                            <label for="{{ form.category.id_for_label }}" class="form-label">
-                                Class Category <span class="text-danger">*</span>
+                            <label for="{{ form.class_type.id_for_label }}" class="form-label">
+                                Class Type <span class="text-danger">*</span>
                             </label>
-                            {{ form.category }}
-                            {% if form.category.errors %}
+                            {{ form.class_type }}
+                            {% if form.class_type.errors %}
                                 <div class="invalid-feedback d-block">
-                                    {% for error in form.category.errors %}
+                                    {% for error in form.class_type.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">Select the category for this class</div>
+                            <div class="form-text">Type of class (academic, club, etc.)</div>
                         </div>
 
                         <!-- Class Name -->
@@ -57,39 +57,55 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">e.g., SSS 1A, Primary 3B</div>
+                            <div class="form-text">e.g., Primary 3A, JSS 1B, Football Club</div>
                         </div>
 
-                        <!-- Class Code -->
+                        <!-- Class Category -->
                         <div class="col-md-6">
-                            <label for="{{ form.code.id_for_label }}" class="form-label">
-                                Class Code
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                Class Category
                             </label>
-                            {{ form.code }}
-                            {% if form.code.errors %}
+                            {{ form.category }}
+                            {% if form.category.errors %}
                                 <div class="invalid-feedback d-block">
-                                    {% for error in form.code.errors %}
+                                    {% for error in form.category.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">{{ form.code.help_text }}</div>
+                            <div class="form-text">Group this class belongs to (Primary, Secondary, etc.)</div>
                         </div>
 
-                        <!-- Academic Session -->
+                        <!-- Education Level -->
                         <div class="col-md-6">
-                            <label for="{{ form.academic_session.id_for_label }}" class="form-label">
-                                Academic Session
+                            <label for="{{ form.education_level.id_for_label }}" class="form-label">
+                                Education Level
                             </label>
-                            {{ form.academic_session }}
-                            {% if form.academic_session.errors %}
+                            {{ form.education_level }}
+                            {% if form.education_level.errors %}
                                 <div class="invalid-feedback d-block">
-                                    {% for error in form.academic_session.errors %}
+                                    {% for error in form.education_level.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">e.g., 2024/2025</div>
+                            <div class="form-text">Academic level for this class</div>
+                        </div>
+
+                        <!-- Academic Year (only for academic classes) -->
+                        <div class="col-md-6" id="academic-year-field">
+                            <label for="{{ form.academic_year.id_for_label }}" class="form-label">
+                                Academic Year
+                            </label>
+                            {{ form.academic_year }}
+                            {% if form.academic_year.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.academic_year.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Required for academic classes</div>
                         </div>
 
                         <!-- Form Master -->
@@ -137,7 +153,7 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">{{ form.max_students.help_text }}</div>
+                            <div class="form-text">Maximum number of students allowed in this class</div>
                         </div>
 
                         <!-- Room Number -->
@@ -171,17 +187,17 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">{{ form.is_active.help_text }}</div>
+                            <div class="form-text">Inactive classes won't be available for student assignment</div>
                         </div>
                     </div>
 
                     <!-- Current Student Count (for update view) -->
-                    {% if class_instance and class_instance.student_count > 0 %}
+                    {% if class_instance and class_instance.current_strength > 0 %}
                     <div class="alert alert-info mt-4">
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>Note:</strong> This class currently has 
-                        <strong>{{ class_instance.student_count }}</strong> enrolled student{{ class_instance.student_count|pluralize }}.
-                        {% if class_instance.student_count > form.max_students.value %}
+                        <strong>{{ class_instance.current_strength }}</strong> enrolled student{{ class_instance.current_strength|pluralize }}.
+                        {% if class_instance.current_strength > form.max_students.value %}
                         <br><span class="text-warning">
                             <i class="bi bi-exclamation-triangle me-1"></i>
                             Current student count exceeds the maximum capacity.
@@ -199,14 +215,14 @@
                                     <i class="bi bi-arrow-left me-1"></i>Cancel
                                 </a>
                                 <div class="btn-group">
-                                    {% if class_instance %}
-                                    <a href="{% url 'core:class_detail' class_instance.pk %}" class="btn btn-outline-primary">
+                                    {% if action == 'update' and class_instance %}
+                                    <a href="{% url 'core:class_detail' class_instance.id %}" class="btn btn-outline-primary">
                                         <i class="bi bi-eye me-1"></i>View Details
                                     </a>
                                     {% endif %}
                                     <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-check-circle me-1"></i>
-                                        {{ submit_text|default:"Create Class" }}
+                                        {% if action == 'update' %}Update Class{% else %}Create Class{% endif %}
                                     </button>
                                 </div>
                             </div>
@@ -222,20 +238,52 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-format class code to uppercase
-    const codeInput = document.getElementById('{{ form.code.id_for_label }}');
-    if (codeInput) {
-        codeInput.addEventListener('input', function() {
-            this.value = this.value.toUpperCase();
-        });
+    const classTypeSelect = document.getElementById('id_class_type');
+    const academicYearField = document.getElementById('academic-year-field');
+    const academicYearSelect = document.getElementById('id_academic_year');
+    
+    // Show/hide academic year field based on class type
+    function toggleAcademicYearField() {
+        if (classTypeSelect && academicYearField && academicYearSelect) {
+            const selectedType = classTypeSelect.value;
+            if (selectedType === 'academic') {
+                academicYearField.style.display = 'block';
+                academicYearSelect.required = true;
+            } else {
+                academicYearField.style.display = 'none';
+                academicYearSelect.required = false;
+                academicYearSelect.value = '';
+            }
+        }
+    }
+    
+    // Initialize on page load
+    toggleAcademicYearField();
+    
+    // Listen for changes
+    if (classTypeSelect) {
+        classTypeSelect.addEventListener('change', toggleAcademicYearField);
     }
     
     // Real-time validation for maximum students
-    const maxStudentsInput = document.getElementById('{{ form.max_students.id_for_label }}');
+    const maxStudentsInput = document.getElementById('id_max_students');
     if (maxStudentsInput) {
         maxStudentsInput.addEventListener('blur', function() {
             const value = parseInt(this.value);
-            if (value < 1) {
+            if (value < 1 || isNaN(value)) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Real-time validation for class name
+    const nameInput = document.getElementById('id_name');
+    if (nameInput) {
+        nameInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value.length < 2) {
                 this.classList.add('is-invalid');
             } else {
                 this.classList.remove('is-invalid');

@@ -200,7 +200,7 @@
                     Teacher Applications
                 </h5>
                 <div class="btn-group">
-                    <a href="{% url 'users:manage_open_positions' %}" class="btn btn-sm btn-outline-primary">
+                    <a href="#" class="btn btn-sm btn-outline-primary" onclick="alert('Open positions management coming soon!')">
                         <i class="fas fa-briefcase me-1"></i> Manage Open Positions
                     </a>
                 </div>
@@ -230,7 +230,7 @@
                 </a>
             </div>
             <div class="card-body">
-                <div id="invitations-table" hx-get="{% url 'users:invitations_table_partial' %}" hx-trigger="load">
+                <div id="invitations-table" hx-get="{% url 'users:staff_invitation_list_partial' %}" hx-trigger="load">
                     <div class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading invitations...</span>
@@ -264,7 +264,7 @@
                 </a>
             </div>
             <div class="col-md-4">
-                <a href="{% url 'users:manage_open_positions' %}" class="btn btn-outline-info w-100 h-100 py-3">
+                <a href="#" class="btn btn-outline-info w-100 h-100 py-3" onclick="alert('Open positions management coming soon!')">
                     <i class="fas fa-briefcase fa-2x mb-2"></i><br>
                     Post Job Openings
                 </a>

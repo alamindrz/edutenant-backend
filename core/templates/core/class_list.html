@@ -8,16 +8,84 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Classes</h6>
+                                <h3 class="mb-0">{{ total_count }}</h3>
+                            </div>
+                            <div class="avatar-sm bg-primary rounded-circle">
+                                <i class="bi bi-journals text-white fs-4"></i>
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ active_count }} active</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-body py-2">
+                        <div class="row">
+                            <div class="col-md-4 border-end">
+                                <div class="text-center">
+                                    <small class="text-muted d-block">Export Data</small>
+                                    <div class="btn-group mt-1">
+                                        <a href="{% url 'core:class_export' %}?format=csv" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>CSV
+                                        </a>
+                                        <button class="btn btn-outline-secondary btn-sm" disabled title="Coming Soon">
+                                            <i class="bi bi-file-excel me-1"></i>Excel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 border-end">
+                                <div class="text-center">
+                                    <small class="text-muted d-block">Bulk Actions</small>
+                                    <button class="btn btn-outline-primary btn-sm mt-1" 
+                                            hx-get="{% url 'core:class_bulk_actions' %}"
+                                            hx-target="#bulkActionsModal"
+                                            hx-swap="innerHTML"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#bulkActionsModal">
+                                        <i class="bi bi-check-all me-1"></i>Bulk Edit
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <small class="text-muted d-block">View Stats</small>
+                                    <button class="btn btn-outline-info btn-sm mt-1"
+                                            hx-get="{% url 'core:get_class_stats' %}"
+                                            hx-target="#classStats"
+                                            hx-swap="innerHTML">
+                                        <i class="bi bi-bar-chart me-1"></i>Show Stats
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Statistics (HTMX Target) -->
+        <div id="classStats" class="mb-4"></div>
+
         <!-- Filters Card -->
         <div class="card mb-4">
             <div class="card-body">
                 <form method="get" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="search" class="form-label">Search</label>
                         <input type="text" class="form-control" id="search" name="search" 
                                value="{{ search_query }}" placeholder="Search classes...">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="category" class="form-label">Category</label>
                         <select class="form-select" id="category" name="category">
                             <option value="">All Categories</option>
@@ -28,7 +96,18 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <label for="type" class="form-label">Class Type</label>
+                        <select class="form-select" id="type" name="type">
+                            <option value="">All Types</option>
+                            {% for type in class_types %}
+                            <option value="{{ type }}" {% if class_type_filter == type %}selected{% endif %}>
+                                {{ type|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select" id="status" name="status">
                             <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
@@ -36,8 +115,15 @@
                             <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="d-flex gap-2 w-100">
+                            <button type="submit" class="btn btn-primary flex-grow-1">
+                                <i class="bi bi-filter me-1"></i>Apply Filters
+                            </button>
+                            <a href="{% url 'core:class_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Clear
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -46,21 +132,98 @@
         <!-- Classes Table Card -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-journal me-2"></i>All Classes
-                    <span class="badge bg-primary ms-2">{{ classes.count }}</span>
-                </h5>
+                <div>
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-journal me-2"></i>All Classes
+                        <span class="badge bg-primary ms-2">{{ classes.count }}</span>
+                    </h5>
+                    <small class="text-muted">
+                        Showing {{ classes.count }} class{{ classes.count|pluralize:"es" }}
+                        {% if search_query or category_filter or status_filter != 'active' %}
+                        <span class="text-primary">(filtered)</span>
+                        {% endif %}
+                    </small>
+                </div>
                 <div class="btn-group">
-                    <a href="{% url 'core:class_create' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle me-1"></i>Create Class
-                    </a>
-                    <a href="{% url 'core:class_category_list' %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-layers me-1"></i>Categories
-                    </a>
+                    <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-gear me-1"></i>Actions
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'core:class_create' %}">
+                                <i class="bi bi-plus-circle me-2"></i>Create New Class
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'core:class_export' %}?format=csv">
+                                <i class="bi bi-download me-2"></i>Export to CSV
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'core:class_category_list' %}">
+                                <i class="bi bi-layers me-2"></i>Manage Categories
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'core:subject_list' %}">
+                                <i class="bi bi-book me-2"></i>Manage Subjects
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
             <div class="card-body p-0">
-                {% include 'core/partials/class_table.html' %}
+                <div class="table-responsive">
+                    {% include 'core/partials/class_table.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1" aria-labelledby="bulkActionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkActionsModalLabel">
+                    <i class="bi bi-check-all me-2"></i>Bulk Class Actions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bulkActionsModalContent">
+                <!-- HTMX content will be loaded here -->
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- School Overview Stats Modal (for principals) -->
+<div class="modal fade" id="schoolOverviewModal" tabindex="-1" aria-labelledby="schoolOverviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="schoolOverviewModalLabel">
+                    <i class="bi bi-building me-2"></i>School Overview Statistics
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="schoolOverviewContent">
+                <!-- HTMX content will be loaded here -->
+                <div class="text-center py-4">
+                    <button class="btn btn-outline-primary"
+                            hx-get="{% url 'core:school_overview_stats' %}"
+                            hx-target="#schoolOverviewContent"
+                            hx-swap="innerHTML">
+                        <i class="bi bi-bar-chart me-1"></i>Load School Overview
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -74,6 +237,7 @@
     background-color: #e9ecef;
     border-radius: 3px;
     overflow: hidden;
+    margin-top: 4px;
 }
 
 .capacity-fill {
@@ -85,5 +249,95 @@
 .table-hover tbody tr:hover {
     background-color: rgba(var(--bs-primary-rgb), 0.05);
 }
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Capacity color coding */
+.capacity-low { background-color: #28a745; } /* Green for < 70% */
+.capacity-medium { background-color: #ffc107; } /* Yellow for 70-90% */
+.capacity-high { background-color: #dc3545; } /* Red for > 90% */
+
+/* Bulk selection */
+.bulk-select-cell {
+    width: 40px;
+    text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .card-header .btn-group {
+        margin-top: 1rem;
+        align-self: flex-end;
+    }
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-close alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+        alerts.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+
+    // HTMX configuration for better loading states
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        const target = evt.detail.target;
+        if (target) {
+            target.classList.add('htmx-request');
+        }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        const target = evt.detail.target;
+        if (target) {
+            target.classList.remove('htmx-request');
+        }
+    });
+
+    // Initialize bulk actions modal with HTMX
+    const bulkModal = document.getElementById('bulkActionsModal');
+    if (bulkModal) {
+        bulkModal.addEventListener('show.bs.modal', function() {
+            const content = document.getElementById('bulkActionsModalContent');
+            if (content && content.children.length === 1) {
+                // Only load if still showing spinner
+                htmx.trigger('#bulkActionsModalContent', 'loadBulkActions');
+            }
+        });
+    }
+
+    // Load class stats on page load if requested
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('show_stats')) {
+        htmx.trigger('#classStats', 'loadStats');
+    }
+});
+
+// Custom event to load bulk actions
+document.addEventListener('loadBulkActions', function() {
+    htmx.ajax('GET', '{% url "core:class_bulk_actions" %}', '#bulkActionsModalContent');
+});
+
+// Custom event to load stats
+document.addEventListener('loadStats', function() {
+    htmx.ajax('GET', '{% url "core:get_class_stats" %}', '#classStats');
+});
+</script>
 {% endblock %}

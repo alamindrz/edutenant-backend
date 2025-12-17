@@ -1,33 +1,63 @@
 <!-- core/templates/core/partials/bulk_actions_modal.html -->
 <div class="modal-content">
     <div class="modal-header">
-        <h5 class="modal-title">Bulk Class Actions</h5>
+        <h5 class="modal-title">
+            <i class="bi bi-check-all me-2"></i>Bulk Class Actions
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
     </div>
     <div class="modal-body">
-        <form hx-post="{% url 'core:class_bulk_actions' %}" 
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            These actions will be applied to all selected classes.
+        </div>
+        
+        <form id="bulkActionsForm" 
+              hx-post="{% url 'core:class_bulk_actions' %}" 
               hx-target="#class-table"
-              hx-swap="innerHTML">
+              hx-swap="innerHTML"
+              hx-indicator="#bulkActionsLoading">
             {% csrf_token %}
+            
+            <!-- Hidden field for selected class IDs -->
+            <div id="selectedClassesIds"></div>
             
             <div class="mb-3">
                 <label class="form-label">Select Action</label>
-                <select name="action" class="form-select" required>
+                <select name="action" class="form-select" required id="bulkActionSelect">
                     <option value="">Choose action...</option>
-                    <option value="activate">Activate Selected</option>
-                    <option value="deactivate">Deactivate Selected</option>
+                    <option value="activate">Activate Selected Classes</option>
+                    <option value="deactivate">Deactivate Selected Classes</option>
                     <option value="update_capacity">Update Capacity</option>
                 </select>
+                <small class="text-muted">Deactivating a class will not remove students from it.</small>
             </div>
             
-            <div id="capacity-field" class="mb-3" style="display: none;">
-                <label class="form-label">New Capacity</label>
-                <input type="number" name="capacity" class="form-control" min="1" max="100">
+            <div id="capacityField" class="mb-3" style="display: none;">
+                <label class="form-label">New Maximum Capacity</label>
+                <div class="input-group">
+                    <input type="number" name="capacity" class="form-control" min="1" max="200" value="40">
+                    <span class="input-group-text">students</span>
+                </div>
+                <small class="text-muted">Sets the maximum number of students for selected classes.</small>
+            </div>
+            
+            <div class="alert alert-warning" id="capacityWarning" style="display: none;">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <span id="warningText"></span>
             </div>
             
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Apply Action</button>
+                <button type="submit" class="btn btn-primary" id="applyBulkAction">
+                    <span id="bulkActionsLoading" class="htmx-indicator">
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Processing...
+                    </span>
+                    <span class="htmx-request-hidden">
+                        <i class="bi bi-check-circle me-1"></i>Apply Action
+                    </span>
+                </button>
             </div>
         </form>
     </div>
@@ -35,14 +65,63 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const actionSelect = document.querySelector('select[name="action"]');
-    const capacityField = document.getElementById('capacity-field');
+    const actionSelect = document.getElementById('bulkActionSelect');
+    const capacityField = document.getElementById('capacityField');
+    const capacityWarning = document.getElementById('capacityWarning');
+    const warningText = document.getElementById('warningText');
+    const bulkActionsForm = document.getElementById('bulkActionsForm');
     
+    // Get selected class IDs from the main page
+    function getSelectedClassIds() {
+        const checkboxes = document.querySelectorAll('input[name="class_ids"]:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+        return ids;
+    }
+    
+    // Update hidden field with selected class IDs
+    const selectedClassesDiv = document.getElementById('selectedClassesIds');
+    const selectedIds = getSelectedClassIds();
+    selectedIds.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'class_ids';
+        input.value = id;
+        selectedClassesDiv.appendChild(input);
+    });
+    
+    // Show/hide capacity field based on action
     actionSelect.addEventListener('change', function() {
         if (this.value === 'update_capacity') {
             capacityField.style.display = 'block';
+            capacityWarning.style.display = 'none';
         } else {
             capacityField.style.display = 'none';
+            capacityWarning.style.display = 'none';
+        }
+    });
+    
+    // Handle form submission
+    bulkActionsForm.addEventListener('submit', function(e) {
+        if (selectedIds.length === 0) {
+            e.preventDefault();
+            alert('No classes selected. Please select at least one class.');
+            return false;
+        }
+        
+        if (actionSelect.value === 'update_capacity') {
+            const capacityInput = document.querySelector('input[name="capacity"]');
+            if (!capacityInput.value || parseInt(capacityInput.value) <= 0) {
+                e.preventDefault();
+                warningText.textContent = 'Please enter a valid capacity (minimum 1).';
+                capacityWarning.style.display = 'block';
+                return false;
+            }
+            
+            // Warn if capacity is too low for existing students
+            // This would need additional logic to check current student counts
+            // For now, just show a generic warning
+            warningText.textContent = 'Warning: If the new capacity is lower than current student count, the class will be marked as over capacity.';
+            capacityWarning.style.display = 'block';
         }
     });
 });

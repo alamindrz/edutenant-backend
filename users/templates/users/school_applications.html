@@ -1,95 +1,105 @@
+<!-- templates/users/school_applications.html -->
 {% extends "base.html" %}
 {% load static %}
 
 {% block title %}Teacher Applications - {{ school.name }}{% endblock %}
 
-{% block page_title %}Teacher Applications{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-1">Teacher Applications</h1>
-                    <p class="text-muted">Review and manage teacher applications for {{ school.name }}</p>
-                </div>
-                <div class="btn-group">
-                    <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Back to Staff
-                    </a>
-                    <a href="{% url 'users:manage_open_positions' %}" class="btn btn-primary">
-                        <i class="bi bi-briefcase me-2"></i>Manage Positions
-                    </a>
-                </div>
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Teacher Applications</h1>
+            <p class="text-muted">Review and manage teacher applications for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Staff
+            </a>
+            <button type="button" class="btn btn-primary" onclick="alert('Open positions management coming soon!')">
+                <i class="fas fa-briefcase me-2"></i>Manage Positions
+            </button>
         </div>
     </div>
 
     <!-- Application Statistics -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card card-primary stat-card">
-                <div class="card-body">
+            <div class="card bg-primary text-white">
+                <div class="card-body py-3">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
                             <h4 class="mb-0">{{ applications.count }}</h4>
-                            <small class="text-muted">Total Applications</small>
+                            <small>Total Applications</small>
                         </div>
                         <div class="flex-shrink-0">
-                            <i class="bi bi-person-badge text-primary fs-3"></i>
+                            <i class="fas fa-file-alt fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card card-warning stat-card">
-                <div class="card-body">
+            <div class="card bg-warning text-white">
+                <div class="card-body py-3">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h4 class="mb-0">{{ applications|length }}</h4>
-                            <small class="text-muted">Pending Review</small>
+                            <h4 class="mb-0">{{ applications|filter_status:"pending"|length }}</h4>
+                            <small>Pending Review</small>
                         </div>
                         <div class="flex-shrink-0">
-                            <i class="bi bi-clock text-warning fs-3"></i>
+                            <i class="fas fa-clock fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card card-success stat-card">
-                <div class="card-body">
+            <div class="card bg-success text-white">
+                <div class="card-body py-3">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h4 class="mb-0">{{ applications|length }}</h4>
-                            <small class="text-muted">Approved</small>
+                            <h4 class="mb-0">{{ applications|filter_status:"approved"|length }}</h4>
+                            <small>Approved</small>
                         </div>
                         <div class="flex-shrink-0">
-                            <i class="bi bi-check-circle text-success fs-3"></i>
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card card-danger stat-card">
-                <div class="card-body">
+            <div class="card bg-danger text-white">
+                <div class="card-body py-3">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <h4 class="mb-0">{{ applications|length }}</h4>
-                            <small class="text-muted">Rejected</small>
+                            <h4 class="mb-0">{{ applications|filter_status:"rejected"|length }}</h4>
+                            <small>Rejected</small>
                         </div>
                         <div class="flex-shrink-0">
-                            <i class="bi bi-x-circle text-danger fs-3"></i>
+                            <i class="fas fa-times-circle fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Application Alert -->
+    {% with pending_count=applications|filter_status:"pending"|length %}
+    {% if pending_count > 0 %}
+    <div class="alert alert-info d-flex align-items-center mb-4">
+        <i class="fas fa-info-circle me-2 fa-lg"></i>
+        <div class="flex-grow-1">
+            <strong>You have {{ pending_count }} pending teacher application{{ pending_count|pluralize }}</strong> waiting for review.
+        </div>
+        <a href="#applications-table" class="btn btn-sm btn-outline-info">
+            Review Applications
+        </a>
+    </div>
+    {% endif %}
+    {% endwith %}
 
     <!-- Filters and Search -->
     <div class="card mb-4">
@@ -105,7 +115,7 @@
                            hx-target="#applications-table"
                            hx-trigger="keyup changed delay:500ms"
                            hx-indicator="#applications-loading"
-                           hx-include="[name='status'], [name='application_type']">
+                           hx-include="[name='status'], [name='position']">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted mb-1">Status Filter</label>
@@ -114,26 +124,27 @@
                             hx-target="#applications-table"
                             hx-trigger="change"
                             hx-indicator="#applications-loading"
-                            hx-include="[name='search'], [name='application_type']">
+                            hx-include="[name='search'], [name='position']">
                         <option value="">All Status</option>
                         <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
                         <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
                         <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
-                        <option value="withdrawn" {% if request.GET.status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-muted mb-1">Application Type</label>
-                    <select class="form-select" name="application_type"
+                    <label class="form-label small text-muted mb-1">Position</label>
+                    <select class="form-select" name="position"
                             hx-get="{% url 'users:applications_table_partial' %}"
                             hx-target="#applications-table"
                             hx-trigger="change"
                             hx-indicator="#applications-loading"
                             hx-include="[name='search'], [name='status']">
-                        <option value="">All Types</option>
-                        <option value="new_teacher" {% if request.GET.application_type == 'new_teacher' %}selected{% endif %}>New Teacher</option>
-                        <option value="experienced" {% if request.GET.application_type == 'experienced' %}selected{% endif %}>Experienced</option>
-                        <option value="transfer" {% if request.GET.application_type == 'transfer' %}selected{% endif %}>Transfer</option>
+                        <option value="">All Positions</option>
+                        {% for position in open_positions %}
+                        <option value="{{ position.title }}" {% if request.GET.position == position.title %}selected{% endif %}>
+                            {{ position.title }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -141,8 +152,9 @@
                             hx-get="{% url 'users:applications_table_partial' %}"
                             hx-target="#applications-table"
                             hx-trigger="click"
-                            hx-include="[name='search'], [name='status'], [name='application_type']">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                            hx-indicator="#applications-loading"
+                            hx-include="[name='search'], [name='status'], [name='position']">
+                        <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
             </div>
@@ -150,30 +162,24 @@
     </div>
 
     <!-- Applications Table -->
-    <div class="card">
+    <div class="card" id="applications-table">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">
-                <i class="bi bi-person-check me-2"></i>
+                <i class="fas fa-user-check me-2"></i>
                 Teacher Applications
             </h5>
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-download me-1"></i> Export
+                    <i class="fas fa-download me-1"></i> Export
                 </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" 
-                           hx-get="{% url 'users:applications_table_partial' %}"
-                           hx-vals='{"export": "csv"}'
-                           hx-trigger="click">Export as CSV</a></li>
-                    <li><a class="dropdown-item" href="#" 
-                           hx-get="{% url 'users:applications_table_partial' %}"
-                           hx-vals='{"export": "pdf"}'
-                           hx-trigger="click">Export as PDF</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="alert('Export feature coming soon!')">Export as CSV</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="alert('Export feature coming soon!')">Export as PDF</a></li>
                 </ul>
             </div>
         </div>
         <div class="card-body p-0">
-            <div id="applications-table" hx-get="{% url 'users:applications_table_partial' %}" hx-trigger="load">
+            <div id="applications-table-content" hx-get="{% url 'users:applications_table_partial' %}" hx-trigger="load">
                 <!-- Loading state -->
                 <div class="text-center py-5" id="applications-loading">
                     <div class="spinner-border text-primary" role="status">
@@ -185,23 +191,17 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block global_modals %}
 <!-- Application Detail Modal -->
-<div class="modal fade" id="applicationDetailModal" tabindex="-1" aria-labelledby="applicationDetailModalLabel" aria-hidden="true">
+<div class="modal fade" id="applicationDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="applicationDetailModalLabel">Application Details</h5>
+                <h5 class="modal-title">Application Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="applicationDetailContent">
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading application details...</span>
-                    </div>
-                </div>
+                <!-- Content loaded via HTMX -->
             </div>
         </div>
     </div>
@@ -210,37 +210,19 @@
 
 {% block extra_css %}
 <style>
-.application-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.application-row:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+.card-header {
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
-.status-badge {
+.badge {
     font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-
-.action-buttons .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
-}
-
-.stat-card {
-    transition: transform 0.2s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
+    padding: 0.35rem 0.65rem;
 }
 
 .htmx-indicator {
@@ -251,27 +233,11 @@
 .htmx-request .htmx-indicator {
     opacity: 1;
 }
-
-.htmx-request.htmx-indicator {
-    opacity: 1;
-}
-
-@media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.875rem;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-}
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Only handle what HTMX can't do
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
     const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
@@ -285,13 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.addEventListener('hidden.bs.modal', function() {
             // Clear modal content when closed
             const content = document.getElementById('applicationDetailContent');
-            content.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading application details...</span>
-                    </div>
-                </div>
-            `;
+            content.innerHTML = '';
         });
     }
 });
@@ -305,15 +265,15 @@ document.addEventListener('htmx:afterSwap', function(event) {
     });
     
     // Update statistics when table updates
-    if (event.detail.target.id === 'applications-table') {
-        updateStatistics();
+    if (event.detail.target.id === 'applications-table-content') {
+        updateApplicationStatistics();
     }
 });
 
 // Update statistics from the current table
-function updateStatistics() {
+function updateApplicationStatistics() {
     const applications = document.querySelectorAll('.application-row');
-    let pending = 0, approved = 0, rejected = 0, withdrawn = 0;
+    let pending = 0, approved = 0, rejected = 0;
     
     applications.forEach(app => {
         const statusBadge = app.querySelector('.status-badge');
@@ -321,22 +281,21 @@ function updateStatistics() {
             if (statusBadge.classList.contains('bg-warning')) pending++;
             else if (statusBadge.classList.contains('bg-success')) approved++;
             else if (statusBadge.classList.contains('bg-danger')) rejected++;
-            else if (statusBadge.classList.contains('bg-secondary')) withdrawn++;
         }
     });
     
     const total = applications.length;
     
-    // Update stat cards
-    const totalElement = document.querySelector('.stat-card:first-child h4');
-    const pendingElement = document.querySelectorAll('.stat-card h4')[1];
-    const approvedElement = document.querySelectorAll('.stat-card h4')[2];
-    const rejectedElement = document.querySelectorAll('.stat-card h4')[3];
+    // Update stat cards if they exist on the page
+    const totalCard = document.querySelector('.card.bg-primary h4');
+    const pendingCard = document.querySelector('.card.bg-warning h4');
+    const approvedCard = document.querySelector('.card.bg-success h4');
+    const rejectedCard = document.querySelector('.card.bg-danger h4');
     
-    if (totalElement) totalElement.textContent = total;
-    if (pendingElement) pendingElement.textContent = pending;
-    if (approvedElement) approvedElement.textContent = approved;
-    if (rejectedElement) rejectedElement.textContent = rejected + withdrawn;
+    if (totalCard) totalCard.textContent = total;
+    if (pendingCard) pendingCard.textContent = pending;
+    if (approvedCard) approvedCard.textContent = approved;
+    if (rejectedCard) rejectedCard.textContent = rejected;
 }
 </script>
 {% endblock %}

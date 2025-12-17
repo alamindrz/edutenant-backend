@@ -12,7 +12,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h1 class="h3 mb-1">{{ page_title }}</h1>
-                    <p class="text-muted">Add new staff member to {{ school.name }}</p>
+                    <p class="text-muted">{% if form.instance.id %}Edit{% else %}Add new{% endif %} staff member at {{ school.name }}</p>
                 </div>
                 <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Back to Staff
@@ -22,13 +22,18 @@
             <!-- Staff Form -->
             <div class="card">
                 <div class="card-body">
-                    <form method="post" 
-                          hx-post="{% if form.instance.id %}{% url 'users:staff_edit' form.instance.id %}{% else %}{% url 'users:staff_create' %}{% endif %}"
-                          hx-target="#form-messages"
-                          novalidate>
+                    <form method="post" id="staffForm" novalidate>
                         {% csrf_token %}
                         
+                        <!-- Form messages container -->
                         <div id="form-messages">
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }}">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
                             {% if form.errors %}
                             <div class="alert alert-danger">
                                 Please correct the errors below.
@@ -48,7 +53,9 @@
                                         First Name *
                                     </label>
                                     {{ form.first_name }}
-                                    <div class="form-errors text-danger small"></div>
+                                    {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -58,7 +65,9 @@
                                         Last Name *
                                     </label>
                                     {{ form.last_name }}
-                                    <div class="form-errors text-danger small"></div>
+                                    {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -68,6 +77,9 @@
                                         Gender
                                     </label>
                                     {{ form.gender }}
+                                    {% if form.gender.errors %}
+                                    <div class="text-danger small">{{ form.gender.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -77,6 +89,9 @@
                                         Date of Birth
                                     </label>
                                     {{ form.date_of_birth }}
+                                    {% if form.date_of_birth.errors %}
+                                    <div class="text-danger small">{{ form.date_of_birth.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -94,7 +109,9 @@
                                     </label>
                                     {{ form.staff_id }}
                                     <div class="form-text">Unique staff identification number</div>
-                                    <div class="form-errors text-danger small"></div>
+                                    {% if form.staff_id.errors %}
+                                    <div class="text-danger small">{{ form.staff_id.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -104,7 +121,9 @@
                                         Position *
                                     </label>
                                     {{ form.position }}
-                                    <div class="form-errors text-danger small"></div>
+                                    {% if form.position.errors %}
+                                    <div class="text-danger small">{{ form.position.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -114,6 +133,9 @@
                                         Employment Type
                                     </label>
                                     {{ form.employment_type }}
+                                    {% if form.employment_type.errors %}
+                                    <div class="text-danger small">{{ form.employment_type.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -123,6 +145,9 @@
                                         Date Joined
                                     </label>
                                     {{ form.date_joined }}
+                                    {% if form.date_joined.errors %}
+                                    <div class="text-danger small">{{ form.date_joined.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -132,6 +157,9 @@
                                         Department
                                     </label>
                                     {{ form.department }}
+                                    {% if form.department.errors %}
+                                    <div class="text-danger small">{{ form.department.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -148,7 +176,9 @@
                                         Email Address *
                                     </label>
                                     {{ form.email }}
-                                    <div class="form-errors text-danger small"></div>
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small">{{ form.email.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -158,6 +188,9 @@
                                         Phone Number
                                     </label>
                                     {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                    <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                             
@@ -167,6 +200,9 @@
                                         Address
                                     </label>
                                     {{ form.address }}
+                                    {% if form.address.errors %}
+                                    <div class="text-danger small">{{ form.address.errors }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -204,32 +240,40 @@
 
 {% block extra_js %}
 <script>
-// Real-time form validation with HTMX
+// Real-time form validation
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+    const form = document.getElementById('staffForm');
     
-    // Validate on blur
-    form.querySelectorAll('input, select, textarea').forEach(field => {
+    // Validate required fields on blur
+    form.querySelectorAll('[required]').forEach(field => {
         field.addEventListener('blur', function() {
-            const fieldName = this.name;
-            const fieldValue = this.value;
-            
-            // Simple required field validation
-            if (this.hasAttribute('required') && !fieldValue.trim()) {
+            if (!this.value.trim()) {
                 this.classList.add('is-invalid');
-                const errorDiv = this.closest('.mb-3').querySelector('.form-errors');
-                if (errorDiv) {
-                    errorDiv.textContent = 'This field is required.';
-                }
             } else {
                 this.classList.remove('is-invalid');
-                const errorDiv = this.closest('.mb-3').querySelector('.form-errors');
-                if (errorDiv) {
-                    errorDiv.textContent = '';
-                }
             }
         });
     });
+    
+    // Email format validation
+    const emailField = document.getElementById('{{ form.email.id_for_label }}');
+    if (emailField) {
+        emailField.addEventListener('blur', function() {
+            const email = this.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('is-invalid');
+                let errorDiv = this.nextElementSibling;
+                if (!errorDiv || !errorDiv.classList.contains('text-danger')) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'text-danger small';
+                    this.parentNode.appendChild(errorDiv);
+                }
+                errorDiv.textContent = 'Please enter a valid email address.';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

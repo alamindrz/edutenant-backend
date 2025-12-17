@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Invoice Details</h1>
+            <p class="text-muted">{{ invoice.invoice_number }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'billing:invoice_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Invoices
+            </a>
+            <button class="btn btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Print
+            </button>
+            {% if invoice.status != 'paid' and invoice.status != 'cancelled' %}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sendInvoiceModal">
+                <i class="fas fa-paper-plane me-2"></i>Send to Parent
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Invoice Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">School Information</h6>
+                            <p class="mb-1"><strong>{{ invoice.school.name }}</strong></p>
+                            <p class="mb-1">{{ invoice.school.address }}</p>
+                            <p class="mb-1">{{ invoice.school.phone_number }}</p>
+                            <p class="mb-0">{{ invoice.school.email }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <h6 class="text-muted">Invoice Details</h6>
+                            <p class="mb-1"><strong>Invoice #:</strong> {{ invoice.invoice_number }}</p>
+                            <p class="mb-1"><strong>Date:</strong> {{ invoice.created_at|date:"F j, Y" }}</p>
+                            <p class="mb-1"><strong>Due Date:</strong> {{ invoice.due_date|date:"F j, Y" }}</p>
+                            <p class="mb-0">
+                                <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' %}danger{% elif invoice.status == 'sent' %}warning{% else %}info{% endif %}">
+                                    {{ invoice.status|title }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Student & Parent Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Student Information</h6>
+                            {% if invoice.student %}
+                            <p class="mb-1"><strong>Name:</strong> {{ invoice.student.full_name }}</p>
+                            <p class="mb-1"><strong>Class:</strong> {{ invoice.student.current_class.name }}</p>
+                            <p class="mb-1"><strong>Admission No:</strong> {{ invoice.student.admission_number }}</p>
+                            {% else %}
+                            <p class="text-muted mb-0">No student associated</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Parent Information</h6>
+                            <p class="mb-1"><strong>Name:</strong> {{ invoice.parent.full_name }}</p>
+                            <p class="mb-1"><strong>Email:</strong> {{ invoice.parent.email }}</p>
+                            <p class="mb-0"><strong>Phone:</strong> {{ invoice.parent.phone_number }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Items -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td class="text-end">{{ item.quantity }}</td>
+                                    <td class="text-end">₦{{ item.unit_price|floatformat:2|intcomma }}</td>
+                                    <td class="text-end">₦{{ item.amount|floatformat:2|intcomma }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">No items found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td class="text-end">₦{{ invoice.subtotal|floatformat:2|intcomma }}</td>
+                                </tr>
+                                {% if invoice.discount > 0 %}
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Discount:</strong></td>
+                                    <td class="text-end">-₦{{ invoice.discount|floatformat:2|intcomma }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if invoice.platform_fee > 0 %}
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Platform Fee:</strong></td>
+                                    <td class="text-end">₦{{ invoice.platform_fee|floatformat:2|intcomma }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if invoice.tax_amount > 0 %}
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Tax:</strong></td>
+                                    <td class="text-end">₦{{ invoice.tax_amount|floatformat:2|intcomma }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total Amount:</strong></td>
+                                    <td class="text-end"><strong>₦{{ invoice.total_amount|floatformat:2|intcomma }}</strong></td>
+                                </tr>
+                                {% if invoice.amount_due > 0 %}
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Amount Due:</strong></td>
+                                    <td class="text-end text-danger"><strong>₦{{ invoice.amount_due|floatformat:2|intcomma }}</strong></td>
+                                </tr>
+                                {% endif %}
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions & Actions -->
+        <div class="col-lg-4">
+            <!-- Payment Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Payment Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Amount Due</span>
+                            <strong class="{% if invoice.amount_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ₦{{ invoice.amount_due|floatformat:2|intcomma }}
+                            </strong>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            {% with paid_percentage=invoice.total_amount|sub:invoice.amount_due|div:invoice.total_amount|mul:100 %}
+                            <div class="progress-bar bg-success" style="width: {{ paid_percentage }}%"></div>
+                            {% endwith %}
+                        </div>
+                        <small class="text-muted">
+                            {% if invoice.amount_due == 0 %}
+                            Fully Paid
+                            {% else %}
+                            {{ paid_percentage|floatformat:0 }}% Paid
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    {% if invoice.is_overdue %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Overdue!</strong> This invoice is {{ invoice.days_overdue }} days overdue.
+                    </div>
+                    {% endif %}
+                    
+                    {% if invoice.paid_date %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Paid on {{ invoice.paid_date|date:"F j, Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Transactions History -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Transaction History</h5>
+                </div>
+                <div class="card-body">
+                    {% if transactions %}
+                    <div class="list-group list-group-flush">
+                        {% for transaction in transactions %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">{{ transaction.created_at|date:"M j, Y" }}</small><br>
+                                    <code class="text-xs">{{ transaction.paystack_reference|truncatechars:15 }}</code>
+                                </div>
+                                <div class="text-end">
+                                    <div>₦{{ transaction.amount|floatformat:2|intcomma }}</div>
+                                    <span class="badge bg-{% if transaction.status == 'success' %}success{% else %}danger{% endif %}">
+                                        {{ transaction.status|title }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No transactions yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if invoice.status == 'draft' %}
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sendInvoiceModal">
+                            <i class="fas fa-paper-plane me-2"></i>Send Invoice
+                        </button>
+                        {% endif %}
+                        
+                        {% if invoice.status == 'sent' and invoice.amount_due > 0 %}
+                        <a href="{% url 'billing:parent_payment_single' invoice.id %}" 
+                           class="btn btn-primary" target="_blank">
+                            <i class="fas fa-external-link-alt me-2"></i>Send Payment Link
+                        </a>
+                        {% endif %}
+                        
+                        {% if invoice.status != 'paid' and invoice.status != 'cancelled' %}
+                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editInvoiceModal">
+                            <i class="fas fa-edit me-2"></i>Edit Invoice
+                        </button>
+                        
+                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelInvoiceModal">
+                            <i class="fas fa-times me-2"></i>Cancel Invoice
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Invoice Modal -->
+<div class="modal fade" id="sendInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Invoice to Parent</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'billing:send_invoice' invoice.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Send invoice <strong>{{ invoice.invoice_number }}</strong> to {{ invoice.parent.full_name }}?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Additional Message (Optional)</label>
+                        <textarea name="message" class="form-control" rows="3" 
+                                  placeholder="Add a custom message..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Send Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Invoice Modal -->
+<div class="modal fade" id="cancelInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'billing:cancel_invoice' invoice.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel invoice <strong>{{ invoice.invoice_number }}</strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Cancellation</label>
+                        <textarea name="reason" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep</button>
+                    <button type="submit" class="btn btn-danger">Yes, Cancel Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .btn-group, .card-header .btn, .modal { display: none !important; }
+    .container-fluid { max-width: 100% !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .card-header { background: white !important; color: black !important; }
+}
+</style>
+{% endblock %}

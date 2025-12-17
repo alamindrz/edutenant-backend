@@ -141,7 +141,7 @@
         </div>
     </div>
 
-    <!-- Class group attendance ranking -->
+    <!-- Class attendance ranking -->
     <div class="row mb-4">
         <div class="col-lg-8">
             <div class="card">
@@ -150,13 +150,18 @@
                     <a href="{% url 'attendance:class_attendance' %}" class="btn btn-sm btn-outline-primary">View All</a>
                 </div>
                 <div class="card-body">
-                    {% if class_group_attendance %}
+                    {% if class_attendance %}
                         <div class="list-group list-group-flush">
-                            {% for item in class_group_attendance %}
+                            {% for item in class_attendance %}
                                 <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0">
                                     <div>
-                                        <strong>{{ item.class_group.name }}</strong>
-                                        <div class="small text-muted">{{ item.present_count }} / {{ item.total_students }} present</div>
+                                        <strong>{{ item.class.name }}</strong>
+                                        <div class="small text-muted">
+                                            {{ item.present_count }} / {{ item.total_students }} present
+                                            {% if item.form_master %}
+                                                <br><small class="text-muted">Form Master: {{ item.form_master.full_name }}</small>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     <div class="text-end" style="width: 220px;">
                                         <div class="d-flex justify-content-between small text-muted mb-1">
@@ -177,6 +182,7 @@
                         <div class="text-center py-4">
                             <i class="fas fa-school fa-2x text-muted mb-3"></i>
                             <p class="text-muted">No class attendance data available.</p>
+                            <small class="text-muted">Try recording attendance for today.</small>
                         </div>
                     {% endif %}
                 </div>
@@ -190,7 +196,9 @@
                     <h6 class="mb-2">Quick Snapshot</h6>
                     <div class="small text-muted mb-1">Students present: {{ student_stats.present_today }}</div>
                     <div class="small text-muted mb-1">Students absent: {{ student_stats.absent_today }}</div>
+                    <div class="small text-muted mb-1">Students late: {{ student_stats.late_today }}</div>
                     <div class="small text-muted mb-1">Teachers signed in: {{ teacher_stats.signed_in_today }}</div>
+                    <div class="small text-muted mb-1">Teachers late: {{ teacher_stats.late_today }}</div>
                     <div class="small text-muted">Updated: {{ today|date:"M j, Y" }}</div>
                 </div>
             </div>
@@ -198,9 +206,10 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h6 class="mb-2">Legend</h6>
-                    <div class="mb-2"><span class="badge bg-success me-1">Present</span><span class="text-muted"> Present status</span></div>
-                    <div class="mb-2"><span class="badge bg-danger me-1">Absent</span><span class="text-muted"> Absent status</span></div>
-                    <div><span class="badge bg-warning me-1">Late</span><span class="text-muted"> Late status</span></div>
+                    <div class="mb-2"><span class="badge bg-success me-1">Present</span><span class="text-muted"> Student present</span></div>
+                    <div class="mb-2"><span class="badge bg-danger me-1">Absent</span><span class="text-muted"> Student absent</span></div>
+                    <div class="mb-2"><span class="badge bg-warning me-1">Late</span><span class="text-muted"> Student/teacher late</span></div>
+                    <div class="mb-2"><span class="badge bg-info me-1">Signed In</span><span class="text-muted"> Teacher signed in</span></div>
                 </div>
             </div>
         </div>
@@ -222,13 +231,34 @@
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
                                     <div>
                                         <h6 class="mb-0">{{ record.student.full_name }}</h6>
-                                        <small class="text-muted">{{ record.student.class_group.name|default:"No Class" }}</small>
+                                        <small class="text-muted">
+                                            {% with student_class=record.student.current_class %}
+                                                {{ student_class.name|default:"No Class Assigned" }}
+                                            {% endwith %}
+                                        </small>
                                     </div>
                                     <div class="text-end">
+                                        {% if record.is_late %}
+                                            <span class="badge bg-warning me-1">Late</span>
+                                        {% endif %}
+                                        {% if record.early_departure %}
+                                            <span class="badge bg-warning me-1">Left Early</span>
+                                        {% endif %}
                                         <span class="badge bg-{% if record.status == 'present' %}success{% elif record.status == 'absent' %}danger{% else %}warning{% endif %}">
                                             {{ record.status|title }}
                                         </span>
-                                        <div><small class="text-muted">{{ record.recorded_at|time }}</small></div>
+                                        <div>
+                                            <small class="text-muted">
+                                                {% if record.time_in %}
+                                                    {{ record.time_in|time }}
+                                                    {% if record.time_out %}
+                                                        - {{ record.time_out|time }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    {{ record.recorded_at|time }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -237,6 +267,9 @@
                         <div class="text-center py-4">
                             <i class="fas fa-clipboard-list fa-2x text-muted mb-3"></i>
                             <p class="text-muted">No student attendance recorded today</p>
+                            <a href="{% url 'attendance:student_attendance_list' %}" class="btn btn-sm btn-primary">
+                                Record Attendance
+                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -257,14 +290,26 @@
                                 <div class="list-group-item d-flex justify-content-between align-items-center">
                                     <div>
                                         <h6 class="mb-0">{{ record.staff.full_name }}</h6>
-                                        <small class="text-muted">{{ record.staff.position }}</small>
+                                        <small class="text-muted">{{ record.staff.position|default:"Teacher" }}</small>
                                     </div>
                                     <div class="text-end">
                                         {% if record.is_late %}
                                             <span class="badge bg-warning me-1">Late</span>
                                         {% endif %}
-                                        <span class="badge bg-success">Signed In</span>
-                                        <div><small class="text-muted">{{ record.sign_in_time|time }}</small></div>
+                                        {% if record.auto_signed_out %}
+                                            <span class="badge bg-secondary me-1">Auto Signed Out</span>
+                                        {% endif %}
+                                        <span class="badge bg-{% if record.status == 'present' %}success{% else %}secondary{% endif %}">
+                                            {{ record.status|title }}
+                                        </span>
+                                        <div>
+                                            <small class="text-muted">
+                                                {{ record.sign_in_time|time }}
+                                                {% if record.sign_out_time %}
+                                                    - {{ record.sign_out_time|time }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -273,11 +318,55 @@
                         <div class="text-center py-4">
                             <i class="fas fa-user-clock fa-2x text-muted mb-3"></i>
                             <p class="text-muted">No teacher sign-ins today</p>
+                            <a href="{% url 'attendance:teacher_attendance_list' %}" class="btn btn-sm btn-primary">
+                                View Teacher Attendance
+                            </a>
                         </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="mb-3">Quick Actions</h5>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'attendance:student_attendance_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i>Record Student Attendance
+                        </a>
+                        <a href="{% url 'attendance:teacher_attendance_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i>Manage Teacher Sign-ins
+                        </a>
+                        <a href="{% url 'attendance:reports' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-download me-1"></i>Generate Reports
+                        </a>
+                        {% if user_profile.role.can_manage_attendance %}
+                        <a href="#" class="btn btn-outline-success">
+                            <i class="fas fa-cog me-1"></i>Attendance Settings
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- HTMX for auto-refresh -->
+<script>
+    // Auto-refresh dashboard every 60 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            if (!document.hidden) {
+                // You can add HTMX refresh logic here
+                // Example: htmx.ajax('GET', '{% url "attendance:dashboard" %}', '#dashboard-content');
+                console.log('Dashboard auto-refresh triggered');
+            }
+        }, 60000);
+    });
+</script>
 {% endblock %}

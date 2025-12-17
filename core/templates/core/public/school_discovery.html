@@ -1,0 +1,209 @@
+<!-- templates/admissions/public/school_discovery.html -->
+{% extends "base.html" %}
+
+{% block title %}Discover Schools{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h2 mb-3">Discover Schools</h1>
+            <p class="text-muted">
+                Browse through our verified schools and find the perfect educational institution for your child.
+            </p>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" 
+                                       name="q" 
+                                       value="{{ search_query|default:'' }}" 
+                                       class="form-control border-start-0" 
+                                       placeholder="Search by school name, location, or type...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="nursery">Nursery</option>
+                                <option value="primary">Primary</option>
+                                <option value="secondary">Secondary</option>
+                                <option value="college">College</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schools Grid -->
+    <div class="row">
+        {% if schools %}
+            {% for school in schools %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <!-- School Header -->
+                        <div class="d-flex align-items-start mb-3">
+                            {% if school.logo %}
+                            <img src="{{ school.logo.url }}" 
+                                 alt="{{ school.name }}"
+                                 class="rounded me-3" 
+                                 style="width: 70px; height: 70px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 70px; height: 70px;">
+                                <i class="bi bi-building fs-2"></i>
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h5 class="card-title mb-1">{{ school.name }}</h5>
+                                <p class="text-muted small mb-2">
+                                    <i class="bi bi-geo-alt me-1"></i>{{ school.location }}
+                                </p>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-info">{{ school.school_type|title }}</span>
+                                    {% if school.subscription and school.subscription.is_active %}
+                                    <span class="badge bg-success">Verified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- School Info -->
+                        <div class="mb-3">
+                            <p class="card-text text-muted small">
+                                {{ school.description|truncatechars:150 }}
+                            </p>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="row g-2 text-center mb-3">
+                            <div class="col-4">
+                                <div class="bg-light rounded p-2">
+                                    <div class="small text-muted">Students</div>
+                                    <div class="fw-bold text-primary">{{ school.student_set.count|default:0 }}</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-light rounded p-2">
+                                    <div class="small text-muted">Staff</div>
+                                    <div class="fw-bold text-success">{{ school.staff_set.count|default:0 }}</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-light rounded p-2">
+                                    <div class="small text-muted">Classes</div>
+                                    <div class="fw-bold text-info">{{ school.classgroup_set.count|default:0 }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'school_detail' school.slug %}" 
+                               class="btn btn-outline-primary btn-sm flex-grow-1">
+                                <i class="bi bi-eye me-1"></i>View Details
+                            </a>
+                            <a href="{% url 'apply_public' school.slug %}" 
+                               class="btn btn-primary btn-sm">
+                                Apply Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-building-slash text-muted fs-1 mb-3"></i>
+                        <h5 class="text-muted">No schools found</h5>
+                        <p class="text-muted mb-0">
+                            {% if search_query %}
+                                No schools match your search criteria "{{ search_query }}"
+                            {% else %}
+                                No schools are currently available.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if schools.has_other_pages %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if schools.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ schools.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in schools.paginator.page_range %}
+                        {% if schools.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > schools.number|add:'-3' and num < schools.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if schools.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ schools.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.school-card:hover {
+    transform: translateY(-5px);
+    transition: transform 0.2s ease;
+}
+
+.card {
+    border: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: rgba(var(--bs-dark-rgb), 0.5) !important;
+}
+</style>
+{% endblock %}

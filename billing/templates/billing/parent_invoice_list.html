@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}My Invoices{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">My Invoices</h1>
+            <p class="text-muted">View and pay your children's school fees</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            {% if total_pending > 0 %}
+            <a href="{% url 'billing:parent_payment' %}" class="btn btn-primary">
+                <i class="fas fa-credit-card me-2"></i>Pay All Pending (₦{{ total_pending|floatformat:2|intcomma }})
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- School Tabs -->
+    {% if invoices_by_school|length > 1 %}
+    <ul class="nav nav-tabs mb-4" id="schoolTabs" role="tablist">
+        {% for school_name, invoices in invoices_by_school.items %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                    id="tab-{{ forloop.counter }}" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#school-{{ forloop.counter }}" 
+                    type="button" role="tab">
+                {{ school_name }}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="tab-content" id="schoolTabsContent">
+        {% for school_name, invoices in invoices_by_school.items %}
+        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+             id="school-{{ forloop.counter }}" role="tabpanel">
+            <div class="row mb-4">
+                <!-- Summary Cards -->
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-start border-primary border-4">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Invoices
+                            </div>
+                            <div class="h5 mb-0">{{ invoices|length }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-start border-success border-4">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Paid
+                            </div>
+                            <div class="h5 mb-0">
+                                ₦{{ invoices|dictsortreversed:"total_amount"|first|default:"0.00" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-start border-warning border-4">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Pending Payment
+                            </div>
+                            <div class="h5 mb-0">
+                                {% with pending=invoices|selectattr:"status"|selectattr:"in"|join:"" %}
+                                ₦{{ pending.total_amount|default:"0.00"|floatformat:2|intcomma }}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-start border-danger border-4">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Overdue
+                            </div>
+                            <div class="h5 mb-0">
+                                {% with overdue=invoices|selectattr:"is_overdue"|join:"" %}
+                                {{ overdue|length }}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Table -->
+            <div id="parent-invoice-table">
+                {% include 'billing/partials/parent_invoice_table.html' %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Invoices Found</h5>
+                <p class="text-muted">You don't have any invoices yet.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh invoice table every 60 seconds
+setInterval(function() {
+    htmx.ajax('GET', '{% url "billing:parent_invoice_table_partial" %}', '#parent-invoice-table');
+}, 60000);
+</script>
+{% endblock %}

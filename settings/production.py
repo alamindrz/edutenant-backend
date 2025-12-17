@@ -1,6 +1,6 @@
 # settings/production.py
 """
-Production settings for Edusuite - Secure and optimized.
+Production settings for Edutenant - Secure and optimized.
 """
 
 import os
@@ -9,10 +9,11 @@ from .base import *
 # Security settings
 DEBUG = False
 ALLOWED_HOSTS = [
-    'edusuite.com',
-    'www.edusuite.com',
-    '*.edusuite.com',  # For school subdomains
-    '.edusuite.com',   # Allow all subdomains
+    'edutenant.com',
+    'www.edutenant.com',
+    '*.edutenant.com',  # For school subdomains
+    '.edutenant.com',   # Allow all subdomains
+    '102.212.246.160',
 ]
 
 # SSL/HTTPS settings
@@ -53,7 +54,7 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
-        'KEY_PREFIX': 'edusuite'
+        'KEY_PREFIX': 'edutenant'
     }
 }
 
@@ -74,7 +75,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/edusuite/edusuite.log',
+            'filename': '/var/log/edutenant/edutenant.log',
             'maxBytes': 10485760,  # 10MB
             'backupCount': 10,
             'formatter': 'verbose',
@@ -82,7 +83,7 @@ LOGGING = {
         'billing_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/edusuite/billing.log',
+            'filename': '/var/log/edutenant/billing.log',
             'maxBytes': 10485760,
             'backupCount': 10,
             'formatter': 'json',
@@ -90,7 +91,7 @@ LOGGING = {
         'error_file': {
             'level': 'ERROR',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/edusuite/error.log',
+            'filename': '/var/log/edutenant/error.log',
             'maxBytes': 10485760,
             'backupCount': 10,
             'formatter': 'verbose',

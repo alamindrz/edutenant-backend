@@ -1,0 +1,413 @@
+<!-- templates/admissions/public/apply.html -->
+{% extends "base.html" %}
+
+{% block title %}
+    {% if school %}
+        Apply to {{ school.name }}
+    {% else %}
+        Apply to School
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.step-indicator {
+    position: relative;
+    padding: 1rem;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--bs-light);
+    color: var(--bs-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-weight: bold;
+    border: 2px solid var(--bs-border-color);
+}
+
+.step.active .step-number {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+
+.step.completed .step-number {
+    background-color: var(--bs-success);
+    color: white;
+    border-color: var(--bs-success);
+}
+
+.step-line {
+    position: absolute;
+    left: 20px;
+    top: 60px;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--bs-border-color);
+    z-index: -1;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="step-indicator">
+                        <div class="step active">
+                            <div class="step-number">1</div>
+                            <div>
+                                <h6 class="mb-0">Fill Application</h6>
+                                <small class="text-muted">Provide student and parent information</small>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div>
+                                <h6 class="mb-0">
+                                    {% if selected_form and selected_form.application_fee > 0 %}
+                                    Payment
+                                    {% else %}
+                                    Review
+                                    {% endif %}
+                                </h6>
+                                <small class="text-muted">
+                                    {% if selected_form and selected_form.application_fee > 0 %}
+                                    Pay application fee
+                                    {% else %}
+                                    Review and submit
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div>
+                                <h6 class="mb-0">Confirmation</h6>
+                                <small class="text-muted">Get application number</small>
+                            </div>
+                        </div>
+                        <div class="step-line"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">
+                        {% if school %}
+                        <i class="bi bi-pencil-square me-2"></i>Apply to {{ school.name }}
+                        {% else %}
+                        <i class="bi bi-pencil-square me-2"></i>School Application Form
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if school and application_forms %}
+                    <!-- School Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Select Application Form:</label>
+                        <div class="list-group">
+                            {% for form in application_forms %}
+                            <a href="{% url 'apply_public_form' school.slug form.slug %}" 
+                               class="list-group-item list-group-item-action {% if selected_form and selected_form.id == form.id %}active{% endif %}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ form.name }}</h6>
+                                    <span class="badge {% if form.application_fee > 0 %}bg-warning{% else %}bg-success{% endif %}">
+                                        {% if form.application_fee > 0 %}
+                                        ₦{{ form.application_fee|floatformat:2 }}
+                                        {% else %}
+                                        Free
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <p class="mb-1 small">{{ form.description|truncatechars:100 }}</p>
+                                <small>
+                                    <i class="bi bi-calendar me-1"></i>
+                                    {{ form.open_date|date:"M d, Y" }} - {{ form.close_date|date:"M d, Y" }}
+                                </small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Application Form -->
+                    {% if selected_form %}
+                    <form method="post" id="applicationForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_slug" value="{{ selected_form.slug }}">
+                        
+                        <!-- Parent Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-person-badge me-2"></i>Parent/Guardian Information
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">First Name *</label>
+                                    <input type="text" 
+                                           name="first_name" 
+                                           class="form-control" 
+                                           required
+                                           placeholder="Enter first name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Last Name *</label>
+                                    <input type="text" 
+                                           name="last_name" 
+                                           class="form-control" 
+                                           required
+                                           placeholder="Enter last name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email Address *</label>
+                                    <input type="email" 
+                                           name="email" 
+                                           class="form-control" 
+                                           required
+                                           placeholder="Enter email address">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phone Number *</label>
+                                    <input type="tel" 
+                                           name="phone" 
+                                           class="form-control" 
+                                           required
+                                           placeholder="Enter phone number">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Address</label>
+                                    <textarea name="address" 
+                                              class="form-control" 
+                                              rows="2"
+                                              placeholder="Enter complete address"></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Relationship to Student *</label>
+                                    <select name="relationship" class="form-select" required>
+                                        <option value="">Select relationship</option>
+                                        <option value="Parent">Parent</option>
+                                        <option value="Guardian">Guardian</option>
+                                        <option value="Sibling">Sibling</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Student Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-person-vcard me-2"></i>Student Information
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">First Name *</label>
+                                    <input type="text" 
+                                           name="student_first_name" 
+                                           class="form-control" 
+                                           required
+                                           placeholder="Enter student's first name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Last Name *</label>
+                                    <input type="text" 
+                                           name="student_last_name" 
+                                           class="form-control" 
+                                           required
+                                           placeholder="Enter student's last name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Gender *</label>
+                                    <select name="gender" class="form-select" required>
+                                        <option value="">Select gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Date of Birth *</label>
+                                    <input type="date" 
+                                           name="date_of_birth" 
+                                           class="form-control" 
+                                           required
+                                           max="{{ today|date:'Y-m-d' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Previous School</label>
+                                    <input type="text" 
+                                           name="previous_school" 
+                                           class="form-control"
+                                           placeholder="Name of previous school">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Previous Class</label>
+                                    <input type="text" 
+                                           name="previous_class" 
+                                           class="form-control"
+                                           placeholder="Previous class/grade">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-info-circle me-2"></i>Additional Information
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">Applying for Class</label>
+                                    <select name="class_group_id" class="form-select">
+                                        <option value="">Select class (optional)</option>
+                                        <!-- Classes will be loaded via AJAX -->
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               name="terms_accepted" 
+                                               id="termsAccepted" 
+                                               required>
+                                        <label class="form-check-label" for="termsAccepted">
+                                            I agree to the 
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">
+                                                terms and conditions
+                                            </a> 
+                                            and confirm that all information provided is accurate.
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% if school %}{% url 'school_detail' school.slug %}{% else %}{% url 'school_discovery' %}{% endif %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5">
+                                {% if selected_form.application_fee > 0 %}
+                                Continue to Payment
+                                {% else %}
+                                Submit Application
+                                {% endif %}
+                                <i class="bi bi-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                    {% elif school and not application_forms %}
+                    <div class="alert alert-warning text-center py-5">
+                        <i class="bi bi-exclamation-triangle fs-1 mb-3"></i>
+                        <h5>No Active Application Forms</h5>
+                        <p class="mb-0">
+                            {{ school.name }} currently doesn't have any active application forms.
+                            Please check back later or contact the school directly.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Important Notes -->
+            <div class="mt-4">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle me-2"></i>Important Information:</h6>
+                    <ul class="mb-0">
+                        <li>Fields marked with * are required</li>
+                        <li>You'll receive a confirmation email after submission</li>
+                        <li>You can track your application status using your email</li>
+                        {% if selected_form and selected_form.application_fee > 0 %}
+                        <li>Application fee: <strong>₦{{ selected_form.application_fee|floatformat:2 }}</strong></li>
+                        <li>Payment must be completed within 7 days</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Application Terms</h6>
+                <p>By submitting this application, you agree to the following terms:</p>
+                <ol>
+                    <li>All information provided must be accurate and complete.</li>
+                    <li>Application fees are non-refundable.</li>
+                    <li>Submission does not guarantee admission.</li>
+                    <li>The school reserves the right to verify all information provided.</li>
+                    <li>You agree to receive communication regarding your application.</li>
+                </ol>
+                <h6>Privacy Policy</h6>
+                <p>Your personal information will be used solely for the purpose of processing 
+                your application and will not be shared with third parties without your consent.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load classes for selected school
+    {% if school %}
+    function loadClasses() {
+        fetch(`/api/schools/{{ school.id }}/classes/`)
+            .then(response => response.json())
+            .then(data => {
+                const select = document.querySelector('select[name="class_group_id"]');
+                select.innerHTML = '<option value="">Select class (optional)</option>';
+                
+                data.classes.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.name + ' - ' + cls.category;
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading classes:', error);
+            });
+    }
+    
+    // Load classes on page load
+    loadClasses();
+    {% endif %}
+
+    // Form validation
+    const form = document.getElementById('applicationForm');

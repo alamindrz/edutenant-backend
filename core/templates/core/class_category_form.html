@@ -1,63 +1,337 @@
-<!-- core/templates/core/class_category_form.html -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
 
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:class_category_list' %}">Class Categories</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">{{ page_title }}</h1>
-                <a href="{% url 'core:class_category_list' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back
-                </a>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-layers me-2"></i>{{ page_title }}
+                </h5>
             </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
 
-            <div class="card">
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Name *</label>
+                    <div class="row g-3">
+                        <!-- Name Field -->
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                Category Name <span class="text-danger">*</span>
+                            </label>
                             {{ form.name }}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Section *</label>
-                            {{ form.section }}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            {{ form.description }}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Display Order</label>
-                            {{ form.display_order }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">e.g., Primary, Secondary, Nursery, JSS</div>
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'core:class_category_list' %}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                {% if category %}Update Category{% else %}Create Category{% endif %}
-                            </button>
+                        <!-- Section Field -->
+                        <div class="col-md-6">
+                            <label for="{{ form.section.id_for_label }}" class="form-label">
+                                School Section <span class="text-danger">*</span>
+                            </label>
+                            {{ form.section }}
+                            {% if form.section.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.section.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">The section of the school this category belongs to</div>
                         </div>
-                    </form>
+
+                        <!-- Display Order -->
+                        <div class="col-md-6">
+                            <label for="{{ form.display_order.id_for_label }}" class="form-label">
+                                Display Order
+                            </label>
+                            {{ form.display_order }}
+                            {% if form.display_order.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.display_order.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Lower numbers appear first in lists (default: 0)</div>
+                        </div>
+
+                        <!-- Active Status -->
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <div class="form-check form-switch">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Active Category
+                                </label>
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.is_active.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Inactive categories won't be available for new classes</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-12">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                Description
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Optional description of this category</div>
+                        </div>
+                    </div>
+
+                    <!-- Category Statistics (for edit view) -->
+                    {% if category and category.class_set.exists %}
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Note:</strong> This category has 
+                        <strong>{{ category.class_set.count }}</strong> class{{ category.class_set.count|pluralize:"es" }}.
+                        {% if not category.is_active %}
+                            <br><span class="text-warning">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Deactivating this category will affect all associated classes.
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% if cancel_url %}{{ cancel_url }}{% else %}{% url 'core:class_category_list' %}{% endif %}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancel
+                                </a>
+                                <div class="btn-group">
+                                    {% if category %}
+                                    <a href="{% url 'core:class_category_list' %}" class="btn btn-outline-primary">
+                                        <i class="bi bi-list me-1"></i>View All
+                                    </a>
+                                    {% endif %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        {% if category %}Update Category{% else %}Create Category{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Help -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-question-circle me-2"></i>About Class Categories
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Purpose of Categories:</h6>
+                        <ul class="text-muted">
+                            <li>Organize classes into logical groups</li>
+                            <li>Filter classes by section in reports</li>
+                            <li>Apply section-specific settings</li>
+                            <li>Display classes in specific order</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Section Examples:</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Section</th>
+                                <th>Example Categories</th>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">nursery</span></td>
+                                <td>Pre-Nursery, Nursery, Reception</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-success">primary</span></td>
+                                <td>Primary 1-6, Elementary</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-info">jss</span></td>
+                                <td>JSS 1-3, Junior Secondary</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning">sss</span></td>
+                                <td>SSS 1-3, Senior Secondary</td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const inputs = document.querySelectorAll('input, select, textarea');
-    inputs.forEach(input => {
-        input.classList.add('form-control');
+    // Auto-add form-control class to form inputs
+    const formInputs = document.querySelectorAll('#{{ form.name.id_for_label }}, #{{ form.section.id_for_label }}, #{{ form.display_order.id_for_label }}, #{{ form.description.id_for_label }}');
+    formInputs.forEach(input => {
+        if (!input.classList.contains('form-control')) {
+            input.classList.add('form-control');
+        }
     });
+    
+    // Add form-control to select element if it exists
+    const sectionSelect = document.getElementById('{{ form.section.id_for_label }}');
+    if (sectionSelect && !sectionSelect.classList.contains('form-select')) {
+        sectionSelect.classList.add('form-select');
+    }
+    
+    // Real-time validation for category name
+    const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+    if (nameInput) {
+        nameInput.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (value.length < 2) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Real-time validation for display order
+    const orderInput = document.getElementById('{{ form.display_order.id_for_label }}');
+    if (orderInput) {
+        orderInput.addEventListener('blur', function() {
+            const value = parseInt(this.value) || 0;
+            if (value < 0 || value > 999) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Enhanced form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validate name
+            if (nameInput && nameInput.value.trim().length < 2) {
+                nameInput.classList.add('is-invalid');
+                nameInput.focus();
+                isValid = false;
+            }
+            
+            // Validate section
+            if (sectionSelect && !sectionSelect.value) {
+                sectionSelect.classList.add('is-invalid');
+                if (isValid) {
+                    sectionSelect.focus();
+                }
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Show error message
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                toast.innerHTML = `
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> Please fill in all required fields correctly.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 5000);
+            }
+        });
+    }
 });
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.invalid-feedback {
+    display: block;
+}
+
+.form-text {
+    font-size: 0.875rem;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+}
+
+.table-sm th, .table-sm td {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.alert {
+    border-left: 4px solid;
+}
+</style>
 {% endblock %}

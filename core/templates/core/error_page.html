@@ -1,14 +1,1 @@
-<!-- templates/core/error_page.html -->
-{% extends "base.html" %}
-
-{% block title %}Error - Edusuite{% endblock %}
-
-{% block content %}
-<div class="error-container">
-    <h2>Something Went Wrong</h2>
-    <div class="alert alert-error">
-        {{ error_message|default:"An unexpected error occurred." }}
-    </div>
-    <a href="{% url 'home' %}" class="btn btn-primary">Go Home</a>
-</div>
-{% endblock %}
+error

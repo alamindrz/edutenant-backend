@@ -1,0 +1,10 @@
+<div class="alert alert-danger d-flex align-items-center" role="alert">
+    <i class="fas fa-exclamation-triangle me-3 fa-2x"></i>
+    <div>
+        <h5 class="alert-heading">Error</h5>
+        <p class="mb-0">{{ message }}</p>
+        {% if details %}
+        <small class="text-muted">{{ details }}</small>
+        {% endif %}
+    </div>
+</div>

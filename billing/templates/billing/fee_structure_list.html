@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Fee Structures - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Fee Structure Management</h1>
+            <p class="text-muted">Configure and manage fee structures for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'billing:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFeeModal">
+                <i class="fas fa-plus me-2"></i>Add Fee
+            </button>
+        </div>
+    </div>
+
+    <!-- Fee Structure by Category -->
+    {% for category_name, fees in fees_by_category.items %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">{{ category_name }}</h5>
+            <button class="btn btn-sm btn-outline-primary" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#createFeeModal"
+                    data-category="{{ category_name }}">
+                <i class="fas fa-plus me-1"></i>Add to {{ category_name }}
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Applicable Levels</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fee in fees %}
+                        <tr>
+                            <td>
+                                <strong>{{ fee.name }}</strong>
+                                {% if fee.is_government_approved %}
+                                <span class="badge bg-info ms-2" title="Government Approved">
+                                    <i class="fas fa-shield-alt"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ fee.get_fee_type_display }}</span>
+                            </td>
+                            <td>
+                                <strong>₦{{ fee.amount|floatformat:2|intcomma }}</strong>
+                                {% if fee.tax_rate > 0 %}
+                                <small class="text-muted d-block">+{{ fee.tax_rate }}% VAT</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if fee.applicable_levels %}
+                                {% for level in fee.applicable_levels %}
+                                <span class="badge bg-light text-dark">{{ level }}</span>
+                                {% endfor %}
+                                {% else %}
+                                <span class="text-muted">All Levels</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if fee.due_date %}
+                                {{ fee.due_date|date:"M j, Y" }}
+                                {% else %}
+                                <span class="text-muted">Not Set</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if fee.is_active %}success{% else %}danger{% endif %}">
+                                    {% if fee.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                                {% if fee.is_required %}
+                                <span class="badge bg-primary ms-1">Required</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editFeeModal{{ fee.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if fee.is_active %}
+                                    <form method="post" action="{% url 'billing:deactivate_fee' fee.id %}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirm('Deactivate this fee structure?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-warning">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" action="{% url 'billing:activate_fee' fee.id %}" 
+                                          class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-success">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="post" action="{% url 'billing:delete_fee' fee.id %}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirm('Delete this fee structure permanently?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Fee Modals -->
+    {% for fee in fees %}
+    <div class="modal fade" id="editFeeModal{{ fee.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Fee Structure</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'billing:update_fee' fee.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fee Name</label>
+                                <input type="text" name="name" value="{{ fee.name }}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fee Type</label>
+                                <select name="fee_type" class="form-select" required>
+                                    {% for value, label in fee.FEE_TYPES %}
+                                    <option value="{{ value }}" {% if fee.fee_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount (₦)</label>
+                                <input type="number" name="amount" value="{{ fee.amount|floatformat:2 }}" 
+                                       step="0.01" min="0" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">VAT Percentage (%)</label>
+                                <input type="number" name="tax_rate" value="{{ fee.tax_rate|floatformat:2 }}" 
+                                       step="0.01" min="0" max="100" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" name="is_required" class="form-check-input" 
+                                           id="required{{ fee.id }}" {% if fee.is_required %}checked{% endif %}>
+                                    <label class="form-check-label" for="required{{ fee.id }}">Required Fee</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" name="is_government_approved" class="form-check-input" 
+                                           id="gov{{ fee.id }}" {% if fee.is_government_approved %}checked{% endif %}>
+                                    <label class="form-check-label" for="gov{{ fee.id }}">Government Approved</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" name="is_active" class="form-check-input" 
+                                           id="active{{ fee.id }}" {% if fee.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="active{{ fee.id }}">Active</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Due Date</label>
+                                <input type="date" name="due_date" value="{{ fee.due_date|date:'Y-m-d' }}" 
+                                       class="form-control">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea name="description" class="form-control" rows="3">{{ fee.description }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Fee</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% empty %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Fee Structures Yet</h5>
+            <p class="text-muted mb-4">Create your first fee structure to get started</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFeeModal">
+                <i class="fas fa-plus me-2"></i>Create Fee Structure
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Create Fee Modal -->
+<div class="modal fade" id="createFeeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Fee Structure</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'billing:create_fee' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fee Name</label>
+                            <input type="text" name="name" class="form-control" required 
+                                   placeholder="e.g., Tuition Fee - Primary 1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fee Type</label>
+                            <select name="fee_type" class="form-select" required>
+                                <option value="">Select Type</option>
+                                {% for value, label in fee_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Category</label>
+                            <select name="category_id" class="form-select">
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Amount (₦)</label>
+                            <input type="number" name="amount" step="0.01" min="0" 
+                                   class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_required" class="form-check-input" checked>
+                                <label class="form-check-label">Required Fee</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="is_government_approved" class="form-check-input">
+                                <label class="form-check-label">Government Approved</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" name="due_date" class="form-control">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3" 
+                                      placeholder="Describe this fee..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Fee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('createFeeModal').addEventListener('show.bs.modal', function(event) {
+    var button = event.relatedTarget;
+    var category = button.getAttribute('data-category');
+    if (category) {
+        var select = this.querySelector('select[name="category_id"]');
+        var options = select.options;
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].text === category) {
+                select.value = options[i].value;
+                break;
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

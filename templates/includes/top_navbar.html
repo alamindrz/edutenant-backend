@@ -1,0 +1,158 @@
+<!-- templates/includes/top_navbar.html -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top" id="main-header">
+    <div class="container-fluid">
+        <!-- Logo & Brand -->
+        <a class="navbar-brand d-flex align-items-center" href="{% if request.user.is_authenticated %}{% url 'users:dashboard' %}{% else %}/{% endif %}">
+            <i class="bi bi-house-door-fill text-primary fs-4 me-2"></i>
+            <span class="fw-bold">SchoolSys</span>
+        </a>
+
+        <!-- Desktop Controls -->
+        <div class="d-none d-lg-flex align-items-center ms-auto">
+            {% if request.user.is_authenticated %}
+            <!-- School Selector -->
+            {% if request.user.profile_set.exists %}
+            <div class="dropdown me-3">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                        type="button" 
+                        data-bs-toggle="dropdown">
+                    <i class="bi bi-building me-1"></i>
+                    {% if current_school %}
+                        {{ current_school.name|truncatechars:20 }}
+                    {% else %}
+                        Select School
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu">
+                    {% for profile in request.user.profile_set.all %}
+                    <li>
+                        <a class="dropdown-item" href="{% url 'users:switch_school' profile.school.id %}">
+                            {{ profile.school.name }}
+                            {% if profile.role %}
+                            <small class="text-muted d-block">{{ profile.role.name }}</small>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'users:school_list' %}">
+                            <i class="bi bi-plus-circle me-2"></i>Add School
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- User Menu -->
+            <div class="dropdown">
+                <button class="btn btn-link text-decoration-none dropdown-toggle" 
+                        type="button" 
+                        data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle fs-4 text-secondary"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <h6 class="dropdown-header">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </h6>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'users:profile' %}">
+                            <i class="bi bi-person me-2"></i>My Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'users:school_list' %}">
+                            <i class="bi bi-building me-2"></i>My Schools
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <button class="dropdown-item" onclick="toggleDarkMode()">
+                            <i class="bi bi-moon me-2"></i>
+                            <span id="theme-toggle-top">Dark Mode</span>
+                        </button>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="{% url 'account_logout' %}">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% else %}
+            <!-- Public Menu -->
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-link text-decoration-none" onclick="toggleDarkMode()">
+                    <i class="bi bi-moon"></i>
+                </button>
+                <a href="{% url 'account_login' %}" class="btn btn-outline-primary btn-sm">
+                    Login
+                </a>
+                <a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm">
+                    Sign Up
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Mobile Controls -->
+        <div class="d-flex d-lg-none align-items-center">
+            <button class="btn btn-link text-decoration-none me-2" onclick="toggleDarkMode()">
+                <i class="bi bi-moon fs-5"></i>
+            </button>
+            <button class="navbar-toggler" 
+                    type="button" 
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#mobileMenuOffcanvas">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<style>
+#main-header {
+    z-index: 1020;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+[data-bs-theme="dark"] #main-header {
+    background-color: var(--bs-dark) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+}
+
+/* Adjust for mobile bottom nav */
+@media (max-width: 991.98px) {
+    #main-header {
+        margin-bottom: 0;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update top theme toggle text
+    function updateTopThemeToggle() {
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+        const textElement = document.getElementById('theme-toggle-top');
+        if (textElement) {
+            textElement.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        }
+    }
+    
+    updateTopThemeToggle();
+    
+    // Update theme toggle when theme changes
+    const originalToggle = window.toggleDarkMode;
+    window.toggleDarkMode = function() {
+        originalToggle();
+        setTimeout(updateTopThemeToggle, 100);
+    };
+});
+</script>

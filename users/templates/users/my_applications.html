@@ -2,90 +2,354 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ page_title }}{% endblock %}
-
-{% block page_title %}My Applications{% endblock %}
+{% block title %}My Applications - Edusuite{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-person-check me-2"></i>
-                        My Teacher Applications
-                    </h5>
-                    <a href="{% url 'school_discovery' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle me-1"></i>Apply to More Schools
-                    </a>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">My Applications</h1>
+            <p class="text-muted">Track your teacher applications across schools</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'users:school_discovery' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i>Apply to More Schools
+            </a>
+        </div>
+    </div>
+
+    <!-- Application Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ total_applications }}</h4>
+                            <small>Total Applications</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% if applications %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>School</th>
-                                    <th>Position</th>
-                                    <th>Applied</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for application in applications %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            {% if application.school.logo %}
-                                            <img src="{{ application.school.logo.url }}" alt="{{ application.school.name }}" class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                                            {% else %}
-                                            <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                                <i class="bi bi-building"></i>
-                                            </div>
-                                            {% endif %}
-                                            <div>
-                                                <strong>{{ application.school.name }}</strong>
-                                                <div class="text-muted small">{{ application.school.get_school_type_display }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ application.position_applied }}</td>
-                                    <td>
-                                        <small class="text-muted">{{ application.created_at|date:"M d, Y" }}</small>
-                                        <div class="text-muted small">{{ application.created_at|timesince }} ago</div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{% if application.status == 'pending' %}warning{% elif application.status == 'approved' %}success{% else %}danger{% endif %}">
-                                            {{ application.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#applicationModal{{ application.id }}">
-                                            <i class="bi bi-eye"></i> View
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ pending_applications }}</h4>
+                            <small>Pending Review</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock fa-2x opacity-50"></i>
+                        </div>
                     </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-person-x fs-1 text-muted mb-3"></i>
-                        <h4 class="text-muted mb-3">No Applications Yet</h4>
-                        <p class="text-muted mb-4">Start applying to teaching positions at schools that interest you.</p>
-                        <a href="{% url 'school_discovery' %}" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i>Discover Schools
-                        </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">
+                                {% with applications_by_school|dict_values|first as first_school %}
+                                    {% if first_school %}
+                                        {{ first_school.applications|filter_status:"approved"|length }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                {% endwith %}
+                            </h4>
+                            <small>Approved</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
                     </div>
-                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">
+                                {% with applications_by_school|dict_values|first as first_school %}
+                                    {% if first_school %}
+                                        {{ first_school.applications|filter_status:"rejected"|length }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                {% endwith %}
+                            </h4>
+                            <small>Rejected</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Applications List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-file-alt me-2"></i>
+                My Teacher Applications
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if applications_by_school %}
+            <div class="accordion" id="applicationsAccordion">
+                {% for school_id, school_data in applications_by_school.items %}
+                <div class="accordion-item mb-3">
+                    <h2 class="accordion-header" id="heading{{ school_id }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" 
+                                type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#collapse{{ school_id }}" 
+                                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                aria-controls="collapse{{ school_id }}">
+                            <div class="d-flex align-items-center w-100">
+                                {% if school_data.school.logo %}
+                                <img src="{{ school_data.school.logo.url }}" 
+                                     alt="{{ school_data.school.name }}" 
+                                     class="rounded me-3" 
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-school"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <strong>{{ school_data.school.name }}</strong>
+                                    <div class="text-muted small">{{ school_data.school.get_school_type_display }}</div>
+                                </div>
+                                <span class="badge bg-primary">{{ school_data.applications|length }} application{{ school_data.applications|pluralize }}</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ school_id }}" 
+                         class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                         aria-labelledby="heading{{ school_id }}" 
+                         data-bs-parent="#applicationsAccordion">
+                        <div class="accordion-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Position</th>
+                                            <th>Applied Date</th>
+                                            <th>Status</th>
+                                            <th>Last Updated</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for application in school_data.applications %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ application.position_applied }}</strong>
+                                                {% if application.application_type %}
+                                                <br>
+                                                <small class="text-muted">{{ application.get_application_type_display }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ application.created_at|date:"M d, Y" }}</small>
+                                                <br>
+                                                <small class="text-muted">{{ application.created_at|timesince }} ago</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{% if application.status == 'pending' %}warning{% elif application.status == 'approved' %}success{% elif application.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                                    {{ application.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ application.updated_at|date:"M d, Y" }}</small>
+                                                <br>
+                                                <small class="text-muted">{{ application.updated_at|timesince }} ago</small>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#applicationModal{{ application.id }}">
+                                                    <i class="fas fa-eye me-1"></i> View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Application Detail Modal -->
+                                        <div class="modal fade" id="applicationModal{{ application.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Application Details</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row mb-4">
+                                                            <div class="col-md-6">
+                                                                <h6>School Information</h6>
+                                                                <p class="mb-1"><strong>{{ school_data.school.name }}</strong></p>
+                                                                <p class="text-muted small mb-1">{{ school_data.school.get_school_type_display }}</p>
+                                                                {% if school_data.school.address %}
+                                                                <p class="text-muted small mb-0">
+                                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                                    {{ school_data.school.address }}
+                                                                </p>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <h6>Application Status</h6>
+                                                                <span class="badge bg-{% if application.status == 'pending' %}warning{% elif application.status == 'approved' %}success{% elif application.status == 'rejected' %}danger{% else %}secondary{% endif %} fs-6 mb-2">
+                                                                    {{ application.get_status_display }}
+                                                                </span>
+                                                                <p class="text-muted small mb-0">
+                                                                    Applied: {{ application.created_at|date:"F d, Y" }}
+                                                                </p>
+                                                                <p class="text-muted small">
+                                                                    Last updated: {{ application.updated_at|date:"F d, Y" }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <h6>Personal Information</h6>
+                                                                <p class="mb-1"><strong>Name:</strong> {{ application.full_name }}</p>
+                                                                <p class="mb-1"><strong>Email:</strong> {{ application.email }}</p>
+                                                                {% if application.phone_number %}
+                                                                <p class="mb-1"><strong>Phone:</strong> {{ application.phone_number }}</p>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <h6>Professional Information</h6>
+                                                                <p class="mb-1"><strong>Position:</strong> {{ application.position_applied }}</p>
+                                                                {% if application.years_of_experience %}
+                                                                <p class="mb-1"><strong>Experience:</strong> {{ application.years_of_experience }} years</p>
+                                                                {% endif %}
+                                                                {% if application.qualification %}
+                                                                <p class="mb-1"><strong>Qualification:</strong> {{ application.qualification }}</p>
+                                                                {% endif %}
+                                                                {% if application.specialization %}
+                                                                <p class="mb-1"><strong>Specialization:</strong> {{ application.specialization }}</p>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {% if application.cover_letter %}
+                                                        <div class="mt-4">
+                                                            <h6>Cover Letter</h6>
+                                                            <div class="border rounded p-3 bg-light">
+                                                                {{ application.cover_letter|linebreaks }}
+                                                            </div>
+                                                        </div>
+                                                        {% endif %}
+                                                        
+                                                        {% if application.rejection_reason and application.status == 'rejected' %}
+                                                        <div class="mt-4">
+                                                            <h6 class="text-danger">Rejection Reason</h6>
+                                                            <div class="border rounded p-3 bg-light">
+                                                                {{ application.rejection_reason }}
+                                                            </div>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        {% if application.status == 'pending' %}
+                                                        <button type="button" class="btn btn-danger" 
+                                                                hx-post="{% url 'users:withdraw_application' application.id %}"
+                                                                hx-confirm="Are you sure you want to withdraw this application?"
+                                                                hx-target="#applications-container">
+                                                            Withdraw Application
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted mb-3">No Applications Yet</h4>
+                <p class="text-muted mb-4">Start applying to teaching positions at schools that interest you.</p>
+                <a href="{% url 'users:school_discovery' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search me-2"></i>Discover Schools
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.accordion-button:not(.collapsed) {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    color: var(--bs-primary);
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+    
+    // Handle HTMX responses
+    document.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'applications-container') {
+            // Re-initialize tooltips after content swap
+            const newTooltips = event.detail.elt.querySelectorAll('[data-bs-toggle="tooltip"]');
+            newTooltips.forEach(tooltip => {
+                new bootstrap.Tooltip(tooltip);
+            });
+            
+            // Re-initialize accordions
+            const accordions = event.detail.elt.querySelectorAll('.accordion');
+            accordions.forEach(accordion => {
+                new bootstrap.Collapse(accordion);
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -1,6 +1,9 @@
 <!-- core/templates/core/partials/class_options.html -->
+<option value="">Select a class...</option>
 {% for class in classes %}
-<option value="{{ class.id }}">
+<option value="{{ class.id }}" 
+        data-strength="{{ class.current_strength }}" 
+        data-capacity="{{ class.max_students }}">
     {{ class.name }} ({{ class.current_strength }}/{{ class.max_students }} students)
 </option>
 {% empty %}

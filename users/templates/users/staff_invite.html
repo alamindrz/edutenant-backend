@@ -1,87 +1,147 @@
 <!-- templates/users/staff_invite.html -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Invite Staff - {{ school.name }}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">
-                    <i class="fas fa-envelope me-2"></i>
-                    Invite Staff to {{ school.name }}
-                </h4>
-            </div>
-            <div class="card-body">
-                <!-- Invitation Form -->
-                <form method="post" 
-                      hx-post="{% url 'users:staff_invite' %}"
-                      hx-target="#invitation-result">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Teacher's Email *</label>
-                                <input type="email" name="email" class="form-control" 
-                                       placeholder="teacher@school.com" required
-                                       hx-post="{% url 'users:check_email' %}"
-                                       hx-trigger="change"
-                                       hx-target="#email-validation">
-                                <div id="email-validation"></div>
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Invitation Form Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-envelope me-2"></i>
+                        Invite Staff to {{ school.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Invitation Form -->
+                    <form method="post" id="invitationForm">
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                        <div class="mb-3">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Email Address *</label>
+                                    <input type="email" name="email" class="form-control" 
+                                           placeholder="teacher@example.com" required
+                                           id="emailInput"
+                                           hx-post="{% url 'users:check_email_availability' %}"
+                                           hx-trigger="change"
+                                           hx-target="#email-validation">
+                                    <div id="email-validation" class="mt-1"></div>
+                                    <div class="form-text">
+                                        Enter the email address of the staff member you want to invite
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Role *</label>
+                                    <select name="role" class="form-select" required>
+                                        <option value="">Select a role...</option>
+                                        {% for role in available_roles %}
+                                        <option value="{{ role.id }}">{{ role.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">
+                                        Choose the role for this staff member
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Role *</label>
-                                <select name="role" class="form-select" required>
-                                    <option value="">Select a role...</option>
-                                    {% for role in available_roles %}
-                                    <option value="{{ role.id }}">{{ role.name }}</option>
-                                    {% endfor %}
-                                </select>
+
+                        <div class="mb-4">
+                            <label class="form-label">Personal Message (Optional)</label>
+                            <textarea name="message" class="form-control" rows="3" 
+                                      placeholder="Add a personal note to the invitation..."></textarea>
+                            <div class="form-text">
+                                This message will be included in the invitation email
                             </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Personal Message (Optional)</label>
-                        <textarea name="message" class="form-control" rows="3" 
-                                  placeholder="Add a personal note to the invitation..."></textarea>
-                    </div>
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{% url 'users:staff_list' %}" class="btn btn-secondary me-md-2">
-                            Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-1"></i>
-                            Send Invitation
-                        </button>
-                    </div>
-                </form>
-
-                <div id="invitation-result"></div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>
+                                Send Invitation
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <!-- Pending Invitations -->
-        <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Pending Invitations</h5>
-                <button class="btn btn-sm btn-outline-primary"
-                        hx-get="{% url 'users:staff_invitation_list' %}"
-                        hx-target="#invitations-list">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-            <div class="card-body">
-                <div id="invitations-list" hx-get="{% url 'users:staff_invitation_list' %}" hx-trigger="load">
-                    <!-- Loading invitations... -->
+            <!-- Pending Invitations Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Pending Invitations
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary"
+                            hx-get="{% url 'users:staff_invitation_list_partial' %}"
+                            hx-target="#invitations-list"
+                            hx-indicator="#refresh-spinner">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="spinner-border spinner-border-sm d-none" id="refresh-spinner"></span>
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="invitations-list" 
+                         hx-get="{% url 'users:staff_invitation_list_partial' %}" 
+                         hx-trigger="load">
+                        <!-- Loading invitations... -->
+                        <div class="text-center text-muted py-4">
+                            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                            Loading pending invitations...
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('emailInput');
+    const emailValidation = document.getElementById('email-validation');
+    
+    // Clear validation message when user starts typing
+    emailInput.addEventListener('input', function() {
+        if (this.value.trim() === '') {
+            emailValidation.innerHTML = '';
+        }
+    });
+    
+    // Handle form submission
+    const form = document.getElementById('invitationForm');
+    form.addEventListener('submit', function(e) {
+        // Add basic validation
+        const email = document.querySelector('input[name="email"]').value;
+        const role = document.querySelector('select[name="role"]').value;
+        
+        if (!email || !role) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+});
+</script>
 {% endblock %}

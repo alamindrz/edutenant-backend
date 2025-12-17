@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Complete Payment - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <!-- Payment Card -->
+            <div class="card border-primary shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-credit-card me-2"></i>
+                        Complete Your Application
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Application Summary -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Application Summary</h5>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Application Number:</strong></p>
+                                <p class="mb-1"><strong>Student:</strong></p>
+                                <p class="mb-1"><strong>Form:</strong></p>
+                                <p class="mb-0"><strong>Amount:</strong></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1">{{ invoice.invoice_number }}</p>
+                                <p class="mb-1">
+                                    {{ invoice.metadata.student_data.first_name }} 
+                                    {{ invoice.metadata.student_data.last_name }}
+                                </p>
+                                <p class="mb-1">{{ form.name }}</p>
+                                <p class="mb-0 fw-bold">₦{{ amount|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Instructions -->
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="bi bi-lock display-1 text-primary"></i>
+                        </div>
+                        <h5>Secure Payment Required</h5>
+                        <p class="text-muted">
+                            Your application is pending payment. 
+                            Click the button below to proceed to secure payment.
+                        </p>
+                    </div>
+                    
+                    <!-- Payment Button -->
+                    <div class="d-grid gap-3">
+                        <a href="{{ payment_url }}" class="btn btn-success btn-lg py-3">
+                            <i class="bi bi-shield-check me-2"></i>
+                            Pay ₦{{ amount|floatformat:2 }} Securely
+                        </a>
+                        
+                        <a href="{% url 'admissions:apply' form.slug %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Application
+                        </a>
+                    </div>
+                    
+                    <!-- Security Notice -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check text-success me-1"></i>
+                                Secured by Paystack. We accept cards, bank transfers, and USSD.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Having issues? 
+                        <a href="mailto:{{ school.contact_email|default:'support@edusuite.com' }}">
+                            Contact Support
+                        </a>
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Auto-redirect notice -->
+            <div class="mt-3 text-center">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <small class="text-muted">
+                    Redirecting to secure payment in <span id="countdown">5</span> seconds...
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-redirect countdown
+let seconds = 5;
+const countdownElement = document.getElementById('countdown');
+
+const countdown = setInterval(function() {
+    seconds--;
+    countdownElement.textContent = seconds;
+    
+    if (seconds <= 0) {
+        clearInterval(countdown);
+        document.querySelector('.btn-success').click();
+    }
+}, 1000);
+</script>
+{% endblock %}

@@ -7,7 +7,11 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 import logging
 
+# ✅ Import shared constants
+from shared.constants import StatusChoices, PaymentMethods
+
 logger = logging.getLogger(__name__)
+
 
 class SubdomainPlan(models.Model):
     """Subscription plans for school subdomains."""
@@ -36,16 +40,35 @@ class SubdomainPlan(models.Model):
         ordering = ['order', 'price_monthly']
         verbose_name = 'Subscription Plan'
         verbose_name_plural = 'Subscription Plans'
+        indexes = [
+            models.Index(fields=['is_active']),
+            models.Index(fields=['tier']),
+        ]
         
     def __str__(self):
         return f"{self.name} - ₦{self.price_monthly:,.0f}/month"
     
+    def clean(self):
+        """Validate plan data."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate prices
+        if self.price_monthly < 0:
+            raise ValidationError({'price_monthly': 'Monthly price cannot be negative.'})
+        
+        if self.price_yearly < 0:
+            raise ValidationError({'price_yearly': 'Yearly price cannot be negative.'})
+        
+        # Validate max counts
+        if self.max_students <= 0:
+            raise ValidationError({'max_students': 'Maximum students must be positive.'})
+        
+        if self.max_staff <= 0:
+            raise ValidationError({'max_staff': 'Maximum staff must be positive.'})
+    
     def save(self, *args, **kwargs):
-        """Log plan creation/updates."""
-        if self.pk:
-            logger.info(f"Updated subscription plan: {self.name}")
-        else:
-            logger.info(f"Created new subscription plan: {self.name}")
+        """Save plan with validation."""
+        self.full_clean()
         super().save(*args, **kwargs)
 
 
@@ -83,7 +106,8 @@ class FeeStructure(models.Model):
         ('other', 'Other Fee'),
     )
     
-    school = models.ForeignKey('users.School', on_delete=models.CASCADE, related_name='fee_structures')
+    # ✅ Using 'core.School' - correct
+    school = models.ForeignKey('core.School', on_delete=models.CASCADE, related_name='fee_structures')
     name = models.CharField(max_length=100)
     fee_type = models.CharField(max_length=20, choices=FEE_TYPES)
     category = models.ForeignKey(FeeCategory, on_delete=models.SET_NULL, null=True, blank=True)
@@ -106,34 +130,50 @@ class FeeStructure(models.Model):
         indexes = [
             models.Index(fields=['school', 'is_active']),
             models.Index(fields=['fee_type', 'is_active']),
+            models.Index(fields=['due_date']),
         ]
     
     def __str__(self):
         return f"{self.name} - ₦{self.amount:,.2f}"
     
+    def clean(self):
+        """Validate fee structure data."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate amount
+        if self.amount < 0:
+            raise ValidationError({'amount': 'Fee amount cannot be negative.'})
+        
+        # Validate tax rate
+        if self.tax_rate < 0 or self.tax_rate > 100:
+            raise ValidationError({'tax_rate': 'Tax rate must be between 0 and 100.'})
+        
+        # Validate due date if provided
+        if self.due_date and self.due_date < timezone.now().date():
+            raise ValidationError({'due_date': 'Due date cannot be in the past.'})
+    
     def save(self, *args, **kwargs):
-        """Log fee structure changes."""
-        if self.pk:
-            logger.info(f"Updated fee structure: {self.name} for school {self.school.name}")
-        else:
-            logger.info(f"Created fee structure: {self.name} for school {self.school.name}")
+        """Save fee structure with validation."""
+        self.full_clean()
         super().save(*args, **kwargs)
 
 
 class Invoice(models.Model):
     """Invoice system with Nigerian payment context."""
+    # ✅ Using shared StatusChoices for consistency
     STATUS_CHOICES = (
-        ('draft', 'Draft'),
-        ('sent', 'Sent'),
-        ('paid', 'Paid'),
-        ('overdue', 'Overdue'),
-        ('cancelled', 'Cancelled'),
-        ('partially_paid', 'Partially Paid'),
+        (StatusChoices.DRAFT, 'Draft'),
+        (StatusChoices.SENT, 'Sent'),
+        (StatusChoices.PAID, 'Paid'),
+        (StatusChoices.OVERDUE, 'Overdue'),
+        (StatusChoices.CANCELLED, 'Cancelled'),
+        (StatusChoices.PARTIALLY_PAID, 'Partially Paid'),
     )
     
     # Core information
     invoice_number = models.CharField(max_length=50, unique=True, db_index=True)
-    school = models.ForeignKey('users.School', on_delete=models.CASCADE, related_name='invoices')
+    # ✅ Using 'core.School' - correct
+    school = models.ForeignKey('core.School', on_delete=models.CASCADE, related_name='invoices')
     parent = models.ForeignKey('students.Parent', on_delete=models.CASCADE, related_name='invoices')
     student = models.ForeignKey('students.Student', on_delete=models.CASCADE, null=True, blank=True, related_name='invoices')
     
@@ -143,7 +183,7 @@ class Invoice(models.Model):
         choices=(
             ('application', 'Application Fee'),
             ('school_fees', 'School Fees'),
-            ('acceptance', 'Acceptance Fee'),  # Optional
+            ('acceptance', 'Acceptance Fee'),
             ('other', 'Other Fees'),
         ),
         default='school_fees'
@@ -157,8 +197,8 @@ class Invoice(models.Model):
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
     
-    # Payment tracking
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    # Payment tracking - using shared constants
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=StatusChoices.DRAFT)
     due_date = models.DateField()
     paid_date = models.DateField(null=True, blank=True)
     paystack_reference = models.CharField(max_length=100, blank=True, db_index=True)
@@ -178,30 +218,74 @@ class Invoice(models.Model):
             models.Index(fields=['invoice_number']),
             models.Index(fields=['school', 'status']),
             models.Index(fields=['parent', 'status']),
+            models.Index(fields=['student', 'status']),
             models.Index(fields=['due_date', 'status']),
+            models.Index(fields=['invoice_type']),
         ]
         verbose_name = 'Invoice'
         verbose_name_plural = 'Invoices'
+        ordering = ['-created_at']
     
     def __str__(self):
         student_name = self.student.full_name if self.student else "No Student"
         return f"Invoice {self.invoice_number} - {student_name} - ₦{self.total_amount:,.2f}"
     
+    def clean(self):
+        """Validate invoice data."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate amounts
+        if self.subtotal < 0:
+            raise ValidationError({'subtotal': 'Subtotal cannot be negative.'})
+        
+        if self.total_amount < 0:
+            raise ValidationError({'total_amount': 'Total amount cannot be negative.'})
+        
+        # Validate discount
+        if self.discount < 0:
+            raise ValidationError({'discount': 'Discount cannot be negative.'})
+        
+        if self.discount > self.subtotal:
+            raise ValidationError({'discount': 'Discount cannot exceed subtotal.'})
+        
+        # Validate due date
+        if self.due_date and self.due_date < timezone.now().date():
+            raise ValidationError({'due_date': 'Due date cannot be in the past for new invoices.'})
+        
+        # Validate school consistency
+        if self.parent and self.parent.school != self.school:
+            raise ValidationError({
+                'parent': 'Parent must belong to the same school.'
+            })
+        
+        if self.student and self.student.school != self.school:
+            raise ValidationError({
+                'student': 'Student must belong to the same school.'
+            })
+        
+        # Validate academic term if provided
+        if self.term and self.term.school != self.school:
+            raise ValidationError({
+                'term': 'Academic term must belong to the same school.'
+            })
+    
     def save(self, *args, **kwargs):
-        """Generate invoice number and log changes."""
+        """Save invoice with auto-generated number and validation."""
+        self.full_clean()  # Run validation first
+        
+        # Generate invoice number if not provided
         if not self.invoice_number:
             self.invoice_number = self.generate_invoice_number()
         
-        if self.pk:
-            logger.info(f"Updated invoice {self.invoice_number} - Status: {self.status}")
-        else:
-            logger.info(f"Created invoice {self.invoice_number} for {self.parent.full_name}")
+        # Ensure total amount is calculated if not set
+        if not self.total_amount and self.subtotal:
+            self.total_amount = self.subtotal + self.platform_fee + self.paystack_fee + self.tax_amount - self.discount
         
         super().save(*args, **kwargs)
     
     def generate_invoice_number(self):
         """Generate Nigerian-style invoice number."""
-        school_code = self.school.subdomain.upper() if self.school.subdomain else 'SCH'
+        school_code = self.school.subdomain.upper()[:3] if self.school.subdomain else 'SCH'
         year = timezone.now().strftime('%y')
         month = timezone.now().strftime('%m')
         unique_id = str(uuid.uuid4().int)[:8]
@@ -211,7 +295,10 @@ class Invoice(models.Model):
     @property
     def is_overdue(self):
         """Check if invoice is overdue."""
-        return self.due_date < timezone.now().date() and self.status in ['sent', 'overdue']
+        return (
+            self.due_date < timezone.now().date() and 
+            self.status in [StatusChoices.SENT, StatusChoices.OVERDUE, StatusChoices.PARTIALLY_PAID]
+        )
     
     @property
     def days_overdue(self):
@@ -219,6 +306,19 @@ class Invoice(models.Model):
         if self.is_overdue:
             return (timezone.now().date() - self.due_date).days
         return 0
+    
+    @property
+    def amount_due(self):
+        """Calculate amount due (total - payments)."""
+        payments = sum(
+            t.amount for t in self.transactions.filter(status=StatusChoices.SUCCESS)
+        )
+        return max(Decimal('0'), self.total_amount - payments)
+    
+    @property
+    def is_fully_paid(self):
+        """Check if invoice is fully paid."""
+        return self.amount_due <= 0
 
 
 class InvoiceItem(models.Model):
@@ -234,13 +334,36 @@ class InvoiceItem(models.Model):
         db_table = 'billing_invoiceitem'
         verbose_name = 'Invoice Item'
         verbose_name_plural = 'Invoice Items'
+        indexes = [
+            models.Index(fields=['invoice']),
+        ]
     
     def __str__(self):
         return f"{self.description} - ₦{self.amount:,.2f}"
     
+    def clean(self):
+        """Validate invoice item data."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate quantities and prices
+        if self.quantity <= 0:
+            raise ValidationError({'quantity': 'Quantity must be positive.'})
+        
+        if self.unit_price < 0:
+            raise ValidationError({'unit_price': 'Unit price cannot be negative.'})
+        
+        # Validate fee_structure belongs to same school
+        if self.fee_structure and self.invoice and self.fee_structure.school != self.invoice.school:
+            raise ValidationError({
+                'fee_structure': 'Fee structure must belong to the same school as the invoice.'
+            })
+    
     def save(self, *args, **kwargs):
-        """Calculate amount and log changes."""
-        if self.unit_price and self.quantity:
+        """Calculate amount and validate."""
+        self.full_clean()
+        
+        # Auto-calculate amount if not set
+        if not self.amount and self.unit_price and self.quantity:
             self.amount = self.unit_price * self.quantity
         
         super().save(*args, **kwargs)
@@ -248,12 +371,13 @@ class InvoiceItem(models.Model):
 
 class Transaction(models.Model):
     """Payment transactions with Paystack integration."""
+    # ✅ Using shared StatusChoices
     STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('success', 'Success'),
-        ('failed', 'Failed'),
-        ('reversed', 'Reversed'),
-        ('abandoned', 'Abandoned'),
+        (StatusChoices.PENDING, 'Pending'),
+        (StatusChoices.SUCCESS, 'Success'),
+        (StatusChoices.FAILED, 'Failed'),
+        (StatusChoices.REVERSED, 'Reversed'),
+        (StatusChoices.ABANDONED, 'Abandoned'),
     )
     
     # Core information
@@ -266,10 +390,22 @@ class Transaction(models.Model):
     paystack_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     school_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
-    # Status and metadata
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    # Status and metadata - using shared constants
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=StatusChoices.PENDING)
     metadata = models.JSONField(default=dict)
     paystack_response = models.JSONField(default=dict, help_text="Raw response from Paystack")
+    
+    # ✅ Using shared PaymentMethods constant for payment method field (add this)
+    payment_method = models.CharField(
+        max_length=20, 
+        choices=PaymentMethods.choices if hasattr(PaymentMethods, 'choices') else [
+            ('paystack', 'Paystack'),
+            ('cash', 'Cash'),
+            ('transfer', 'Transfer'),
+            ('waiver', 'Waiver'),
+        ],
+        default='paystack'
+    )
     
     # Nigerian payment context
     channel = models.CharField(max_length=50, blank=True, help_text="Payment channel: card, bank, etc.")
@@ -287,6 +423,8 @@ class Transaction(models.Model):
             models.Index(fields=['paystack_reference']),
             models.Index(fields=['invoice', 'status']),
             models.Index(fields=['initiated_at']),
+            models.Index(fields=['status', 'completed_at']),
+            models.Index(fields=['payment_method']),  # Added index
         ]
         verbose_name = 'Transaction'
         verbose_name_plural = 'Transactions'
@@ -295,32 +433,54 @@ class Transaction(models.Model):
     def __str__(self):
         return f"Transaction {self.paystack_reference} - ₦{self.amount:,.2f} - {self.status}"
     
-    def save(self, *args, **kwargs):
-        """Log transaction status changes."""
-        if self.pk:
-            old_status = Transaction.objects.get(pk=self.pk).status
-            if old_status != self.status:
-                logger.info(f"Transaction {self.paystack_reference} status changed: {old_status} -> {self.status}")
+    def clean(self):
+        """Validate transaction data."""
+        from django.core.exceptions import ValidationError
         
+        # Validate amount
+        if self.amount <= 0:
+            raise ValidationError({'amount': 'Transaction amount must be positive.'})
+        
+        # Validate school_amount calculation
+        if self.school_amount < 0:
+            raise ValidationError({'school_amount': 'School amount cannot be negative.'})
+        
+        # Validate currency
+        if self.currency != 'NGN':
+            raise ValidationError({'currency': 'Only NGN currency is supported.'})
+        
+        # Auto-calculate school_amount if not set
+        if not self.school_amount and self.amount and self.platform_fee and self.paystack_fee:
+            self.school_amount = self.amount - self.platform_fee - self.paystack_fee
+    
+    def save(self, *args, **kwargs):
+        """Save transaction with validation."""
+        self.full_clean()
         super().save(*args, **kwargs)
 
 
 class SchoolSubscription(models.Model):
     """School subscription management."""
+    # ✅ Using shared StatusChoices
     STATUS_CHOICES = (
-        ('trialing', 'Trialing'),
-        ('active', 'Active'),
-        ('past_due', 'Past Due'),
-        ('cancelled', 'Cancelled'),
-        ('expired', 'Expired'),
+        (StatusChoices.TRIALING, 'Trialing'),
+        (StatusChoices.ACTIVE, 'Active'),
+        (StatusChoices.PAST_DUE, 'Past Due'),
+        (StatusChoices.CANCELLED, 'Cancelled'),
+        (StatusChoices.EXPIRED, 'Expired'),
     )
     
-    school = models.OneToOneField('users.School', on_delete=models.CASCADE, related_name='subscription')
+    # ✅ Using 'core.School' - correct
+    school = models.OneToOneField('core.School', on_delete=models.CASCADE, related_name='subscription')
     plan = models.ForeignKey(SubdomainPlan, on_delete=models.PROTECT)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='trialing')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=StatusChoices.TRIALING)
     
     # Billing period
-    billing_period = models.CharField(max_length=10, choices=[('monthly', 'Monthly'), ('yearly', 'Yearly')], default='monthly')
+    billing_period = models.CharField(
+        max_length=10, 
+        choices=[('monthly', 'Monthly'), ('yearly', 'Yearly')], 
+        default='monthly'
+    )
     current_period_start = models.DateTimeField(default=timezone.now)
     current_period_end = models.DateTimeField()
     
@@ -336,29 +496,49 @@ class SchoolSubscription(models.Model):
         db_table = 'billing_subscription'
         verbose_name = 'School Subscription'
         verbose_name_plural = 'School Subscriptions'
+        indexes = [
+            models.Index(fields=['school']),
+            models.Index(fields=['status']),
+            models.Index(fields=['current_period_end']),
+        ]
     
     def __str__(self):
         return f"{self.school.name} - {self.plan.name} ({self.status})"
     
+    def clean(self):
+        """Validate subscription data."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate period dates
+        if self.current_period_end and self.current_period_start:
+            if self.current_period_end <= self.current_period_start:
+                raise ValidationError({
+                    'current_period_end': 'Period end must be after period start.'
+                })
+        
+        # Validate plan is active
+        if not self.plan.is_active:
+            raise ValidationError({
+                'plan': 'Selected plan is not active.'
+            })
+    
     def save(self, *args, **kwargs):
-        """Set period end and log subscription changes."""
+        """Save subscription with auto-calculated period end."""
+        self.full_clean()
+        
+        # Set period end if not provided
         if not self.current_period_end:
             if self.billing_period == 'yearly':
                 self.current_period_end = self.current_period_start + timezone.timedelta(days=365)
             else:
                 self.current_period_end = self.current_period_start + timezone.timedelta(days=30)
         
-        if self.pk:
-            logger.info(f"Updated subscription for {self.school.name} - Status: {self.status}")
-        else:
-            logger.info(f"Created subscription for {self.school.name} - Plan: {self.plan.name}")
-        
         super().save(*args, **kwargs)
     
     @property
     def is_active(self):
         """Check if subscription is currently active."""
-        return self.status == 'active' and self.current_period_end > timezone.now()
+        return self.status == StatusChoices.ACTIVE and self.current_period_end > timezone.now()
     
     @property
     def days_remaining(self):
@@ -366,3 +546,8 @@ class SchoolSubscription(models.Model):
         if self.current_period_end > timezone.now():
             return (self.current_period_end - timezone.now()).days
         return 0
+    
+    @property
+    def has_expired(self):
+        """Check if subscription has expired."""
+        return self.current_period_end <= timezone.now()

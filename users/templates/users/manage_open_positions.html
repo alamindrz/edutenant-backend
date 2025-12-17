@@ -1,0 +1,157 @@
+<!-- templates/users/manage_open_positions.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Open Positions - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ page_title }}</h1>
+            <p class="text-muted">Manage open teaching positions for {{ school.name }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'users:school_applications' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Applications
+            </a>
+            <a href="{% url 'users:staff_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-users me-2"></i>Staff Management
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ positions.count }}</h4>
+                            <small>Total Positions</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-briefcase fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ positions|filter_active:True|length }}</h4>
+                            <small>Active Positions</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">
+                                {% with total=0 %}
+                                    {% for position in positions %}
+                                        {% with count=position.application_count %}
+                                            {{ total|add:count }}
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% endwith %}
+                            </h4>
+                            <small>Total Applications</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ positions|filter_active:False|length }}</h4>
+                            <small>Inactive Positions</small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-pause-circle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Positions Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-briefcase me-2"></i>
+                Open Positions
+            </h5>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i> Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'users:application_export' %}" target="_blank">
+                        Export Applications (CSV)
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="positions-table" hx-get="{% url 'users:manage_open_positions' %}" hx-trigger="load">
+                <!-- Content loaded via HTMX -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading positions...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h6 class="card-title">
+                <i class="fas fa-info-circle me-2 text-info"></i>
+                How Open Positions Work
+            </h6>
+            <ul class="list-unstyled small text-muted mb-0">
+                <li class="mb-1">• Active positions appear on the school discovery page for teachers to apply</li>
+                <li class="mb-1">• Each position tracks the number of pending applications</li>
+                <li class="mb-1">• Deactivate positions when they are filled or no longer needed</li>
+                <li class="mb-1">• Teachers can apply for multiple positions at the same school</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

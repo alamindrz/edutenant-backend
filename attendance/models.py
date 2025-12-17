@@ -5,15 +5,9 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 import logging
 from datetime import datetime, time as time_type
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from django.core.exceptions import ValidationError
-import logging
-from datetime import datetime, time as time_type
-
 
 logger = logging.getLogger(__name__)
+
 
 class AttendanceConfig(models.Model):
     """School-specific attendance configuration."""
@@ -22,7 +16,8 @@ class AttendanceConfig(models.Model):
         ('double', 'Double Session'),
     )
     
-    school = models.OneToOneField('users.School', on_delete=models.CASCADE, related_name='attendance_config')
+    # ✅ FIXED: Use 'core.School' instead of 'users.School'
+    school = models.OneToOneField('core.School', on_delete=models.CASCADE, related_name='attendance_config')
     session_type = models.CharField(max_length=10, choices=SCHOOL_SESSION_TYPES, default='single')
     
     # Student attendance settings
@@ -68,10 +63,9 @@ class AttendanceConfig(models.Model):
                 raise ValidationError("Break times must be within school hours.")
 
 
-# attendance/models.py - CRITICAL FIXES
-
 class StudentAttendance(models.Model):
     """Student attendance records."""
+    # ✅ Consider moving to shared constants if used elsewhere
     ATTENDANCE_STATUS = (
         ('present', 'Present'),
         ('absent', 'Absent'),
@@ -96,7 +90,13 @@ class StudentAttendance(models.Model):
     early_departure = models.BooleanField(default=False)
     
     # Metadata
-    recorded_by = models.ForeignKey('users.Profile', on_delete=models.SET_NULL, null=True, related_name='recorded_student_attendance')
+    # ✅ FIXED: Use 'users.Profile' or 'core.User' - check your actual model
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='recorded_student_attendance'
+    )
     recorded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -122,32 +122,42 @@ class StudentAttendance(models.Model):
         
         if self.date > timezone.now().date():
             raise ValidationError("Cannot record attendance for future dates.")
+        
+        # ✅ Validate student belongs to same school as academic term
+        if self.student.school != self.academic_term.school:
+            raise ValidationError("Student must belong to the same school as academic term.")
     
     def save(self, *args, **kwargs):
         """Calculate late and early departure status."""
-        # REMOVED DUPLICATE METHOD - KEEP ONLY ONE save() METHOD
-        
-        if self.time_in and hasattr(self.academic_term, 'school') and hasattr(self.academic_term.school, 'attendance_config'):
+        # ✅ Added proper error handling and existence checks
+        if self.time_in and self.academic_term:
             try:
-                config = self.academic_term.school.attendance_config
-                school_start = datetime.combine(self.date, config.school_start_time)
-                time_in_dt = datetime.combine(self.date, self.time_in)
-                
-                # Check if late
-                time_diff = (time_in_dt - school_start).total_seconds() / 60  # minutes
-                self.is_late = time_diff > config.late_threshold_minutes
+                # Get school from academic_term
+                school = self.academic_term.school
+                if hasattr(school, 'attendance_config') and school.attendance_config:
+                    config = school.attendance_config
+                    school_start = datetime.combine(self.date, config.school_start_time)
+                    time_in_dt = datetime.combine(self.date, self.time_in)
+                    
+                    # Check if late
+                    time_diff = (time_in_dt - school_start).total_seconds() / 60  # minutes
+                    self.is_late = time_diff > config.late_threshold_minutes
+            except AttributeError as e:
+                logger.warning(f"Error accessing attendance config: {e}")
             except Exception as e:
                 logger.warning(f"Error calculating late status: {e}")
         
-        if self.time_out and hasattr(self.academic_term, 'school') and hasattr(self.academic_term.school, 'attendance_config'):
+        if self.time_out and self.academic_term:
             try:
-                config = self.academic_term.school.attendance_config
-                school_end = datetime.combine(self.date, config.school_end_time)
-                time_out_dt = datetime.combine(self.date, self.time_out)
-                
-                # Check if early departure
-                time_diff = (school_end - time_out_dt).total_seconds() / 60  # minutes
-                self.early_departure = time_diff > config.early_departure_minutes
+                school = self.academic_term.school
+                if hasattr(school, 'attendance_config') and school.attendance_config:
+                    config = school.attendance_config
+                    school_end = datetime.combine(self.date, config.school_end_time)
+                    time_out_dt = datetime.combine(self.date, self.time_out)
+                    
+                    # Check if early departure
+                    time_diff = (school_end - time_out_dt).total_seconds() / 60  # minutes
+                    self.early_departure = time_diff > config.early_departure_minutes
             except Exception as e:
                 logger.warning(f"Error calculating early departure: {e}")
         
@@ -157,23 +167,27 @@ class StudentAttendance(models.Model):
     def duration_minutes(self):
         """Calculate attendance duration in minutes."""
         if self.time_in and self.time_out:
-            time_in_dt = datetime.combine(self.date, self.time_in)
-            time_out_dt = datetime.combine(self.date, self.time_out)
-            return (time_out_dt - time_in_dt).total_seconds() / 60
+            try:
+                time_in_dt = datetime.combine(self.date, self.time_in)
+                time_out_dt = datetime.combine(self.date, self.time_out)
+                return (time_out_dt - time_in_dt).total_seconds() / 60
+            except Exception as e:
+                logger.warning(f"Error calculating duration: {e}")
         return 0
     
     @property
     def student_class(self):
         """Get the student's current class."""
+        # ✅ Using shared ClassManager or direct attribute
         return getattr(self.student, 'current_class', None)
     
     @property
     def class_name(self):
         """Get the student's class name."""
         class_obj = self.student_class
-        return class_obj.name if class_obj else "No Class Assigned"
-
-
+        if class_obj and hasattr(class_obj, 'name'):
+            return class_obj.name
+        return "No Class Assigned"
 
 
 class TeacherAttendance(models.Model):
@@ -187,6 +201,7 @@ class TeacherAttendance(models.Model):
         ('other', 'Other'),
     )
     
+    # ✅ FIXED: Use 'users.Staff' - make sure this model exists
     staff = models.ForeignKey('users.Staff', on_delete=models.CASCADE, related_name='attendance_records')
     academic_term = models.ForeignKey('students.AcademicTerm', on_delete=models.CASCADE)
     date = models.DateField()
@@ -206,186 +221,12 @@ class TeacherAttendance(models.Model):
     auto_signed_out = models.BooleanField(default=False)
     
     # Recorded by (principal or staff manager)
-    recorded_by = models.ForeignKey('users.Profile', on_delete=models.SET_NULL, null=True, related_name='recorded_teacher_attendance')
-    recorded_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'attendance_teacher'
-        verbose_name = 'Teacher Attendance'
-        verbose_name_plural = 'Teacher Attendance Records'
-        unique_together = ['staff', 'date']
-        indexes = [
-            models.Index(fields=['staff', 'date']),
-            models.Index(fields=['academic_term', 'date']),
-            models.Index(fields=['date', 'status']),
-            models.Index(fields=['sign_in_time']),
-        ]
-        ordering = ['-date', 'staff']
-    
-    def __str__(self):
-        return f"{self.staff} - {self.date} - {self.status}"
-    
-    def clean(self):
-        """Validate teacher attendance data."""
-        if self.sign_in_time and self.sign_out_time and self.sign_in_time >= self.sign_out_time:
-            raise ValidationError("Sign out time must be after sign in time.")
-        
-        if self.date > timezone.now().date():
-            raise ValidationError("Cannot record attendance for future dates.")
-    
-    def save(self, *args, **kwargs):
-        """Calculate late status and auto-signout."""
-        # FIX: Add proper error handling and timezone awareness
-        if self.sign_in_time and hasattr(self.academic_term, 'school') and hasattr(self.academic_term.school, 'attendance_config'):
-            try:
-                config = self.academic_term.school.attendance_config
-                
-                # Convert to timezone-naive for comparison if needed
-                school_start = datetime.combine(self.date, config.school_start_time)
-                sign_in_dt = self.sign_in_time
-                
-                # Handle timezone-aware datetime
-                if timezone.is_aware(sign_in_dt):
-                    sign_in_dt = timezone.make_naive(sign_in_dt)
-                
-                time_diff = (sign_in_dt - school_start).total_seconds() / 60  # minutes
-                self.is_late = time_diff > config.teacher_late_threshold
-            except Exception as e:
-                logger.warning(f"Error calculating teacher late status: {e}")
-        
-        # Auto-signout logic
-        if (self.sign_in_time and not self.sign_out_time and 
-            hasattr(self.academic_term, 'school') and hasattr(self.academic_term.school, 'attendance_config')):
-            
-            try:
-                config = self.academic_term.school.attendance_config
-                school_end = datetime.combine(self.date, config.school_end_time)
-                current_time = timezone.now()
-                
-                if timezone.is_aware(current_time):
-                    current_time = timezone.make_naive(current_time)
-                
-                if current_time > school_end:
-                    self.sign_out_time = timezone.now()
-                    self.auto_signed_out = True
-            except Exception as e:
-                logger.warning(f"Error in auto-signout: {e}")
-        
-        super().save(*args, **kwargs)
-    
-    @property
-    def work_duration_minutes(self):
-        """Calculate work duration in minutes."""
-        if self.sign_in_time and self.sign_out_time:
-            return (self.sign_out_time - self.sign_in_time).total_seconds() / 60
-        return 0
-    
-    @property
-    def is_currently_signed_in(self):
-        """Check if teacher is currently signed in."""
-        return self.sign_in_time is not None and self.sign_out_time is None
-
-
-
-class ClassAttendanceSummary(models.Model):
-    """Daily attendance summary for each class."""
-    class_group = models.ForeignKey('core.Class', on_delete=models.CASCADE, related_name='attendance_summaries')
-    date = models.DateField()
-    academic_term = models.ForeignKey('students.AcademicTerm', on_delete=models.CASCADE)
-    
-    # Attendance counts
-    total_students = models.IntegerField(default=0)
-    present_count = models.IntegerField(default=0)
-    absent_count = models.IntegerField(default=0)
-    late_count = models.IntegerField(default=0)
-    excused_count = models.IntegerField(default=0)
-    
-    # Rates
-    attendance_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    
-    # Metadata
-    calculated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'attendance_class_summary'
-        verbose_name = 'Class Attendance Summary'
-        verbose_name_plural = 'Class Attendance Summaries'
-        unique_together = ['class_group', 'date']
-        indexes = [
-            models.Index(fields=['class_group', 'date']),
-            models.Index(fields=['date', 'attendance_rate']),
-        ]
-        ordering = ['-date', 'class_group']
-    
-    def __str__(self):
-        return f"{self.class_group.name} - {self.date} - {self.attendance_rate}%"
-    
-    def calculate_summary(self):
-        """Calculate attendance summary for the class."""
-        from students.models import Student
-        
-        # Get all active students in this class
-        students = Student.objects.filter(
-            current_class=self.class_group,
-            is_active=True
-        )
-        
-        self.total_students = students.count()
-        
-        # Get attendance records for this date
-        attendance_records = StudentAttendance.objects.filter(
-            student__current_class=self.class_group,
-            date=self.date
-        )
-        
-        self.present_count = attendance_records.filter(status='present').count()
-        self.absent_count = attendance_records.filter(status='absent').count()
-        self.late_count = attendance_records.filter(status='late').count()
-        self.excused_count = attendance_records.filter(status='excused').count()
-        
-        # Calculate attendance rate
-        if self.total_students > 0:
-            self.attendance_rate = (self.present_count / self.total_students) * 100
-    
-    def save(self, *args, **kwargs):
-        """Recalculate summary before saving."""
-        self.calculate_summary()
-        super().save(*args, **kwargs)
-
-
-# attendance/models.py - UPDATE TeacherAttendance MODEL
-class TeacherAttendance(models.Model):
-    """Teacher attendance and sign-in/out records."""
-    ATTENDANCE_STATUS = (
-        ('present', 'Present'),
-        ('absent', 'Absent'),
-        ('late', 'Late'),
-        ('half_day', 'Half Day'),
-        ('leave', 'On Leave'),
-        ('other', 'Other'),
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='recorded_teacher_attendance'
     )
-    
-    staff = models.ForeignKey('users.Staff', on_delete=models.CASCADE, related_name='attendance_records')  # ✅ Use users.Staff
-    academic_term = models.ForeignKey('students.AcademicTerm', on_delete=models.CASCADE)
-    date = models.DateField()
-    status = models.CharField(max_length=10, choices=ATTENDANCE_STATUS, default='present')
-  
-    # Sign-in/out tracking
-    sign_in_time = models.DateTimeField(null=True, blank=True)
-    sign_out_time = models.DateTimeField(null=True, blank=True)
-    
-    # Location tracking (optional)
-    sign_in_location = models.CharField(max_length=255, blank=True)
-    sign_out_location = models.CharField(max_length=255, blank=True)
-    
-    # Additional information
-    remarks = models.TextField(blank=True)
-    is_late = models.BooleanField(default=False)
-    auto_signed_out = models.BooleanField(default=False)
-    
-    # Recorded by (principal or staff manager)
-    recorded_by = models.ForeignKey('users.Profile', on_delete=models.SET_NULL, null=True, related_name='recorded_teacher_attendance')
     recorded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -412,30 +253,49 @@ class TeacherAttendance(models.Model):
         
         if self.date > timezone.now().date():
             raise ValidationError("Cannot record attendance for future dates.")
+        
+        # ✅ Validate staff belongs to same school as academic term
+        if self.staff.school != self.academic_term.school:
+            raise ValidationError("Staff must belong to the same school as academic term.")
     
     def save(self, *args, **kwargs):
         """Calculate late status and auto-signout."""
-        if self.sign_in_time and self.academic_term.school.attendance_config:
-            config = self.academic_term.school.attendance_config
-            
-            # Check if late
-            school_start = datetime.combine(self.date, config.school_start_time)
-            sign_in_dt = self.sign_in_time.replace(tzinfo=None) if self.sign_in_time.tzinfo else self.sign_in_time
-            
-            time_diff = (sign_in_dt - school_start).total_seconds() / 60  # minutes
-            self.is_late = time_diff > config.teacher_late_threshold
+        if self.sign_in_time and self.academic_term:
+            try:
+                school = self.academic_term.school
+                if hasattr(school, 'attendance_config') and school.attendance_config:
+                    config = school.attendance_config
+                    
+                    # Check if late
+                    school_start = datetime.combine(self.date, config.school_start_time)
+                    # Handle timezone-aware datetime
+                    sign_in_dt = self.sign_in_time
+                    if sign_in_dt.tzinfo:
+                        sign_in_dt = sign_in_dt.replace(tzinfo=None)
+                    
+                    time_diff = (sign_in_dt - school_start).total_seconds() / 60  # minutes
+                    self.is_late = time_diff > config.teacher_late_threshold
+            except Exception as e:
+                logger.warning(f"Error calculating late status: {e}")
         
         # Auto-signout at school end time if still signed in
-        if (self.sign_in_time and not self.sign_out_time and 
-            self.academic_term.school.attendance_config):
-            
-            config = self.academic_term.school.attendance_config
-            school_end = datetime.combine(self.date, config.school_end_time)
-            current_time = timezone.now().replace(tzinfo=None)
-            
-            if current_time > school_end:
-                self.sign_out_time = timezone.now()
-                self.auto_signed_out = True
+        if self.sign_in_time and not self.sign_out_time and self.academic_term:
+            try:
+                school = self.academic_term.school
+                if hasattr(school, 'attendance_config') and school.attendance_config:
+                    config = school.attendance_config
+                    school_end = datetime.combine(self.date, config.school_end_time)
+                    current_time = timezone.now()
+                    
+                    # Remove timezone for comparison
+                    if current_time.tzinfo:
+                        current_time = current_time.replace(tzinfo=None)
+                    
+                    if current_time > school_end:
+                        self.sign_out_time = timezone.now()
+                        self.auto_signed_out = True
+            except Exception as e:
+                logger.warning(f"Error auto-signing out: {e}")
         
         super().save(*args, **kwargs)
     
@@ -443,7 +303,10 @@ class TeacherAttendance(models.Model):
     def work_duration_minutes(self):
         """Calculate work duration in minutes."""
         if self.sign_in_time and self.sign_out_time:
-            return (self.sign_out_time - self.sign_in_time).total_seconds() / 60
+            try:
+                return (self.sign_out_time - self.sign_in_time).total_seconds() / 60
+            except Exception as e:
+                logger.warning(f"Error calculating work duration: {e}")
         return 0
     
     @property
@@ -485,6 +348,14 @@ class AttendanceSummary(models.Model):
     
     def __str__(self):
         return f"{self.student} - {self.period_type} Summary - {self.start_date}"
+    
+    def clean(self):
+        """Validate summary data."""
+        if self.start_date > self.end_date:
+            raise ValidationError("End date must be after start date.")
+        
+        if self.student.school != self.academic_term.school:
+            raise ValidationError("Student must belong to the same school as academic term.")
     
     def calculate_rates(self):
         """Calculate attendance and punctuality rates."""
@@ -537,6 +408,14 @@ class TeacherPerformance(models.Model):
     
     def __str__(self):
         return f"{self.staff} - {self.period_type} Performance - {self.start_date}"
+    
+    def clean(self):
+        """Validate performance data."""
+        if self.start_date > self.end_date:
+            raise ValidationError("End date must be after start date.")
+        
+        if self.staff.school != self.academic_term.school:
+            raise ValidationError("Staff must belong to the same school as academic term.")
     
     def calculate_scores(self):
         """Calculate performance scores."""

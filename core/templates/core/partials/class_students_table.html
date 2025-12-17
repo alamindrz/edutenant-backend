@@ -1,0 +1,84 @@
+<!-- core/templates/core/partials/class_students_table.html -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0">Students in {{ class_instance.name }}</h6>
+    <div class="btn-group">
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+            <i class="bi bi-person-plus me-1"></i>Add Student
+        </button>
+        <a href="{% url 'students:student_list' %}?class={{ class_instance.id }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-right me-1"></i>View All
+        </a>
+    </div>
+</div>
+
+{% if students %}
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Admission No.</th>
+                <th>Parent</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students|slice:":10" %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                            <i class="bi bi-person text-muted"></i>
+                        </div>
+                        <div>
+                            <div class="fw-medium">{{ student.full_name }}</div>
+                            <small class="text-muted">{{ student.gender|default:"" }}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <code>{{ student.admission_number|default:"—" }}</code>
+                </td>
+                <td>
+                    {% if student.parent %}
+                        <small>{{ student.parent.full_name }}</small>
+                        <br>
+                        <small class="text-muted">{{ student.parent.phone_number|default:"" }}</small>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-{% if student.admission_status == 'enrolled' %}success{% else %}info{% endif %}">
+                        {{ student.get_admission_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'students:student_detail' student.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if students.count > 10 %}
+    <div class="text-center mt-3">
+        <a href="{% url 'students:student_list' %}?class={{ class_instance.id }}" class="btn btn-outline-primary btn-sm">
+            View all {{ students.count }} students <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+    <h5 class="text-muted mt-3">No Students in This Class</h5>
+    <p class="text-muted">Add students to populate this class.</p>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+        <i class="bi bi-person-plus me-1"></i>Add First Student
+    </button>
+</div>
+{% endif %}

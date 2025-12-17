@@ -1,0 +1,179 @@
+<!-- templates/core/public/landing.html -->
+{% extends "base.html" %}
+
+{% block title %}Welcome - School Management System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold text-white mb-4">
+                    Find the Perfect School for Your Child
+                </h1>
+                <p class="lead text-white mb-4">
+                    Discover top schools, apply online, and manage everything in one place. 
+                    Join thousands of parents who trust our platform.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'school_discovery' %}" class="btn btn-light btn-lg px-4">
+                        <i class="bi bi-search me-2"></i>Discover Schools
+                    </a>
+                    <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-person-plus me-2"></i>Sign Up Free
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
+                         alt="Education" class="img-fluid" style="max-height: 400px;">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-4">
+                <div class="display-4 fw-bold text-primary">{{ total_schools|default:"100+" }}</div>
+                <p class="text-muted">Schools Registered</p>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="display-4 fw-bold text-success">5000+</div>
+                <p class="text-muted">Happy Parents</p>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="display-4 fw-bold text-info">98%</div>
+                <p class="text-muted">Success Rate</p>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="display-4 fw-bold text-warning">24/7</div>
+                <p class="text-muted">Support Available</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Schools -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Featured Schools</h2>
+        <div class="row">
+            {% for school in featured_schools %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start mb-3">
+                            {% if school.logo %}
+                            <img src="{{ school.logo.url }}" alt="{{ school.name }}" 
+                                 class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 60px; height: 60px;">
+                                <i class="bi bi-building fs-3"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="card-title mb-1">{{ school.name }}</h5>
+                                <p class="text-muted small mb-2">
+                                    <i class="bi bi-geo-alt me-1"></i>{{ school.location }}
+                                </p>
+                                <span class="badge bg-info">{{ school.school_type|title }}</span>
+                            </div>
+                        </div>
+                        <p class="card-text text-muted small">
+                            {{ school.description|truncatechars:120 }}
+                        </p>
+                        <div class="mt-3">
+                            <a href="{% url 'school_detail' school.slug %}" class="btn btn-outline-primary btn-sm">
+                                View Details
+                            </a>
+                            <a href="{% url 'apply_public' school.slug %}" class="btn btn-primary btn-sm ms-2">
+                                Apply Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No featured schools available at the moment.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'school_discovery' %}" class="btn btn-outline-primary">
+                View All Schools <i class="bi bi-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">How It Works</h2>
+        <div class="row">
+            <div class="col-md-3 mb-4 text-center">
+                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-search fs-3"></i>
+                </div>
+                <h5>1. Find Schools</h5>
+                <p class="text-muted">Browse through our verified schools and find the perfect match.</p>
+            </div>
+            <div class="col-md-3 mb-4 text-center">
+                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-pencil-square fs-3"></i>
+                </div>
+                <h5>2. Apply Online</h5>
+                <p class="text-muted">Fill out the application form completely online. No paperwork needed.</p>
+            </div>
+            <div class="col-md-3 mb-4 text-center">
+                <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-credit-card fs-3"></i>
+                </div>
+                <h5>3. Secure Payment</h5>
+                <p class="text-muted">Pay application fees securely through our payment gateway.</p>
+            </div>
+            <div class="col-md-3 mb-4 text-center">
+                <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-check-circle fs-3"></i>
+                </div>
+                <h5>4. Track Status</h5>
+                <p class="text-muted">Monitor your application status and get updates in real-time.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5" style="background-color: #f8f9fa;">
+    <div class="container text-center">
+        <h2 class="mb-4">Ready to Get Started?</h2>
+        <p class="lead text-muted mb-4">
+            Join thousands of parents who have found the perfect school for their children.
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{% url 'account_signup' %}" class="btn btn-primary btn-lg px-5">
+                <i class="bi bi-person-plus me-2"></i>Create Free Account
+            </a>
+            <a href="{% url 'school_discovery' %}" class="btn btn-outline-secondary btn-lg px-5">
+                <i class="bi bi-search me-2"></i>Browse Schools
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

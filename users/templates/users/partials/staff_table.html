@@ -9,9 +9,6 @@
             <table class="table table-hover table-striped mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th width="5%">
-                            <input type="checkbox" class="form-check-input" id="select-all">
-                        </th>
                         <th>Staff ID</th>
                         <th>Name</th>
                         <th>Position</th>
@@ -23,10 +20,51 @@
                 </thead>
                 <tbody>
                     {% for staff in staff_members %}
-                    {% include 'users/partials/staff_row.html' with staff=staff %}
+                    <tr>
+                        <td>
+                            <strong>{{ staff.staff_id }}</strong>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                                     style="width: 32px; height: 32px;">
+                                    {{ staff.first_name|first|upper }}{{ staff.last_name|first|upper }}
+                                </div>
+                                <div>
+                                    <strong>{{ staff.full_name }}</strong>
+                                    {% if staff.user %}
+                                    <small class="text-muted d-block">User account</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ staff.position }}</td>
+                        <td>{{ staff.department|default:"-" }}</td>
+                        <td>{{ staff.email }}</td>
+                        <td>
+                            <span class="badge {% if staff.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if staff.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'users:staff_detail' staff.id %}" class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn {% if staff.is_active %}btn-warning{% else %}btn-success{% endif %}"
+                                        hx-post="{% url 'users:staff_toggle_active' staff.id %}"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML"
+                                        hx-confirm="{% if staff.is_active %}Deactivate this staff member?{% else %}Activate this staff member?{% endif %}"
+                                        title="{% if staff.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                    <i class="fas {% if staff.is_active %}fa-times{% else %}fa-check{% endif %}"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="7" class="text-center py-4">
                             <i class="fas fa-users fa-2x text-muted mb-2"></i>
                             <p class="text-muted">No staff members found</p>
                             <a href="{% url 'users:staff_create' %}" class="btn btn-primary btn-sm">
@@ -38,63 +76,43 @@
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
-
-<!-- Bulk Actions -->
-{% if staff_members %}
-<div class="mt-3" id="bulk-actions" style="display: none;">
-    <div class="card">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-                <span id="selected-count">0 staff selected</span>
-                <div class="btn-group">
-                    <button class="btn btn-success btn-sm" 
-                            hx-post="{% url 'users:staff_bulk_actions' %}"
-                            hx-include="[name='staff_ids']"
-                            name="action" value="activate">
-                        Activate
-                    </button>
-                    <button class="btn btn-warning btn-sm"
-                            hx-post="{% url 'users:staff_bulk_actions' %}"
-                            hx-include="[name='staff_ids']"
-                            name="action" value="deactivate">
-                        Deactivate
-                    </button>
-                    <button class="btn btn-danger btn-sm"
-                            hx-post="{% url 'users:staff_bulk_actions' %}"
-                            hx-include="[name='staff_ids']"
-                            name="action" value="delete">
-                        Delete
-                    </button>
-                </div>
-            </div>
+        
+        {% if staff_members.has_other_pages %}
+        <div class="card-footer">
+            <nav aria-label="Staff pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if staff_members.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           hx-get="{% url 'users:staff_table_partial' %}"
+                           hx-target="#staff-table"
+                           hx-vals='{"page": "{{ staff_members.previous_page_number }}", "search": "{{ search_query }}", "active": "{{ active_filter }}"}'
+                           href="?page={{ staff_members.previous_page_number }}">&laquo;</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in staff_members.paginator.page_range %}
+                    <li class="page-item {% if staff_members.number == i %}active{% endif %}">
+                        <a class="page-link" 
+                           hx-get="{% url 'users:staff_table_partial' %}"
+                           hx-target="#staff-table"
+                           hx-vals='{"page": "{{ i }}", "search": "{{ search_query }}", "active": "{{ active_filter }}"}'
+                           href="?page={{ i }}">{{ i }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if staff_members.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           hx-get="{% url 'users:staff_table_partial' %}"
+                           hx-target="#staff-table"
+                           hx-vals='{"page": "{{ staff_members.next_page_number }}", "search": "{{ search_query }}", "active": "{{ active_filter }}"}'
+                           href="?page={{ staff_members.next_page_number }}">&raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
+        {% endif %}
     </div>
 </div>
-{% endif %}
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Bulk selection
-    const selectAll = document.getElementById('select-all');
-    const staffCheckboxes = document.querySelectorAll('.staff-checkbox');
-    const bulkActions = document.getElementById('bulk-actions');
-    const selectedCount = document.getElementById('selected-count');
-
-    function updateBulkActions() {
-        const selected = document.querySelectorAll('.staff-checkbox:checked');
-        selectedCount.textContent = `${selected.length} staff selected`;
-        bulkActions.style.display = selected.length > 0 ? 'block' : 'none';
-    }
-
-    selectAll?.addEventListener('change', function() {
-        staffCheckboxes.forEach(cb => cb.checked = this.checked);
-        updateBulkActions();
-    });
-
-    staffCheckboxes.forEach(cb => {
-        cb.addEventListener('change', updateBulkActions);
-    });
-});
-</script>

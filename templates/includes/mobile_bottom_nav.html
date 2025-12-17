@@ -1,0 +1,39 @@
+<!-- templates/includes/mobile_bottom_nav.html -->
+{% load navigation_tags %}
+
+<nav class="navbar navbar-light bg-white border-top fixed-bottom d-lg-none mobile-bottom-nav" id="mobile-bottom-nav">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-around w-100">
+            {% get_navigation_items 'mobile_bottom' as mobile_items %}
+            {% for item in mobile_items %}
+                {% if item.url_name != '#' %}
+                <a href="{{ item.url }}" 
+                   class="btn btn-link text-decoration-none bottom-nav-item py-2 flex-fill {% if item.is_active %}active{% endif %}"
+                   {% if item.disabled %}onclick="return false;"{% endif %}>
+                    <div class="d-flex flex-column align-items-center position-relative">
+                        <i class="bi bi-{{ item.icon }} fs-5 mb-1"></i>
+                        <small>{{ item.label }}</small>
+                        {% if item.badge_count > 0 %}
+                        <span class="position-absolute notification-badge badge rounded-pill bg-{{ item.badge_color|default:'primary' }}">
+                            {{ item.badge_count }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% else %}
+                <!-- More Menu Button -->
+                <button class="btn btn-link text-decoration-none bottom-nav-item py-2 flex-fill" 
+                        type="button"
+                        data-bs-toggle="offcanvas" 
+                        data-bs-target="#mobileMenuOffcanvas"
+                        aria-controls="mobileMenuOffcanvas">
+                    <div class="d-flex flex-column align-items-center position-relative">
+                        <i class="bi bi-three-dots fs-5 mb-1"></i>
+                        <small>More</small>
+                    </div>
+                </button>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</nav>

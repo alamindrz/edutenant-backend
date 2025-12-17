@@ -1,0 +1,135 @@
+<!-- templates/includes/mobile_menu_offcanvas.html -->
+{% load navigation_tags %}
+
+<!-- Mobile Menu Offcanvas -->
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="mobileMenuOffcanvas" aria-labelledby="mobileMenuOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center w-100">
+            <div class="flex-shrink-0">
+                {% if request.school.logo %}
+                <img src="{{ request.school.logo.url }}" alt="{{ request.school.name }}" style="height: 32px;">
+                {% else %}
+                <i class="bi bi-building text-primary fs-4"></i>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1 ms-2">
+                <h6 class="mb-0 fw-bold" id="mobileMenuOffcanvasLabel">
+                    {% if request.school %}
+                        {{ request.school.name }}
+                    {% else %}
+                        Edusuite
+                    {% endif %}
+                </h6>
+                {% if request.user.is_authenticated %}
+                <small class="text-muted">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                    {% if user_role %} • {{ user_role }}{% endif %}
+                </small>
+                {% endif %}
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    
+    <div class="offcanvas-body p-0">
+        <!-- Quick Actions -->
+        {% if request.user.is_authenticated and request.school %}
+        <div class="p-3 bg-light border-bottom">
+            <div class="d-grid gap-2">
+                <a href="{% url 'users:dashboard' %}" class="btn btn-primary">
+                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                </a>
+                <a href="{% url 'users:profile' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-person me-2"></i>My Profile
+                </a>
+                <a href="{% url 'users:school_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-building me-2"></i>Switch School
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Full Navigation -->
+        <nav class="nav flex-column py-2">
+            {% get_navigation_items as nav_items %}
+            {% for item in nav_items %}
+                {% if item.label == 'divider' %}
+                <hr class="my-2 mx-3">
+                {% elif item.label == 'header' %}
+                <div class="px-3 pt-3 small fw-bold text-uppercase text-muted">{{ item.label }}</div>
+                {% else %}
+                <a href="{{ item.url }}" 
+                   class="nav-link px-3 py-2 d-flex align-items-center {% if item.is_active %}active{% endif %} {% if item.disabled %}disabled text-muted{% endif %}"
+                   {% if item.disabled %}onclick="return false;"{% endif %}
+                   data-bs-dismiss="offcanvas">
+                    <i class="bi bi-{{ item.icon }} me-3 fs-5"></i>
+                    <div class="flex-grow-1">{{ item.label }}</div>
+                    {% if item.badge_count > 0 %}
+                    <span class="badge bg-{{ item.badge_color|default:'primary' }} rounded-pill">{{ item.badge_count }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Theme Toggle -->
+            <button class="nav-link px-3 py-2 d-flex align-items-center border-0 bg-transparent" onclick="toggleDarkMode()" data-bs-dismiss="offcanvas">
+                <i class="bi bi-moon me-3 fs-5"></i>
+                <span id="theme-toggle-mobile">Dark Mode</span>
+            </button>
+        </nav>
+    </div>
+    
+    <!-- Footer -->
+    <div class="offcanvas-footer border-top p-3">
+        {% if request.user.is_authenticated %}
+        <a href="{% url 'account_logout' %}" class="btn btn-outline-danger w-100" data-bs-dismiss="offcanvas">
+            <i class="bi bi-box-arrow-right me-2"></i>Logout
+        </a>
+        {% else %}
+        <div class="d-grid gap-2">
+            <a href="{% url 'account_login' %}" class="btn btn-primary" data-bs-dismiss="offcanvas">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Login
+            </a>
+            <a href="{% url 'account_signup' %}" class="btn btn-outline-primary" data-bs-dismiss="offcanvas">
+                <i class="bi bi-person-plus me-2"></i>Sign Up
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Mobile offcanvas */
+#mobileMenuOffcanvas {
+    width: 300px;
+}
+
+/* Active state for mobile */
+.nav-link.active {
+    background-color: var(--bs-primary);
+    color: white !important;
+}
+
+.nav-link.active i {
+    color: white !important;
+}
+
+.nav-link.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] #mobileMenuOffcanvas {
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+}
+
+[data-bs-theme="dark"] #mobileMenuOffcanvas .nav-link:not(.active) {
+    color: var(--bs-light);
+}
+
+[data-bs-theme="dark"] #mobileMenuOffcanvas .bg-light {
+    background-color: rgba(var(--bs-dark-rgb), 0.5) !important;
+}
+</style>

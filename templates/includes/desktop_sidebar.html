@@ -1,0 +1,178 @@
+<!-- templates/includes/desktop_sidebar.html -->
+{% load navigation_tags %}
+
+<!-- Desktop Sidebar -->
+<div class="offcanvas offcanvas-start d-none d-lg-block sidebar-desktop" tabindex="-1" id="sidebarDesktop" style="width: 280px;">
+    <div class="offcanvas-header border-bottom">
+        <div class="d-flex align-items-center w-100">
+            <div class="flex-shrink-0">
+                {% if request.school.logo %}
+                <img src="{{ request.school.logo.url }}" alt="{{ request.school.name }}" style="height: 32px;">
+                {% else %}
+                <i class="bi bi-building text-primary fs-4"></i>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1 ms-2">
+                <h6 class="mb-0 fw-bold text-truncate">
+                    {% if request.school %}
+                        {{ request.school.name|truncatechars:20 }}
+                    {% else %}
+                        Edusuite
+                    {% endif %}
+                </h6>
+                {% if request.school %}
+                <small class="text-muted text-truncate d-block">
+                    {% if user_role %}{{ user_role }}{% else %}Administrator{% endif %}
+                </small>
+                {% endif %}
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    
+    <div class="offcanvas-body p-0">
+        <!-- Quick Stats -->
+        {% if request.school %}
+        <div class="p-3 bg-light border-bottom">
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded">
+                        <div class="h6 mb-0 text-primary">
+                            {{ stats.student_count|default:0 }}
+                        </div>
+                        <small class="text-muted">Students</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded">
+                        <div class="h6 mb-0 text-success">
+                            {{ stats.staff_count|default:0 }}
+                        </div>
+                        <small class="text-muted">Staff</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 bg-white rounded">
+                        <div class="h6 mb-0 text-info">
+                            {{ stats.class_count|default:0 }}
+                        </div>
+                        <small class="text-muted">Classes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Navigation Menu -->
+        <nav class="nav flex-column py-2">
+            {% get_navigation_items as nav_items %}
+            {% for item in nav_items %}
+                {% if item.label == 'divider' %}
+                <hr class="my-2 mx-3">
+                {% elif item.label == 'header' %}
+                <div class="px-3 pt-3 small fw-bold text-uppercase text-muted">{{ item.label }}</div>
+                {% else %}
+                <a href="{{ item.url }}" 
+                   class="nav-link sidebar-nav-item px-3 py-2 d-flex align-items-center {% if item.is_active %}active{% endif %} {% if item.disabled %}disabled text-muted{% endif %}"
+                   {% if item.disabled %}onclick="return false;"{% endif %}>
+                    <i class="bi bi-{{ item.icon }} me-3 {% if item.is_active %}text-white{% else %}text-primary{% endif %}"></i>
+                    <span>{{ item.label }}</span>
+                    {% if item.badge_count > 0 %}
+                    <span class="badge bg-{{ item.badge_color|default:'primary' }} rounded-pill ms-auto">{{ item.badge_count }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Theme Toggle -->
+            <button class="nav-link sidebar-nav-item px-3 py-2 d-flex align-items-center border-0 bg-transparent" onclick="toggleDarkMode()">
+                <i class="bi bi-moon me-3 text-secondary"></i>
+                <span id="theme-toggle-text">Dark Mode</span>
+            </button>
+        </nav>
+    </div>
+    
+    <!-- Sidebar Footer -->
+    <div class="offcanvas-footer border-top p-3 bg-light">
+        <div class="d-grid gap-2">
+            <a href="{% url 'users:profile' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-person me-2"></i>My Profile
+            </a>
+            <a href="{% url 'users:school_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-building me-2"></i>Switch School
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.sidebar-desktop {
+    background: var(--bs-body-bg);
+    border-right: 1px solid var(--bs-border-color);
+}
+
+.sidebar-nav-item {
+    border-radius: 0.5rem;
+    margin: 0.125rem 0.5rem;
+    transition: all 0.2s ease;
+    border: none;
+    color: var(--bs-secondary);
+}
+
+.sidebar-nav-item:hover:not(.disabled) {
+    background-color: var(--bs-primary);
+    color: white !important;
+    transform: translateX(4px);
+}
+
+.sidebar-nav-item:hover:not(.disabled) i {
+    color: white !important;
+}
+
+.sidebar-nav-item.active {
+    background-color: var(--bs-primary);
+    color: white !important;
+}
+
+.sidebar-nav-item.active i {
+    color: white !important;
+}
+
+.sidebar-nav-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+[data-bs-theme="dark"] .sidebar-nav-item {
+    color: var(--bs-light);
+}
+
+[data-bs-theme="dark"] .sidebar-nav-item:hover:not(.disabled) {
+    background-color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .sidebar-desktop {
+    background: var(--bs-dark);
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: rgba(var(--bs-dark-rgb), 0.5) !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+    background: var(--bs-dark) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Main content adjustment */
+.main-content.sidebar-active {
+    margin-left: 280px;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 991.98px) {
+    .main-content.sidebar-active {
+        margin-left: 0;
+    }
+}
+</style>

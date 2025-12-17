@@ -1,0 +1,223 @@
+<!-- templates/admissions/public/school_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- School Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        {% if school.logo %}
+                        <img src="{{ school.logo.url }}" 
+                             alt="{{ school.name }}"
+                             class="rounded me-4" 
+                             style="width: 100px; height: 100px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-4" 
+                             style="width: 100px; height: 100px;">
+                            <i class="bi bi-building fs-1"></i>
+                        </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h1 class="h2 mb-2">{{ school.name }}</h1>
+                                    <p class="text-muted mb-3">
+                                        <i class="bi bi-geo-alt me-1"></i>{{ school.location }}
+                                    </p>
+                                    <div class="d-flex gap-2 mb-3">
+                                        <span class="badge bg-info">{{ school.school_type|title }}</span>
+                                        {% if school.subscription and school.subscription.is_active %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>Verified
+                                        </span>
+                                        {% endif %}
+                                        {% if school.phone_number %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-telephone me-1"></i>{{ school.phone_number }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <a href="{% url 'apply_public' school.slug %}" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-pencil-square me-2"></i>Apply Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: School Info -->
+        <div class="col-lg-8 mb-4">
+            <!-- About School -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>About School</h5>
+                </div>
+                <div class="card-body">
+                    {% if school.description %}
+                    <p class="card-text">{{ school.description }}</p>
+                    {% else %}
+                    <p class="text-muted">No description available.</p>
+                    {% endif %}
+                    
+                    {% if school.website %}
+                    <div class="mt-3">
+                        <a href="{{ school.website }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-globe me-1"></i>Visit Website
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Application Forms -->
+            {% if application_forms %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Available Application Forms</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for form in application_forms %}
+                        <div class="list-group-item border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ form.name }}</h6>
+                                    <p class="text-muted small mb-0">
+                                        {{ form.description|truncatechars:100 }}
+                                    </p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-info me-2">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            {{ form.open_date|date:"M d, Y" }} - {{ form.close_date|date:"M d, Y" }}
+                                        </span>
+                                        {% if form.application_fee > 0 %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-currency-exchange me-1"></i>
+                                            ₦{{ form.application_fee|floatformat:2 }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-success">Free</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <a href="{% url 'apply_public_form' school.slug form.slug %}" 
+                                       class="btn btn-primary">
+                                        Apply Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Quick Info & Stats -->
+        <div class="col-lg-4 mb-4">
+            <!-- Quick Stats -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>School Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6 text-center">
+                            <div class="p-3 bg-light rounded">
+                                <div class="display-6 fw-bold text-primary">{{ school.student_set.count|default:0 }}</div>
+                                <div class="text-muted small">Students</div>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="p-3 bg-light rounded">
+                                <div class="display-6 fw-bold text-success">{{ school.staff_set.count|default:0 }}</div>
+                                <div class="text-muted small">Staff</div>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="p-3 bg-light rounded">
+                                <div class="display-6 fw-bold text-info">{{ school.classgroup_set.count|default:0 }}</div>
+                                <div class="text-muted small">Classes</div>
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="p-3 bg-light rounded">
+                                <div class="display-6 fw-bold text-warning">{{ school.parent_set.count|default:0 }}</div>
+                                <div class="text-muted small">Parents</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>Contact Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% if school.phone_number %}
+                        <li class="mb-3">
+                            <i class="bi bi-telephone text-primary me-2"></i>
+                            <strong>Phone:</strong>
+                            <a href="tel:{{ school.phone_number }}" class="text-decoration-none">
+                                {{ school.phone_number }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if school.email %}
+                        <li class="mb-3">
+                            <i class="bi bi-envelope text-primary me-2"></i>
+                            <strong>Email:</strong>
+                            <a href="mailto:{{ school.email }}" class="text-decoration-none">
+                                {{ school.email }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if school.address %}
+                        <li class="mb-3">
+                            <i class="bi bi-geo-alt text-primary me-2"></i>
+                            <strong>Address:</strong>
+                            <span>{{ school.address }}</span>
+                        </li>
+                        {% endif %}
+                        
+                        {% if school.website %}
+                        <li>
+                            <i class="bi bi-globe text-primary me-2"></i>
+                            <strong>Website:</strong>
+                            <a href="{{ school.website }}" target="_blank" class="text-decoration-none">
+                                Visit Website
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'apply_public' school.slug %}" class="btn btn-primary w-100">
+                            <i class="bi bi-pencil-square me-2"></i>Start Application
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

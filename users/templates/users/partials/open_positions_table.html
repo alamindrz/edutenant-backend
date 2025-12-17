@@ -1,0 +1,105 @@
+<!-- templates/users/partials/open_positions_table.html -->
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Position Title</th>
+                <th>Department</th>
+                <th>Active Applications</th>
+                <th>Status</th>
+                <th width="150">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for position in positions %}
+            <tr>
+                <td>
+                    <strong>{{ position.title }}</strong>
+                    {% if position.description %}
+                    <br>
+                    <small class="text-muted">{{ position.description|truncatewords:10 }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ position.department|default:"-" }}</td>
+                <td>
+                    <span class="badge bg-primary">{{ position.application_count }}</span>
+                    <small class="text-muted d-block">applications</small>
+                </td>
+                <td>
+                    {% if position.is_active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary"
+                                hx-post="{% url 'users:manage_open_positions' %}"
+                                hx-vals='{"action": "toggle", "position_id": "{{ position.id }}"}'
+                                hx-target="#positions-table"
+                                title="{% if position.is_active %}Deactivate{% else %}Activate{% endif %}">
+                            <i class="fas fa-power-off"></i>
+                        </button>
+                        <button class="btn btn-outline-danger"
+                                hx-post="{% url 'users:manage_open_positions' %}"
+                                hx-vals='{"action": "delete", "position_id": "{{ position.id }}"}'
+                                hx-target="#positions-table"
+                                hx-confirm="Delete this position?"
+                                title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fas fa-briefcase fa-2x d-block mb-2"></i>
+                        No open positions
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Position Form -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="card-title mb-0">Add New Position</h6>
+    </div>
+    <div class="card-body">
+        <form hx-post="{% url 'users:manage_open_positions' %}"
+              hx-target="#positions-table"
+              hx-vals='{"action": "create"}'>
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Position Title *</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Department</label>
+                    <input type="text" name="department" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus me-1"></i> Add Position
+                    </button>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea name="description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Requirements (Optional)</label>
+                    <textarea name="requirements" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

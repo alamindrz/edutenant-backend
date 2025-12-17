@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Make Payment{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {% if is_multiple %}Make Payment{% else %}Pay Invoice{% endif %}
+                    </h5>
+                </div>
+                
+                {% if is_multiple %}
+                <!-- Multiple Invoices Payment -->
+                <form method="post" id="paymentForm">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Select the invoices you want to pay. You can pay multiple invoices at once.
+                        </div>
+
+                        <!-- Invoice Selection -->
+                        <div class="table-responsive mb-4">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="50">
+                                            <input type="checkbox" id="selectAll" checked>
+                                        </th>
+                                        <th>Invoice #</th>
+                                        <th>Student</th>
+                                        <th>School</th>
+                                        <th class="text-end">Amount</th>
+                                        <th>Due Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invoice in invoices %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="selected_invoices" 
+                                                   value="{{ invoice.id }}" 
+                                                   class="invoice-checkbox" checked>
+                                        </td>
+                                        <td>
+                                            <strong>{{ invoice.invoice_number }}</strong><br>
+                                            <small class="text-muted">{{ invoice.invoice_type|title }}</small>
+                                        </td>
+                                        <td>
+                                            {{ invoice.student.full_name }}<br>
+                                            <small class="text-muted">{{ invoice.student.current_class.name }}</small>
+                                        </td>
+                                        <td>{{ invoice.school.name }}</td>
+                                        <td class="text-end">
+                                            <strong>₦{{ invoice.total_amount|floatformat:2|intcomma }}</strong><br>
+                                            {% if invoice.amount_due < invoice.total_amount %}
+                                            <small class="text-success">
+                                                Paid: ₦{{ invoice.total_amount|sub:invoice.amount_due|floatformat:2|intcomma }}
+                                            </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ invoice.due_date|date:"M j, Y" }}
+                                            {% if invoice.is_overdue %}
+                                            <br><small class="text-danger">
+                                                {{ invoice.days_overdue }} days overdue
+                                            </small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="4" class="text-end"><strong>Selected Total:</strong></td>
+                                        <td class="text-end">
+                                            <strong id="selectedTotal">₦{{ total_amount|floatformat:2|intcomma }}</strong>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Select Payment Method</h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check card border p-3 h-100">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="paystack" value="paystack" checked>
+                                        <label class="form-check-label h-100" for="paystack">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-credit-card fa-2x text-primary me-3"></i>
+                                                <div>
+                                                    <strong>Card/Bank Transfer</strong>
+                                                    <p class="text-muted small mb-0">Pay with debit card or bank transfer</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check card border p-3 h-100">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="bank" value="bank">
+                                        <label class="form-check-label h-100" for="bank">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-university fa-2x text-success me-3"></i>
+                                                <div>
+                                                    <strong>Bank Deposit</strong>
+                                                    <p class="text-muted small mb-0">Make direct bank deposit</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check card border p-3 h-100">
+                                        <input class="form-check-input" type="radio" name="payment_method" 
+                                               id="cash" value="cash">
+                                        <label class="form-check-label h-100" for="cash">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-money-bill-wave fa-2x text-warning me-3"></i>
+                                                <div>
+                                                    <strong>Cash Payment</strong>
+                                                    <p class="text-muted small mb-0">Pay at school office</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="mb-4">
+                            <h6 class="mb-3">Contact Information</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email for Receipt</label>
+                                    <input type="email" name="email" class="form-control" 
+                                           value="{{ request.user.email }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="tel" name="phone" class="form-control" 
+                                           value="{{ request.user.phone_number|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms Agreement -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'billing:parent_invoices' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Invoices
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-lock me-2"></i>Proceed to Payment
+                                <span id="payAmount">(₦{{ total_amount|floatformat:2|intcomma }})</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                {% else %}
+                <!-- Single Invoice Payment -->
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Invoice Summary -->
+                            <div class="card border mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Invoice Summary</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <small class="text-muted">Invoice Number</small>
+                                        <p class="mb-0"><strong>{{ invoices.0.invoice_number }}</strong></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">Student</small>
+                                        <p class="mb-0">{{ invoices.0.student.full_name }}</p>
+                                        <small class="text-muted">{{ invoices.0.student.current_class.name }}</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">School</small>
+                                        <p class="mb-0">{{ invoices.0.school.name }}</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">Due Date</small>
+                                        <p class="mb-0 {% if invoices.0.is_overdue %}text-danger{% endif %}">
+                                            {{ invoices.0.due_date|date:"F j, Y" }}
+                                            {% if invoices.0.is_overdue %}
+                                            <br><small>({{ invoices.0.days_overdue }} days overdue)</small>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bank Transfer Details -->
+                            <div class="card border">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Bank Transfer Option</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted mb-3">
+                                        You can also make a direct bank transfer to:
+                                    </p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Bank Name</small>
+                                        <p class="mb-0"><strong>Guaranty Trust Bank (GTB)</strong></p>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Account Name</small>
+                                        <p class="mb-0"><strong>{{ invoices.0.school.name }}</strong></p>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Account Number</small>
+                                        <p class="mb-0"><strong>0123456789</strong></p>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Reference</small>
+                                        <p class="mb-0"><code>{{ invoices.0.invoice_number }}</code></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <!-- Payment Amount -->
+                            <div class="card border-primary mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">Payment Amount</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center mb-4">
+                                        <h1 class="display-4">₦{{ total_amount|floatformat:2|intcomma }}</h1>
+                                        <p class="text-muted">Total Amount Due</p>
+                                    </div>
+
+                                    <!-- Payment Form -->
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            <label class="form-label">Email for Receipt</label>
+                                            <input type="email" name="email" class="form-control" 
+                                                   value="{{ request.user.email }}" required>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label class="form-label">Phone Number</label>
+                                            <input type="tel" name="phone" class="form-control" 
+                                                   value="{{ request.user.phone_number|default:'' }}">
+                                        </div>
+                                        <div class="mb-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="termsSingle" required>
+                                                <label class="form-check-label" for="termsSingle">
+                                                    I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                                            <i class="fas fa-lock me-2"></i>Pay Now with Paystack
+                                        </button>
+                                    </form>
+
+                                    <div class="mt-4 text-center">
+                                        <p class="text-muted small mb-2">Secure payment powered by</p>
+                                        <img src="{% static 'images/paystack-logo.png' %}" alt="Paystack" height="30">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Important Information -->
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Important:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Payment confirmation may take a few minutes</li>
+                                    <li>Keep your payment reference for tracking</li>
+                                    <li>Receipt will be sent to your email</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Payment Terms & Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <h6>1. Payment Processing</h6>
+                    <p>All payments are processed securely through Paystack. We accept major debit cards and bank transfers.</p>
+                </div>
+                <div class="mb-4">
+                    <h6>2. Transaction Fees</h6>
+                    <p>Transaction fees are included in the invoice amount. No additional charges will be applied.</p>
+                </div>
+                <div class="mb-4">
+                    <h6>3. Refund Policy</h6>
+                    <p>Refunds are processed within 7-14 business days. Refund requests must be made through the school administration.</p>
+                </div>
+                <div class="mb-4">
+                    <h6>4. Payment Confirmation</h6>
+                    <p>Payment confirmation may take 2-5 minutes. A receipt will be sent to your email upon successful payment.</p>
+                </div>
+                <div class="mb-4">
+                    <h6>5. Security</h6>
+                    <p>Your payment information is encrypted and secure. We do not store your card details.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Calculate selected total for multiple invoices
+function updateSelectedTotal() {
+    let total = 0;
+    document.querySelectorAll('.invoice-checkbox:checked').forEach(function(checkbox) {
+        let row = checkbox.closest('tr');
+        let amountText = row.querySelector('td:nth-child(5) strong').textContent;
+        let amount = parseFloat(amountText.replace(/[^\d.]/g, ''));
+        total += amount;
+    });
+    
+    document.getElementById('selectedTotal').textContent = '₦' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    document.getElementById('payAmount').textContent = '(₦' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ')';
+}
+
+// Select all invoices
+document.getElementById('selectAll').addEventListener('change', function() {
+    let checkboxes = document.querySelectorAll('.invoice-checkbox');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = this.checked;
+    }.bind(this));
+    updateSelectedTotal();
+});
+
+// Update total when individual checkbox changes
+document.querySelectorAll('.invoice-checkbox').forEach(function(checkbox) {
+    checkbox.addEventListener('change', updateSelectedTotal);
+});
+
+// Initialize total
+updateSelectedTotal();
+
+// Form validation
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    let checked = document.querySelectorAll('.invoice-checkbox:checked').length;
+    if (checked === 0) {
+        e.preventDefault();
+        alert('Please select at least one invoice to pay.');
+        return false;
+    }
+    
+    if (!document.getElementById('terms').checked) {
+        e.preventDefault();
+        alert('Please agree to the terms and conditions.');
+        return false;
+    }
+});
+</script>
+{% endblock %}

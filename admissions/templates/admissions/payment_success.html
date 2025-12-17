@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Successful - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <!-- Success Card -->
+            <div class="card border-success shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Payment Successful!
+                    </h4>
+                </div>
+                
+                <div class="card-body text-center">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <div class="success-checkmark">
+                            <div class="check-icon">
+                                <span class="icon-line line-tip"></span>
+                                <span class="icon-line line-long"></span>
+                                <div class="icon-circle"></div>
+                                <div class="icon-fix"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Success Message -->
+                    <h2 class="text-success mb-3">Thank You!</h2>
+                    <p class="lead mb-4">
+                        Your payment of <strong>₦{{ amount|floatformat:2 }}</strong> was successful.
+                    </p>
+                    
+                    <!-- Application Details -->
+                    <div class="alert alert-success mb-4">
+                        <h5 class="alert-heading">Application Submitted</h5>
+                        <hr>
+                        <div class="row text-start">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Application Number:</strong></p>
+                                <p class="mb-1"><strong>Student Name:</strong></p>
+                                <p class="mb-1"><strong>Payment Reference:</strong></p>
+                                <p class="mb-0"><strong>Date:</strong></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1">{{ application.application_number }}</p>
+                                <p class="mb-1">{{ application.student_full_name }}</p>
+                                <p class="mb-1"><code>{{ reference }}</code></p>
+                                <p class="mb-0">{{ application.submitted_at|date:"F j, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Next Steps -->
+                    <div class="mb-4">
+                        <h5>What Happens Next?</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check2 text-success me-2"></i>
+                                Your application is now under review
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-envelope text-success me-2"></i>
+                                You'll receive a confirmation email shortly
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-clock text-success me-2"></i>
+                                Review typically takes 3-5 business days
+                            </li>
+                            <li>
+                                <i class="bi bi-person-check text-success me-2"></i>
+                                Check your application status anytime
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <a href="{% url 'admissions:application_status' application.public_uuid %}" 
+                           class="btn btn-primary">
+                            <i class="bi bi-eye me-1"></i> View Application Status
+                        </a>
+                        
+                        <a href="{% url 'users:dashboard:home' %}" 
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-speedometer2 me-1"></i> Go to Dashboard
+                        </a>
+                    </div>
+                    
+                    <!-- Receipt Download -->
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="bi bi-receipt me-1"></i>
+                            A payment receipt has been sent to your email.
+                            You can also 
+                            <a href="#" class="text-decoration-none">download it here</a>.
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Need help? 
+                        <a href="mailto:{{ school.contact_email|default:'support@edusuite.com' }}">
+                            Contact {{ school.name }} Admissions
+                        </a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Success checkmark animation */
+.success-checkmark {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.check-icon {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    border-radius: 50%;
+    box-sizing: content-box;
+    border: 4px solid #28a745;
+}
+
+.check-icon::before {
+    top: 3px;
+    left: -2px;
+    width: 30px;
+    transform-origin: 100% 50%;
+}
+
+.check-icon::after {
+    top: 0;
+    left: 30px;
+    width: 60px;
+    transform-origin: 0 50%;
+}
+
+.check-icon::before, .check-icon::after {
+    content: '';
+    height: 4px;
+    background: #28a745;
+    position: absolute;
+    transform: scaleX(0);
+    animation: animate 0.3s ease-in-out 0.3s forwards;
+}
+
+.icon-line {
+    height: 4px;
+    background-color: #28a745;
+    display: block;
+    border-radius: 2px;
+    position: absolute;
+    z-index: 10;
+}
+
+.line-tip {
+    top: 46px;
+    left: 14px;
+    width: 25px;
+    transform: rotate(45deg);
+    animation: icon-line-tip 0.3s ease-in-out forwards;
+}
+
+.line-long {
+    top: 38px;
+    right: 8px;
+    width: 47px;
+    transform: rotate(-45deg);
+    animation: icon-line-long 0.3s ease-in-out forwards;
+}
+
+@keyframes icon-line-tip {
+    0% { width: 0; left: 1px; top: 19px; }
+    100% { width: 25px; left: 14px; top: 46px; }
+}
+
+@keyframes icon-line-long {
+    0% { width: 0; right: 46px; top: 54px; }
+    100% { width: 47px; right: 8px; top: 38px; }
+}
+</style>
+{% endblock %}

@@ -2,32 +2,53 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title }} - {{ current_school.name }}{% endblock %}
+{% block title %}{{ page_title }} - {{ school.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">{{ page_title }}</h5>
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">{{ page_title }}</h1>
+                    <p class="text-muted">
+                        {% if role %}Edit custom role{% else %}Create new custom role{% endif %} for {{ school.name }}
+                    </p>
                 </div>
+                <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Roles
+                </a>
+            </div>
+
+            <!-- Role Form Card -->
+            <div class="card">
                 <div class="card-body">
                     <form method="post" id="roleForm">
                         {% csrf_token %}
                         
-                        {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                            {{ error }}
-                            {% endfor %}
+                        <!-- Form messages -->
+                        <div id="form-messages">
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }}">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
 
                         <!-- Basic Role Information -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <h6 class="border-bottom pb-2">Basic Information</h6>
+                                <h5 class="border-bottom pb-2 mb-3">Basic Information</h5>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -38,6 +59,7 @@
                                     {% if form.name.errors %}
                                     <div class="text-danger small">{{ form.name.errors }}</div>
                                     {% endif %}
+                                    <div class="form-text">e.g., "Head Teacher", "Finance Manager"</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -68,42 +90,61 @@
                         <!-- Permissions -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <h6 class="border-bottom pb-2">Permissions</h6>
+                                <h5 class="border-bottom pb-2 mb-3">Permissions</h5>
                                 <p class="text-muted mb-3">Select the permissions this role should have:</p>
                             </div>
                             
                             <!-- Management Permissions -->
-                            <div class="col-md-6">
-                                <div class="card border-0 bg-light">
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-cogs me-2"></i>Management Permissions
+                                        </h6>
+                                    </div>
                                     <div class="card-body">
-                                        <h6 class="card-title">Management Permissions</h6>
                                         <div class="form-check mb-2">
-                                            {{ form.can_manage_roles }}
-                                            <label class="form-check-label" for="{{ form.can_manage_roles.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="manage_roles"
+                                                   id="perm_manage_roles"
+                                                   {% if role and 'manage_roles' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_manage_roles">
                                                 Manage Roles & Permissions
                                             </label>
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_manage_staff }}
-                                            <label class="form-check-label" for="{{ form.can_manage_staff.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="manage_staff"
+                                                   id="perm_manage_staff"
+                                                   {% if role and 'manage_staff' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_manage_staff">
                                                 Manage Staff Members
                                             </label>
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_manage_students }}
-                                            <label class="form-check-label" for="{{ form.can_manage_students.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="manage_students"
+                                                   id="perm_manage_students"
+                                                   {% if role and 'manage_students' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_manage_students">
                                                 Manage Students & Parents
                                             </label>
                                         </div>
                                         <div class="form-check mb-2">
-                                            {{ form.can_manage_academics }}
-                                            <label class="form-check-label" for="{{ form.can_manage_academics.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="manage_academics"
+                                                   id="perm_manage_academics"
+                                                   {% if role and 'manage_academics' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_manage_academics">
                                                 Manage Academic Records
                                             </label>
                                         </div>
                                         <div class="form-check">
-                                            {{ form.can_manage_finances }}
-                                            <label class="form-check-label" for="{{ form.can_manage_finances.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="manage_finances"
+                                                   id="perm_manage_finances"
+                                                   {% if role and 'manage_finances' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_manage_finances">
                                                 Manage Financial Records
                                             </label>
                                         </div>
@@ -112,19 +153,29 @@
                             </div>
 
                             <!-- Access Permissions -->
-                            <div class="col-md-6">
-                                <div class="card border-0 bg-light">
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-eye me-2"></i>Access Permissions
+                                        </h6>
+                                    </div>
                                     <div class="card-body">
-                                        <h6 class="card-title">Access Permissions</h6>
                                         <div class="form-check mb-2">
-                                            {{ form.can_view_reports }}
-                                            <label class="form-check-label" for="{{ form.can_view_reports.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="view_reports"
+                                                   id="perm_view_reports"
+                                                   {% if role and 'view_reports' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_view_reports">
                                                 View Reports & Analytics
                                             </label>
                                         </div>
                                         <div class="form-check">
-                                            {{ form.can_communicate }}
-                                            <label class="form-check-label" for="{{ form.can_communicate.id_for_label }}">
+                                            <input type="checkbox" class="form-check-input" 
+                                                   name="permissions" value="communicate"
+                                                   id="perm_communicate"
+                                                   {% if role and 'communicate' in role.permissions %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_communicate">
                                                 Send Communications
                                             </label>
                                         </div>
@@ -133,44 +184,30 @@
                             </div>
                         </div>
 
-                        <!-- Permission Preview -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="border-bottom pb-2">Permission Preview</h6>
-                                <div class="alert alert-info">
-                                    <div class="d-flex">
-                                        <div class="me-3">
-                                            <i class="fas fa-info-circle fa-2x"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="alert-heading">How permissions work</h6>
-                                            <p class="mb-1">Selected permissions will determine what actions users with this role can perform:</p>
-                                            <ul class="mb-0 small">
-                                                <li><strong>Management permissions:</strong> Create, edit, delete records</li>
-                                                <li><strong>Access permissions:</strong> View data and send communications</li>
-                                                <li><strong>System roles:</strong> Pre-defined permissions that cannot be modified</li>
-                                            </ul>
-                                        </div>
-                                    </div>
+                        <!-- Warning for system roles -->
+                        {% if role and role.is_system_role %}
+                        <div class="alert alert-warning mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                                <div>
+                                    <h6 class="alert-heading">System Role</h6>
+                                    <p class="mb-0">This is a system role. Some permissions may be restricted and cannot be modified.</p>
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
 
                         <!-- Form Actions -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between">
-                                    <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-arrow-left"></i> Back to List
-                                    </a>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save"></i> 
-                                            {% if role %}Update Role{% else %}Create Role{% endif %}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if role %}Update Role{% else %}Create Role{% endif %}
+                            </button>
                         </div>
                     </form>
                 </div>

@@ -1,0 +1,381 @@
+<!-- templates/users/role_detail.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ role.name }} - Role Details - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ role.name }}</h1>
+            <p class="text-muted mb-0">
+                {% if role.is_system_role %}
+                <span class="badge bg-primary me-2">System Role</span>
+                {% endif %}
+                <span class="badge bg-{% if role.category == 'academic' %}success{% elif role.category == 'administration' %}info{% elif role.category == 'student' %}warning{% elif role.category == 'parent' %}secondary{% else %}dark{% endif %}">
+                    {{ role.get_category_display }}
+                </span>
+            </p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Roles
+            </a>
+            {% if perms.users.manage_roles and not role.is_system_role %}
+            <a href="{% url 'users:role_edit' role.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit me-2"></i> Edit Role
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Role Details -->
+        <div class="col-lg-8">
+            <!-- Role Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Role Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if role.description %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Description</h6>
+                        <p class="mb-0">{{ role.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Role Type</h6>
+                                <p class="mb-0">
+                                    {% if role.is_system_role %}
+                                    <span class="badge bg-primary">System Role</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Custom Role</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Category</h6>
+                                <p class="mb-0">{{ role.get_category_display }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Status</h6>
+                                <p class="mb-0">
+                                    {% if role.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Created</h6>
+                                <p class="mb-0">{{ role.created_at|date:"F d, Y" }}</p>
+                            </div>
+                        </div>
+                        {% if role.system_role_type %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">System Role Type</h6>
+                                <p class="mb-0">{{ role.system_role_type|title }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-key me-2 text-success"></i>Permissions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if permissions_display %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Management Permissions</h6>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_manage_roles %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">Manage Roles</span>
+                                        <small class="text-muted">Create, edit, and delete roles</small>
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_manage_staff %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">Manage Staff</span>
+                                        <small class="text-muted">Add, edit, and manage staff members</small>
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_manage_students %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">Manage Students</span>
+                                        <small class="text-muted">Manage student and parent records</small>
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_manage_academics %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">Manage Academics</span>
+                                        <small class="text-muted">Manage classes, subjects, and academic records</small>
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_manage_finances %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">Manage Finances</span>
+                                        <small class="text-muted">Manage fees, payments, and financial records</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Access Permissions</h6>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_view_reports %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">View Reports</span>
+                                        <small class="text-muted">Access analytics and reports</small>
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <div class="form-check form-check-inline me-3">
+                                        <input class="form-check-input" type="checkbox" 
+                                               {% if role.can_communicate %}checked{% endif %} disabled>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-medium">Send Communications</span>
+                                        <small class="text-muted">Send announcements and messages</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h6 class="text-muted mb-2">Additional Permissions</h6>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for permission in permissions_display %}
+                                    <span class="badge bg-light text-dark border">{{ permission }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-key fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No specific permissions defined</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Role Assignments -->
+        <div class="col-lg-4">
+            <!-- Role Assignments Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2 text-info"></i>Role Assignments
+                    </h5>
+                    <span class="badge bg-primary">{{ assignments|length }} assignment{{ assignments|pluralize }}</span>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                    <div class="list-group list-group-flush">
+                        {% for assignment in assignments %}
+                        <div class="list-group-item d-flex align-items-center px-0">
+                            <div class="flex-shrink-0">
+                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    {{ assignment.staff.first_name|first|upper }}{{ assignment.staff.last_name|first|upper }}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">{{ assignment.staff.full_name }}</h6>
+                                <small class="text-muted">{{ assignment.staff.position }}</small>
+                                <div class="text-muted small">
+                                    Assigned by {{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.email }}
+                                    on {{ assignment.assigned_at|date:"M d, Y" }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-plus fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-3">No staff assigned to this role</p>
+                        <a href="{% url 'users:staff_list' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i> Assign Staff
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if assignments %}
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Staff with this role inherit all permissions listed above.
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quick Actions Card -->
+            {% if perms.users.manage_roles %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2 text-warning"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if not role.is_system_role %}
+                        <a href="{% url 'users:role_edit' role.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Role
+                        </a>
+                        {% endif %}
+                        
+                        {% if perms.users.manage_staff %}
+                        <a href="{% url 'users:staff_list' %}" class="btn btn-outline-success">
+                            <i class="fas fa-user-plus me-2"></i>Assign to Staff
+                        </a>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#permissionsModal">
+                            <i class="fas fa-question-circle me-2"></i>Permissions Guide
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Permissions Guide Modal -->
+<div class="modal fade" id="permissionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Role Permissions Guide</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Management Permissions</h6>
+                        <ul class="small text-muted">
+                            <li class="mb-2">
+                                <strong>Manage Roles:</strong> Create, edit, and delete user roles and permissions
+                            </li>
+                            <li class="mb-2">
+                                <strong>Manage Staff:</strong> Add, edit, deactivate, and manage staff members
+                            </li>
+                            <li class="mb-2">
+                                <strong>Manage Students:</strong> Manage student enrollment, profiles, and parent accounts
+                            </li>
+                            <li class="mb-2">
+                                <strong>Manage Academics:</strong> Create classes, assign subjects, manage academic records
+                            </li>
+                            <li>
+                                <strong>Manage Finances:</strong> Handle fees, payments, invoices, and financial reports
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Access Permissions</h6>
+                        <ul class="small text-muted">
+                            <li class="mb-2">
+                                <strong>View Reports:</strong> Access analytics, attendance reports, and performance data
+                            </li>
+                            <li>
+                                <strong>Send Communications:</strong> Send announcements, messages, and notifications
+                            </li>
+                        </ul>
+                        
+                        <h6 class="mt-4">System Roles</h6>
+                        <p class="small text-muted">
+                            System roles have predefined permissions and cannot be edited. 
+                            Custom roles can be created with specific permission combinations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+}
+</style>
+{% endblock %}

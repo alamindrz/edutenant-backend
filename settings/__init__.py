@@ -1,7 +1,11 @@
 # settings/__init__.py
-from .base import *
-from .development import *
+import os
 
-# Determine which settings to use based on environment
-if os.getenv('DJANGO_SETTINGS_MODULE') == 'config.settings.production':
+DJANGO_ENV = os.getenv("DJANGO_ENV", "development").lower()
+
+if DJANGO_ENV == "production":
+    print("⚙️ Using PRODUCTION settings")
     from .production import *
+else:
+    print("🛠️ Using DEVELOPMENT settings")
+    from .development import *

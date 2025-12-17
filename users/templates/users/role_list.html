@@ -1,20 +1,19 @@
 <!-- templates/users/role_list.html -->
 {% extends 'base.html' %}
 {% load static %}
-{% load custom_filters %}
 
-{% block title %}Role Management - {{ current_school.name }}{% endblock %}
+{% block title %}Role Management - {{ school.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-1">Role Management</h1>
-            <p class="text-muted">Manage permissions and access levels for {{ current_school.name }}</p>
+            <p class="text-muted">Manage permissions and access levels for {{ school.name }}</p>
         </div>
         <a href="{% url 'users:role_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create Custom Role
+            <i class="fas fa-plus me-2"></i> Create Custom Role
         </a>
     </div>
 
@@ -39,8 +38,12 @@
                     </select>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-outline-primary me-2">Filter</button>
-                    <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">Clear</a>
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-filter me-1"></i> Filter
+                    </button>
+                    <a href="{% url 'users:role_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i> Clear
+                    </a>
                 </div>
             </form>
         </div>
@@ -50,47 +53,54 @@
     <div class="row">
         {% for role in roles %}
         <div class="col-xl-4 col-lg-6 mb-4">
-            <div class="card h-100 {% if role.is_system_role %}border-primary{% endif %}">
+            <div class="card h-100 {% if role.is_system_role %}border-primary border-2{% else %}border-light{% endif %}">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         {{ role.name }}
                         {% if role.is_system_role %}
-                        <small class="text-muted">(System Role)</small>
+                        <small class="text-primary ms-1">(System)</small>
                         {% endif %}
                     </h5>
-                    <span class="badge bg-{% if role.is_system_role %}primary{% else %}secondary{% endif %}">
+                    <span class="badge bg-{% if role.category == 'academic' %}success{% elif role.category == 'administrative' %}info{% elif role.category == 'support' %}warning{% else %}secondary{% endif %}">
                         {{ role.get_category_display }}
                     </span>
                 </div>
                 <div class="card-body">
                     <!-- Role Description -->
-                    <p class="text-muted mb-3">{{ role.description|default:"No description provided." }}</p>
+                    <p class="text-muted mb-3">{{ role.description|default:"No description provided."|truncatewords:15 }}</p>
                     
                     <!-- Permissions Summary -->
                     <div class="mb-3">
                         <strong class="text-muted d-block mb-2">Key Permissions:</strong>
                         <div class="d-flex flex-wrap gap-1">
-                            {% for permission in role.permissions|slice:":5" %}
-                            <span class="badge bg-light text-dark small">{{ permission }}</span>
-                            {% endfor %}
-                            {% if role.permissions|length > 5 %}
-                            <span class="badge bg-light text-dark small">+{{ role.permissions|length|add:"-5" }} more</span>
+                            {% with role_stats|get_item:role.id as stats %}
+                            {% if stats and stats.permissions_preview %}
+                                {% for permission in stats.permissions_preview|slice:":4" %}
+                                <span class="badge bg-light text-dark small">{{ permission }}</span>
+                                {% endfor %}
+                                {% if stats.permissions_preview|length > 4 %}
+                                <span class="badge bg-light text-dark small">+{{ stats.permissions_preview|length|add:"-4" }} more</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-light text-dark small">Custom permissions</span>
                             {% endif %}
-                            {% if role.permissions == '*' %}
-                            <span class="badge bg-success small">All Permissions</span>
-                            {% endif %}
+                            {% endwith %}
                         </div>
                     </div>
 
                     <!-- Role Statistics -->
-                    <div class="d-flex justify-content-between text-center">
+                    <div class="d-flex justify-content-between text-center border-top pt-3">
                         <div>
-                            <div class="fw-bold text-primary">{{ role_stats|get_item:role.id|get_item:'total_assignments'|default:0 }}</div>
+                            <div class="fw-bold text-primary">
+                                {% with role_stats|get_item:role.id as stats %}
+                                {{ stats.total_assignments|default:"0" }}
+                                {% endwith %}
+                            </div>
                             <small class="text-muted">Assignments</small>
                         </div>
                         <div>
-                            <div class="fw-bold text-success">
-                                {% if role_stats|get_item:role.id|get_item:'is_system_role' %}
+                            <div class="fw-bold text-{% if role.is_system_role %}primary{% else %}success{% endif %}">
+                                {% if role.is_system_role %}
                                 System
                                 {% else %}
                                 Custom
@@ -109,15 +119,15 @@
                 <div class="card-footer">
                     <div class="btn-group w-100">
                         <a href="{% url 'users:role_detail' role.id %}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-eye"></i> View
+                            <i class="fas fa-eye me-1"></i> View
                         </a>
                         {% if not role.is_system_role %}
                         <a href="{% url 'users:role_edit' role.id %}" class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-edit"></i> Edit
+                            <i class="fas fa-edit me-1"></i> Edit
                         </a>
                         {% else %}
                         <button class="btn btn-outline-secondary btn-sm" disabled title="System roles cannot be edited">
-                            <i class="fas fa-edit"></i> Edit
+                            <i class="fas fa-edit me-1"></i> Edit
                         </button>
                         {% endif %}
                     </div>
@@ -129,9 +139,12 @@
             <div class="card">
                 <div class="card-body text-center py-5">
                     <div class="text-muted">
-                        <i class="fas fa-user-shield fa-2x mb-3"></i>
-                        <p>No roles found.</p>
-                        <a href="{% url 'users:role_create' %}" class="btn btn-primary">Create Your First Role</a>
+                        <i class="fas fa-user-shield fa-3x mb-3"></i>
+                        <h5 class="mb-3">No roles found</h5>
+                        <p class="mb-4">Create your first custom role to manage permissions</p>
+                        <a href="{% url 'users:role_create' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i> Create Your First Role
+                        </a>
                     </div>
                 </div>
             </div>
@@ -143,11 +156,24 @@
 
 {% block extra_js %}
 <script>
-// Custom template filter for dictionary access
-window.templateFilters = {
-    get_item: function(dict, key) {
-        return dict ? dict[key] : null;
-    }
-};
+// Simple dictionary access helper
+function getItem(dict, key) {
+    return dict ? dict[key] : null;
+}
+
+// Initialize any interactive elements
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to role cards
+    document.querySelectorAll('.card.h-100').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-4px)';
+            this.style.transition = 'transform 0.2s ease-in-out';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
 </script>
 {% endblock %}

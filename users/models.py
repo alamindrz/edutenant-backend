@@ -1,214 +1,20 @@
 # users/models.py 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from decimal import Decimal
 import logging 
+
+# SHARED IMPORTS - NEW ARCHITECTURE
+from shared.constants import (
+    StatusChoices,
+    PARENT_PHONE_FIELD,
+    CLASS_MODEL_PATH
+)
+
 logger = logging.getLogger(__name__)
-
-
-class School(models.Model):
-    """School institution model - foundation for multi-tenancy."""
-    SUBDOMAIN_STATUS = (
-        ('none', 'No Subdomain'),  # ✅ ADDED - No subdomain option
-        ('pending', 'Pending Payment'),
-        ('active', 'Active'),
-        ('suspended', 'Suspended'),
-        ('expired', 'Expired'),
-    )
-    
-    SCHOOL_TYPES = (
-        ('nursery', 'Nursery Only'),
-        ('primary', 'Primary Only'), 
-        ('secondary', 'Secondary Only'),
-        ('combined', 'Nursery & Primary'),
-        ('full', 'Full K-12'),
-    )
-    
-    # Basic Information
-    name = models.CharField(max_length=255, help_text="Official school name")
-    subdomain = models.SlugField(unique=True, blank=True, null=True, help_text="Optional custom subdomain")  # ✅ CHANGED to optional
-    school_type = models.CharField(max_length=20, choices=SCHOOL_TYPES, default='primary')
-    contact_email = models.EmailField(blank=True, null=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
-    
-    # White-label Branding
-    logo = models.ImageField(upload_to='school_logos/', null=True, blank=True)
-    primary_color = models.CharField(max_length=7, default='#3B82F6')
-    secondary_color = models.CharField(max_length=7, default='#1E40AF')
-    footer_text = models.TextField(blank=True, default='')
-    hide_platform_branding = models.BooleanField(default=True)
-    
-    # Payment Configuration
-    paystack_subaccount_id = models.CharField(max_length=128, blank=True, null=True)
-    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.015)
-    bank_code = models.CharField(max_length=10, blank=True, null=True)
-    account_number = models.CharField(max_length=20, blank=True, null=True)
-    account_name = models.CharField(max_length=255, blank=True, null=True)
-    
-    # Subscription Management - SIMPLIFIED
-    subdomain_status = models.CharField(max_length=20, choices=SUBDOMAIN_STATUS, default='none')  # ✅ CHANGED default
-    subdomain_expires_at = models.DateTimeField(null=True, blank=True)
-    
-    
-    # Onboarding
-    onboarding_completed = models.BooleanField(default=False)
-    onboarding_step = models.IntegerField(default=0)
-    
-    # Operational
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    # Fee Policies Configuration
-    fee_policies = models.JSONField(default=dict, blank=True, help_text="School fee policies configuration")
-    
-    # Application Fee Policies
-    application_fee_required = models.BooleanField(default=True)
-    application_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    application_fee_currency = models.CharField(max_length=3, default='NGN')
-    
-    # Staff Children Policies
-    staff_children_waive_application_fee = models.BooleanField(default=False)
-    staff_children_discount_percentage = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        default=0,
-        help_text="Percentage discount on school fees for staff children"
-    )
-    staff_children_max_discount = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        default=0,
-        help_text="Maximum discount amount (0 = unlimited)"
-    )
-    
-    # Scholarship Policies
-    scholarship_enabled = models.BooleanField(default=False)
-    scholarship_application_required = models.BooleanField(default=False)
-    scholarship_max_percentage = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        default=100,
-        help_text="Maximum scholarship percentage"
-    )
-    
-    # Payment Methods
-    allowed_payment_methods = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="['bank_transfer', 'paystack', 'cash', 'cheque']"
-    )
-    
-    # Application Form Policies
-    application_form_enabled = models.BooleanField(default=True)
-    allow_staff_applications = models.BooleanField(default=True)
-    allow_external_applications = models.BooleanField(default=True)
-    
-    # Timelines
-    application_deadline_extension_days = models.PositiveIntegerField(
-        default=7,
-        help_text="Grace period after deadline for special cases"
-    )
-    
-    class Meta:
-        db_table = 'schools_school'
-        indexes = [
-            models.Index(fields=['subdomain', 'is_active']),
-            models.Index(fields=['subdomain_status', 'subdomain_expires_at']),
-        ]
-    
-    @property
-    def open_application_forms(self):
-        """Get active AND open application forms for admission into this school."""
-        from admissions.models import ApplicationForm
-        now = timezone.now()
-        
-        return ApplicationForm.objects.filter(
-            school=self,
-            status='active',
-            open_date__lte=now,
-            close_date__gte=now
-        )
-    
-    @property
-    def is_accepting_applications(self):
-        """Check if school is accepting any applications."""
-        return self.open_application_forms.exists() and self.application_form_enabled
-    
-    def get_staff_children_discount(self, fee_amount):
-        """Calculate discount for staff children."""
-        if self.staff_children_discount_percentage <= 0:
-            return Decimal('0')
-        
-        discount = fee_amount * (self.staff_children_discount_percentage / Decimal('100'))
-        
-        if self.staff_children_max_discount > 0:
-            discount = min(discount, self.staff_children_max_discount)
-        
-        return discount.quantize(Decimal('0.01'))
-
-
-
-    def __str__(self):
-        return f"{self.name} ({self.subdomain or 'no-subdomain'})"  # ✅ UPDATED
-    
-    @property
-    def is_subdomain_active(self):
-        """Check if school has an active subdomain."""
-        from django.utils import timezone
-        return (
-            self.subdomain_status == 'active' and 
-            self.subdomain and  # ✅ MUST have a subdomain
-            self.subdomain_expires_at and 
-            self.subdomain_expires_at > timezone.now()
-        )
-    
-    @property
-    def school_url(self):
-        """Get school URL - either subdomain or path-based."""
-        if self.is_subdomain_active:
-            return f"https://{self.subdomain}.edusuite.com"
-        else:
-            return f"/schools/{self.id}/"  
-    
-    @property
-    def open_teaching_positions(self):
-        """Get open teaching positions that are actively hiring."""
-        return self.openposition_set.filter(is_active=True)
-    
-    def get_open_positions_list(self):
-        """Get list of open teaching positions for display."""
-        return list(self.openposition_set.filter(
-            is_active=True
-        ).values_list('title', flat=True))
-    
-    def add_open_position(self, title, department="", description="", requirements=""):
-        """Add a new open teaching position."""
-        return OpenPosition.objects.create(
-            school=self,
-            title=title,
-            department=department,
-            description=description,
-            requirements=requirements
-        )
-
-    
-    @property
-    def open_application_forms(self):
-        """Get active application forms for admission into this school."""
-        from admissions.models import ApplicationForm
-        return ApplicationForm.objects.filter(
-            school=self,
-            status='active'
-        )
-    
-    @property
-    def open_application_forms_count(self):
-        """Count of active application forms."""
-        return self.open_application_forms.count()
-
 
 
 class User(AbstractUser):
@@ -223,11 +29,11 @@ class User(AbstractUser):
     )
     
     email = models.EmailField(_("email address"), unique=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)  # ✅ Consistent with shared
     
     # Use string reference to avoid circular import
     current_school = models.ForeignKey(
-        School, 
+        "core.School", 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
@@ -239,11 +45,13 @@ class User(AbstractUser):
 
     class Meta:
         db_table = 'auth_user'
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['phone_number']),
+        ]
 
     def __str__(self):
         return self.email
-
-
 
 
 class SchoolOnboardingTemplate(models.Model):
@@ -251,7 +59,7 @@ class SchoolOnboardingTemplate(models.Model):
     Template for automatically configuring new schools based on type.
     """
     name = models.CharField(max_length=100, help_text="Template name")
-    school_type = models.CharField(max_length=20, choices=School.SCHOOL_TYPES)
+    school_type = models.CharField(max_length=20, choices=[], blank=True)  # Will be set from core
     configuration = models.JSONField(help_text="Template configuration JSON")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -261,6 +69,7 @@ class SchoolOnboardingTemplate(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.school_type})"
+
 
 class Scholarship(models.Model):
     """Scholarship definition for students."""
@@ -273,7 +82,7 @@ class Scholarship(models.Model):
         ('external', 'External Sponsorship'),
     )
     
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
     scholarship_type = models.CharField(max_length=20, choices=SCHOLARSHIP_TYPES)
     description = models.TextField(blank=True)
@@ -313,7 +122,7 @@ class Scholarship(models.Model):
     application_end = models.DateField(null=True, blank=True)
     
     # Metadata
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -367,8 +176,6 @@ class Scholarship(models.Model):
         return discount.quantize(Decimal('0.01'))
 
 
-
-
 class Role(models.Model):
     """Enhanced role-based access control with real permissions."""
     ROLE_CATEGORIES = (
@@ -382,15 +189,15 @@ class Role(models.Model):
     # Core role information
     name = models.CharField(max_length=100, help_text="Role display name")
     category = models.CharField(max_length=50, choices=ROLE_CATEGORIES)
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
     
-    # Permissions system
+    # Permissions system - using shared StatusChoices
     permissions = models.JSONField(default=list, help_text="List of permission strings")
     is_system_role = models.BooleanField(default=False)
     system_role_type = models.CharField(max_length=50, blank=True, null=True)
     description = models.TextField(blank=True, help_text="Role description and responsibilities")
     
-    # Role management
+    # Role management - align with shared decorators
     can_manage_roles = models.BooleanField(default=False, help_text="Can create/edit roles")
     can_manage_staff = models.BooleanField(default=False, help_text="Can manage staff members")
     can_manage_students = models.BooleanField(default=False, help_text="Can manage students")
@@ -421,6 +228,8 @@ class Role(models.Model):
     
     def get_permissions_display(self):
         """Get human-readable permissions list."""
+        # Use shared constants where possible
+        from shared.constants import StatusChoices
         permission_map = {
             'manage_roles': 'Manage Roles',
             'manage_staff': 'Manage Staff',
@@ -433,10 +242,12 @@ class Role(models.Model):
             'manage_scores': 'Manage Scores',
             'pay_fees': 'Pay Fees',
             'view_children': 'View Children Info',
+            # Shared status permissions
+            StatusChoices.APPROVED: 'Approve Items',
+            StatusChoices.REJECTED: 'Reject Items',
+            StatusChoices.PENDING: 'Review Pending Items',
         }
         return [permission_map.get(p, p) for p in self.permissions]
-
-
 
 
 class Staff(models.Model):
@@ -463,8 +274,8 @@ class Staff(models.Model):
     )
     
     # Basic information
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     staff_id = models.CharField(
         max_length=50, 
         unique=True, 
@@ -509,9 +320,9 @@ class Staff(models.Model):
         help_text="Years of teaching/professional experience"
     )
     
-    # Contact information
+    # Contact information - using shared field names
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=20, blank=True)
+    phone_number = models.CharField(max_length=20, blank=True)  # ✅ Consistent with shared
     alternate_phone = models.CharField(max_length=20, blank=True, help_text="Alternate phone number")
     address = models.TextField(blank=True)
     emergency_contact_name = models.CharField(max_length=200, blank=True)
@@ -539,11 +350,12 @@ class Staff(models.Model):
         related_name='teaching_staff',
         help_text="Subjects this staff member teaches"
     )
-    class_groups = models.ManyToManyField(
-        'students.ClassGroup',
+    # ✅ FIXED: Using core.Class with consistent field name
+    assigned_classes = models.ManyToManyField(  # Changed from class_groups to assigned_classes
+        'core.Class',
         blank=True,
         related_name='assigned_staff',
-        help_text="Class groups this staff member is assigned to"
+        help_text="Academic classes this staff member is assigned to"
     )
     
     # Status and tracking
@@ -620,80 +432,115 @@ class Staff(models.Model):
             
             self.staff_id = f"{school_code}/STAFF/{year}/{sequence:04d}"
     
+    def clean(self):
+        """Validate staff data before saving."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate email uniqueness
+        if self.email and Staff.objects.filter(
+            email=self.email
+        ).exclude(pk=self.pk).exists():
+            raise ValidationError({'email': 'A staff member with this email already exists.'})
+        
+        # Validate date of birth
+        if self.date_of_birth and self.date_of_birth > timezone.now().date():
+            raise ValidationError({'date_of_birth': 'Date of birth cannot be in the future.'})
+        
+        # Validate date joined
+        if self.date_joined and self.date_joined > timezone.now().date():
+            raise ValidationError({'date_joined': 'Date joined cannot be in the future.'})
+        
+        # Auto-set flags based on position
+        if self.position:
+            teaching_positions = ['teacher', 'lecturer', 'instructor', 'tutor']
+            self.is_teaching_staff = any(pos in self.position.lower() for pos in teaching_positions)
+            
+            management_positions = ['principal', 'head', 'director', 'manager', 'admin', 'coordinator']
+            self.is_management = any(pos in self.position.lower() for pos in management_positions)
+    
     def save(self, *args, **kwargs):
-        """Auto-generate staff ID and handle user account creation."""
+        """Auto-generate staff ID."""
+        self.full_clean()  # Run validation
+        
         if not self.staff_id:
             self.generate_staff_id()
         
-        # Auto-set is_teaching_staff based on position
-        teaching_positions = ['teacher', 'lecturer', 'instructor', 'tutor']
-        self.is_teaching_staff = any(pos in self.position.lower() for pos in teaching_positions)
-        
-        # Auto-set is_management based on position
-        management_positions = ['principal', 'head', 'director', 'manager', 'admin', 'coordinator']
-        self.is_management = any(pos in self.position.lower() for pos in management_positions)
-        
         super().save(*args, **kwargs)
-        
-        # Auto-create user account if email is provided and no user exists
-        if self.email and not self.user:
-            self.create_user_account()
     
-    def create_user_account(self):
-        """Create a user account for this staff member."""
+    def create_user_account(self, password=None):
+        """
+        Create a user account for this staff member.
+        This should be moved to a service, but kept for backward compatibility.
+        """
         if self.user:
             return self.user
         
         try:
-            user = User.objects.create_user(
-                email=self.email,
-                username=self.email,
-                password=User.objects.make_random_password(),
-                first_name=self.first_name,
-                last_name=self.last_name,
-                phone_number=self.phone_number
-            )
+            # Use get_user_model() for flexibility
+            User = settings.AUTH_USER_MODEL
             
-            # Create profile with appropriate role
-            from users.models import Profile, Role
+            # Check if user already exists with this email
             try:
-                if self.is_management:
-                    role = Role.objects.get(school=self.school, system_role_type='principal')
-                else:
-                    role = Role.objects.get(school=self.school, system_role_type='teacher')
-            except Role.DoesNotExist:
-                # Fallback to teacher role
-                role = Role.objects.filter(school=self.school, category='academic').first()
-            
-            if role:
-                Profile.objects.create(
-                    user=user,
-                    school=self.school,
-                    role=role,
+                user = User.objects.get(email=self.email)
+            except User.DoesNotExist:
+                # Create new user
+                if password is None:
+                    password = User.objects.make_random_password()
+                
+                user = User.objects.create_user(
+                    email=self.email,
+                    username=self.email,
+                    password=password,
+                    first_name=self.first_name,
+                    last_name=self.last_name,
                     phone_number=self.phone_number
                 )
             
-            self.user = user
-            self.save()
+            # Create profile with appropriate role
+            try:
+                # Get or create default teacher role
+                role, created = Role.objects.get_or_create(
+                    school=self.school,
+                    system_role_type='teacher',
+                    defaults={
+                        'name': 'Teacher',
+                        'category': 'academic',
+                        'permissions': [
+                            'manage_attendance',
+                            'manage_scores',
+                            'view_reports',
+                            'communicate'
+                        ]
+                    }
+                )
+            except Role.DoesNotExist:
+                # Fallback to any academic role
+                role = Role.objects.filter(
+                    school=self.school,
+                    category='academic'
+                ).first()
             
-            # Send welcome email with temporary password (you can implement this)
-            self._send_welcome_email()
+            if role:
+                # Create or update profile
+                Profile.objects.update_or_create(
+                    user=user,
+                    school=self.school,
+                    defaults={'role': role, 'phone_number': self.phone_number}
+                )
+
+            
+            self.user = user
+            self.save(update_fields=['user'])
             
             return user
         except Exception as e:
             logger.error(f"Error creating user account for staff {self.email}: {e}")
             return None
     
-    def _send_welcome_email(self):
-        """Send welcome email to new staff (placeholder for email implementation)."""
-        # This would integrate with your email service
-        # You can use Django's send_mail function here
-        pass
-    
     @property
     def current_classes(self):
         """Get current class assignments."""
-        return self.class_groups.all()
+        return self.assigned_classes.all()  # ✅ Updated field name
     
     @property
     def current_subjects(self):
@@ -702,6 +549,7 @@ class Staff(models.Model):
     
     def get_attendance_records(self, start_date=None, end_date=None):
         """Get attendance records for this staff member."""
+        # Use string reference to avoid import issues
         from attendance.models import TeacherAttendance
         
         records = TeacherAttendance.objects.filter(staff=self)
@@ -712,37 +560,13 @@ class Staff(models.Model):
             records = records.filter(date__lte=end_date)
             
         return records.order_by('-date')
-    
-    def get_recent_attendance(self, days=30):
-        """Get recent attendance records."""
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        end_date = timezone.now().date()
-        start_date = end_date - timedelta(days=days)
-        
-        return self.get_attendance_records(start_date, end_date)
-    
-    def get_attendance_summary(self, start_date=None, end_date=None):
-        """Get attendance summary for period."""
-        records = self.get_attendance_records(start_date, end_date)
-        
-        return {
-            'total_days': records.count(),
-            'present_count': records.filter(status='present').count(),
-            'absent_count': records.filter(status='absent').count(),
-            'late_count': records.filter(is_late=True).count(),
-            'attendance_rate': (records.filter(status='present').count() / records.count() * 100) if records.count() > 0 else 0,
-        }
-        
-        
-        
+
 
 class StaffAssignment(models.Model):
     """Assignment of staff to roles and responsibilities."""
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     assigned_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     notes = models.TextField(blank=True)
@@ -758,23 +582,22 @@ class StaffAssignment(models.Model):
         return f"{self.staff} - {self.role}"
 
 
-
-
 class Profile(models.Model):
     """User profile for school-specific information."""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.PROTECT)
-    phone_number = models.CharField(max_length=32, blank=True, null=True)
+    phone_number = models.CharField(max_length=32, blank=True, null=True)  # ✅ Consistent
     
     class Meta:
         db_table = 'users_profile'
         unique_together = ['user', 'school']
+        indexes = [
+            models.Index(fields=['user', 'school']),
+        ]
 
     def __str__(self):
         return f"{self.user.email} - {self.school.name}"
-        
-
 
 
 class StaffInvitation(models.Model):
@@ -785,10 +608,10 @@ class StaffInvitation(models.Model):
         ('expired', 'Expired'),
     )
     
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
     email = models.EmailField()
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    invited_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     token = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=20, choices=INVITATION_STATUS, default='pending')
     expires_at = models.DateTimeField()
@@ -808,38 +631,11 @@ class StaffInvitation(models.Model):
     
     def is_valid(self):
         return self.status == 'pending' and self.expires_at > timezone.now()
-    
-    def send_invitation_email(self):
-        """Send invitation email to teacher."""
-        # Implementation for sending email
-        from django.core.mail import send_mail
-        from django.template.loader import render_to_string
-        from django.utils.html import strip_tags
-        
-        subject = f"Invitation to join {self.school.name} on Edusuite"
-        
-        context = {
-            'invitation': self,
-            'accept_url': f"http://localhost:8000/users/invitations/accept/{self.token}/",
-            'school': self.school,
-        }
-        
-        html_message = render_to_string('emails/teacher_invitation.html', context)
-        plain_message = strip_tags(html_message)
-        
-        send_mail(
-            subject,
-            plain_message,
-            'noreply@edusuite.com',
-            [self.email],
-            html_message=html_message,
-            fail_silently=False
-        )
 
 
 class OpenPosition(models.Model):
     """Model for school's open teaching positions."""
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     department = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
@@ -860,8 +656,8 @@ class OpenPosition(models.Model):
     @property
     def application_count(self):
         """Count pending applications for this position."""
-        # Django creates reverse relationship as 'teacher_application' (lowercase + _set)
         return self.teacherapplication_set.filter(status='pending').count()
+
 
 class TeacherApplication(models.Model):
     """Model for teachers applying to join schools."""
@@ -879,13 +675,13 @@ class TeacherApplication(models.Model):
     )
     
     # Basic information
-    school = models.ForeignKey(School, on_delete=models.CASCADE)
-    position = models.ForeignKey(OpenPosition, on_delete=models.CASCADE, null=True, blank=True)  # ADD THIS FIELD
-    applicant = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    school = models.ForeignKey("core.School", on_delete=models.CASCADE)
+    position = models.ForeignKey(OpenPosition, on_delete=models.CASCADE, null=True, blank=True)
+    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     email = models.EmailField()
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20)  # ✅ Consistent field name
     
     # Application details
     application_type = models.CharField(max_length=20, choices=APPLICATION_TYPE, default='experienced')
@@ -899,9 +695,15 @@ class TeacherApplication(models.Model):
     resume = models.FileField(upload_to='teacher_resumes/', null=True, blank=True)
     certificates = models.FileField(upload_to='teacher_certificates/', null=True, blank=True)
     
-    # Status and tracking
+    # Status and tracking - using shared StatusChoices where possible
     status = models.CharField(max_length=20, choices=APPLICATION_STATUS, default='pending')
-    status_changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_applications')
+    status_changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='processed_applications'
+    )
     status_changed_at = models.DateTimeField(null=True, blank=True)
     
     # Timestamps
@@ -929,8 +731,12 @@ class TeacherApplication(models.Model):
     
     def approve(self, approved_by):
         """Approve this application and create staff record."""
-        from .services import  StaffService
-        return  StaffService.approve_application(self, approved_by)
+        # ✅ This should be moved to a shared service
+        # For now, we'll keep it but log that it should be refactored
+        logger.warning("TeacherApplication.approve() should be moved to shared service")
+        
+        from .services import StaffService
+        return StaffService.approve_application(self, approved_by)
     
     def reject(self, rejected_by, reason=""):
         """Reject this application."""
@@ -938,13 +744,3 @@ class TeacherApplication(models.Model):
         self.status_changed_by = rejected_by
         self.status_changed_at = timezone.now()
         self.save()
-        
-        # Send rejection email
-        self._send_status_notification('rejected', reason)
-    
-    def _send_status_notification(self, status, reason=""):
-        """Send status notification email (placeholder)."""
-        # Implement email notification logic here
-        pass
-
-
