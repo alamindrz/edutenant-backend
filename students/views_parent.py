@@ -15,8 +15,7 @@ from django.apps import apps
 from django.core.exceptions import PermissionDenied
 
 # SHARED IMPORTS
-from shared.decorators.permissions import require_role
-from shared.decorators.permissions import require_school_context
+from shared.decorators.permissions import require_role, require_school_context
 from shared.constants import StatusChoices
 from shared.utils import FieldMapper
 

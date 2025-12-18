@@ -1,19 +1,23 @@
-# config/views.py
+# config/views.py - FIXED VERSION
 from django.shortcuts import render, redirect
 from core.models import School
 from django.utils import timezone
 from datetime import timedelta
-
-
-
+from django.db.models import Q, Count
+from django.core.paginator import Paginator
 
 def home_view(request):
     """Public landing page for ALL users."""
     # Get featured schools for the public landing page
+    # Since there's no 'is_featured' field, we'll use schools with:
+    # - Active status
+    # - Application forms enabled
+    # - Subdomain active (optional criteria)
     featured_schools = School.objects.filter(
         is_active=True,
-        is_featured=True,
-        application_form_enabled=True
+        application_form_enabled=True,
+        subdomain_status='active',  # Schools with active custom domains
+        onboarding_completed=True,  # Schools that completed setup
     )[:6]
     
     # Get stats for landing page
@@ -30,10 +34,6 @@ def home_view(request):
   
 def school_discovery_view(request):
     """Public school discovery page."""
-    from users.models import School
-    from django.db.models import Q, Count
-    from django.core.paginator import Paginator
-    
     # Get filter parameters
     search_query = request.GET.get('q', '')
     school_type = request.GET.get('type', '')
@@ -41,14 +41,13 @@ def school_discovery_view(request):
     sort = request.GET.get('sort', 'newest')
     page = request.GET.get('page', 1)
     
-    # Base queryset
+    # Base queryset - using core.models.School
     schools = School.objects.filter(is_active=True, application_form_enabled=True)
     
     # Apply filters
     if search_query:
         schools = schools.filter(
             Q(name__icontains=search_query) |
-            Q(description__icontains=search_query) |
             Q(address__icontains=search_query)
         )
     
@@ -60,15 +59,16 @@ def school_discovery_view(request):
     
     # Apply sorting
     if sort == 'popular':
+        # Annotate with student count for popularity sorting
         schools = schools.annotate(
             student_count=Count('student', distinct=True),
         ).order_by('-student_count')
     elif sort == 'name':
         schools = schools.order_by('name')
-    else:  # newest
+    else:  # newest (default)
         schools = schools.order_by('-created_at')
     
-    # Annotate with counts
+    # Annotate with counts (if you have related models)
     schools = schools.annotate(
         student_count=Count('student', distinct=True),
         staff_count=Count('staff', distinct=True),

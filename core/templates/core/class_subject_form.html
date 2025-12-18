@@ -1,0 +1,344 @@
+<!-- core/templates/core/class_subject_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Class Subject Assignment" }} - {{ school.name }}{% endblock %}
+
+{% block page_title %}{{ page_title|default:"Class Subject Assignment" }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:class_list' %}">Classes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:class_detail' class_instance.id %}">{{ class_instance.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ page_title|default:"Add Subject" }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-book-plus me-2"></i>{{ page_title|default:"Assign Subject to Class" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Class:</strong> {{ class_instance.name }}
+                    {% if class_instance.category %}
+                        <span class="badge bg-primary ms-2">{{ class_instance.category.name }}</span>
+                    {% endif %}
+                </div>
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Subject Field -->
+                        <div class="col-md-6">
+                            <label for="{{ form.subject.id_for_label }}" class="form-label">
+                                Subject <span class="text-danger">*</span>
+                            </label>
+                            {{ form.subject }}
+                            {% if form.subject.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.subject.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Select the subject to add to this class</div>
+                        </div>
+
+                        <!-- Teacher Field -->
+                        <div class="col-md-6">
+                            <label for="{{ form.teacher.id_for_label }}" class="form-label">
+                                Teacher
+                            </label>
+                            {{ form.teacher }}
+                            {% if form.teacher.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.teacher.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Teacher assigned to teach this subject</div>
+                        </div>
+
+                        <!-- Periods per Week -->
+                        <div class="col-md-6">
+                            <label for="{{ form.periods_per_week.id_for_label }}" class="form-label">
+                                Periods per Week
+                            </label>
+                            {{ form.periods_per_week }}
+                            {% if form.periods_per_week.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.periods_per_week.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Number of teaching periods per week</div>
+                        </div>
+
+                        <!-- Display Order -->
+                        <div class="col-md-6">
+                            <label for="{{ form.display_order.id_for_label }}" class="form-label">
+                                Display Order
+                            </label>
+                            {{ form.display_order }}
+                            {% if form.display_order.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.display_order.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Order in class subject list (lower numbers first)</div>
+                        </div>
+
+                        <!-- Compulsory Field -->
+                        <div class="col-md-6">
+                            <label class="form-label">Subject Type</label>
+                            <div class="form-check">
+                                {{ form.is_compulsory }}
+                                <label class="form-check-label" for="{{ form.is_compulsory.id_for_label }}">
+                                    Compulsory Subject
+                                </label>
+                            </div>
+                            {% if form.is_compulsory.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.is_compulsory.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Is this subject mandatory for all students?</div>
+                        </div>
+
+                        <!-- Elective Group -->
+                        <div class="col-md-6">
+                            <label for="{{ form.elective_group.id_for_label }}" class="form-label">
+                                Elective Group
+                            </label>
+                            {{ form.elective_group }}
+                            {% if form.elective_group.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.elective_group.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Group name for elective subjects (if applicable)</div>
+                        </div>
+                    </div>
+
+                    <!-- Already Assigned Warning -->
+                    {% if existing_subject %}
+                    <div class="alert alert-warning mt-4">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> This subject is already assigned to this class.
+                        Editing will update the existing assignment.
+                    </div>
+                    {% endif %}
+
+                    <!-- Subject Statistics -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-bar-chart me-2"></i>Class Subject Statistics
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-6">
+                                    <div class="display-6 fw-bold">{{ class_instance.classsubjects.count }}</div>
+                                    <small class="text-muted">Subjects in Class</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="display-6 fw-bold">
+                                        {{ class_instance.classsubjects.filter.is_compulsory=True|length }}
+                                    </div>
+                                    <small class="text-muted">Compulsory Subjects</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'core:class_detail' class_instance.id %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Back to Class
+                                </a>
+                                <div class="btn-group">
+                                    {% if class_subject and action == 'edit' %}
+                                    <a href="{% url 'core:class_subject_remove' class_instance.id class_subject.id %}" 
+                                       class="btn btn-outline-danger">
+                                        <i class="bi bi-trash me-1"></i>Remove
+                                    </a>
+                                    {% endif %}
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        {% if action == 'edit' %}Update Assignment{% else %}Add Subject{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Available Subjects -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-check me-2"></i>Available Subjects
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Subjects available for assignment to <strong>{{ class_instance.name }}</strong>:
+                </p>
+                <div class="row">
+                    {% for subject in available_subjects|slice:":6" %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 border">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ subject.name }}</h6>
+                                <p class="card-text small text-muted mb-2">{{ subject.code }}</p>
+                                <span class="badge bg-secondary">{{ subject.get_category_display }}</span>
+                                {% if subject.difficulty_level != 'basic' %}
+                                <span class="badge bg-info ms-1">{{ subject.get_difficulty_level_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-3">
+                        <i class="bi bi-book text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2 mb-0">No subjects available. Create subjects first.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if available_subjects.count > 6 %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">... and {{ available_subjects.count|add:"-6" }} more subjects</small>
+                </div>
+                {% endif %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'core:subject_create' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Create New Subject
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Real-time validation
+    const periodsInput = document.getElementById('{{ form.periods_per_week.id_for_label }}');
+    if (periodsInput) {
+        periodsInput.addEventListener('blur', function() {
+            const value = parseInt(this.value) || 0;
+            if (value < 1 || value > 20) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    const orderInput = document.getElementById('{{ form.display_order.id_for_label }}');
+    if (orderInput) {
+        orderInput.addEventListener('blur', function() {
+            const value = parseInt(this.value) || 0;
+            if (value < 0 || value > 100) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Filter teachers based on selected subject
+    const subjectSelect = document.getElementById('{{ form.subject.id_for_label }}');
+    const teacherSelect = document.getElementById('{{ form.teacher.id_for_label }}');
+    
+    if (subjectSelect && teacherSelect) {
+        subjectSelect.addEventListener('change', function() {
+            const subjectId = this.value;
+            if (subjectId) {
+                // This would ideally be an AJAX call to filter teachers
+                // For now, we'll just enable the teacher select
+                teacherSelect.disabled = false;
+            } else {
+                teacherSelect.disabled = true;
+                teacherSelect.value = '';
+            }
+        });
+        
+        // Initialize
+        if (!subjectSelect.value) {
+            teacherSelect.disabled = true;
+        }
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            if (periodsInput && (parseInt(periodsInput.value) < 1 || parseInt(periodsInput.value) > 20)) {
+                periodsInput.classList.add('is-invalid');
+                if (isValid) periodsInput.focus();
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Please fix the validation errors above.', 'danger');
+            }
+        });
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="bi ${type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

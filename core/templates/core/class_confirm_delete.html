@@ -1,0 +1,132 @@
+<!-- core/templates/core/class_confirm_delete.html -->
+{% extends "base.html" %}
+
+{% block title %}Deactivate Class - {{ school.name }}{% endblock %}
+
+{% block page_title %}Deactivate Class{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Deactivate Class
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> You are about to deactivate this class.
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Class Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th style="width: 140px;">Class Name:</th>
+                                            <td>{{ class_instance.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Category:</th>
+                                            <td>
+                                                {% if class_instance.category %}
+                                                    <span class="badge bg-primary">{{ class_instance.category.name }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">None</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Form Master:</th>
+                                            <td>
+                                                {% if class_instance.form_master %}
+                                                    {{ class_instance.form_master.full_name }}
+                                                {% else %}
+                                                    <span class="text-muted">Not assigned</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <th style="width: 140px;">Students:</th>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if class_instance.current_strength == 0 %}bg-secondary
+                                                    {% elif class_instance.current_strength >= class_instance.max_students %}bg-danger
+                                                    {% else %}bg-success{% endif %}">
+                                                    {{ class_instance.current_strength }}/{{ class_instance.max_students }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Capacity:</th>
+                                            <td>{{ class_instance.capacity_percentage|floatformat:0 }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Room:</th>
+                                            <td>{{ class_instance.room_number|default:"Not assigned" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if class_instance.current_strength > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-people-fill me-2"></i>
+                        <strong>Important:</strong> This class has {{ class_instance.current_strength }} enrolled student{{ class_instance.current_strength|pluralize:"s" }}.
+                        Deactivating the class will not remove students, but they won't be able to receive new assignments.
+                        <br><br>
+                        Consider reassigning students to other classes before deactivating.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Note:</strong> Deactivation is reversible. You can reactivate this class later from the class list.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:class_detail' class_instance.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-toggle-off me-1"></i>Deactivate Class
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-question-circle me-2"></i>What happens when I deactivate a class?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>The class will no longer appear in active class lists</li>
+                        <li>Existing students will remain enrolled but can't receive new assignments</li>
+                        <li>No new students can be added to the class</li>
+                        <li>Class data (grades, attendance, etc.) will be preserved</li>
+                        <li>The class can be reactivated at any time</li>
+                        <li>Useful for archived/graduated classes or temporary suspensions</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

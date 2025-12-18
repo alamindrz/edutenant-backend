@@ -86,8 +86,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',  # Required by allauth
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'core.context_processors_unified.unified_context',
-                'core.context_processors.billing_context',
+                'core.context_processors.unified_context',
                 'users.context_processors.navigation_context',
                 
             ],

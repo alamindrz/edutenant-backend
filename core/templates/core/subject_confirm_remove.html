@@ -1,0 +1,101 @@
+<!-- core/templates/core/class_subject_confirm_remove.html -->
+{% extends "base.html" %}
+
+{% block title %}Remove Subject - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Remove Subject from Class
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> This action will remove the subject from the class.
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Subject Assignment Details</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th style="width: 140px;">Class:</th>
+                                    <td>{{ class_instance.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Subject:</th>
+                                    <td>
+                                        <strong>{{ class_subject.subject.name }}</strong>
+                                        <span class="badge bg-primary ms-2">{{ class_subject.subject.code }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Teacher:</th>
+                                    <td>
+                                        {% if class_subject.teacher %}
+                                            {{ class_subject.teacher.full_name }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Periods/Week:</th>
+                                    <td>{{ class_subject.periods_per_week }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type:</th>
+                                    <td>
+                                        <span class="badge {% if class_subject.is_compulsory %}bg-primary{% else %}bg-warning{% endif %}">
+                                            {{ class_subject.is_compulsory|yesno:"Compulsory,Elective" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Note:</strong> This action only removes the subject from this specific class.
+                        The subject will remain available for other classes.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:class_detail' class_instance.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Remove Subject
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-question-circle me-2"></i>What happens when I remove a subject?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>The subject will no longer be offered in this class</li>
+                        <li>Existing student grades for this subject will be preserved</li>
+                        <li>The subject will remain in the system for other classes</li>
+                        <li>You can re-add the subject later if needed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

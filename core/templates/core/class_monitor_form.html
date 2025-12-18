@@ -1,0 +1,376 @@
+<!-- core/templates/core/class_monitor_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Assign Class Monitor" }} - {{ school.name }}{% endblock %}
+
+{% block page_title %}{{ page_title|default:"Assign Class Monitor" }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:class_list' %}">Classes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'core:class_detail' class_instance.id %}">{{ class_instance.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ page_title|default:"Assign Monitor" }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-award me-2"></i>{{ page_title|default:"Assign Class Monitor" }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Class:</strong> {{ class_instance.name }}
+                    <span class="badge bg-primary ms-2">{{ class_instance.current_strength }} students</span>
+                </div>
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Student Field -->
+                        <div class="col-md-6">
+                            <label for="{{ form.student.id_for_label }}" class="form-label">
+                                Student <span class="text-danger">*</span>
+                            </label>
+                            {{ form.student }}
+                            {% if form.student.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.student.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Select a student from this class</div>
+                        </div>
+
+                        <!-- Role Field -->
+                        <div class="col-md-6">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            {{ form.role }}
+                            {% if form.role.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.role.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Monitor position/role</div>
+                        </div>
+
+                        <!-- Position Title -->
+                        <div class="col-md-6">
+                            <label for="{{ form.position.id_for_label }}" class="form-label">
+                                Position Title
+                            </label>
+                            {{ form.position }}
+                            {% if form.position.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.position.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">e.g., Class Captain, Head Prefect</div>
+                        </div>
+
+                        <!-- Start Date -->
+                        <div class="col-md-6">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                Start Date
+                            </label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.start_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">When the monitor role begins</div>
+                        </div>
+
+                        <!-- Responsibilities -->
+                        <div class="col-12">
+                            <label for="{{ form.responsibilities.id_for_label }}" class="form-label">
+                                Responsibilities
+                            </label>
+                            {{ form.responsibilities }}
+                            {% if form.responsibilities.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.responsibilities.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">List the monitor's duties and responsibilities</div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="col-12">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                Notes
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Additional notes about this assignment</div>
+                        </div>
+                    </div>
+
+                    <!-- Current Monitors Warning -->
+                    {% if current_monitors %}
+                    <div class="alert alert-warning mt-4">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> This class already has {{ current_monitors.count }} active monitor{{ current_monitors.count|pluralize:"s" }}.
+                        <a href="{% url 'core:class_detail' class_instance.id %}#monitors" class="alert-link">
+                            View current monitors
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Student Information -->
+                    <div class="card mt-4" id="studentInfoCard" style="display: none;">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-person-circle me-2"></i>Selected Student Information
+                            </h6>
+                        </div>
+                        <div class="card-body" id="studentInfoContent">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'core:class_detail' class_instance.id %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Back to Class
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>Assign Monitor
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Available Students -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-people me-2"></i>Available Students
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Students in <strong>{{ class_instance.name }}</strong> available for monitor roles:
+                </p>
+                <div class="row">
+                    {% for student in available_students|slice:":8" %}
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card h-100 border">
+                            <div class="card-body text-center">
+                                <div class="mb-2">
+                                    <i class="bi bi-person-circle text-primary" style="font-size: 2rem;"></i>
+                                </div>
+                                <h6 class="card-title mb-1">{{ student.first_name }}</h6>
+                                <p class="card-text small text-muted mb-2">{{ student.last_name }}</p>
+                                <small class="text-muted">{{ student.admission_number|default:"No ID" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-3">
+                        <i class="bi bi-person-x text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2 mb-0">No students available in this class.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if available_students.count > 8 %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">... and {{ available_students.count|add:"-8" }} more students</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    const studentInfoCard = document.getElementById('studentInfoCard');
+    const studentInfoContent = document.getElementById('studentInfoContent');
+    
+    // Load student information when selected
+    if (studentSelect) {
+        studentSelect.addEventListener('change', function() {
+            const studentId = this.value;
+            
+            if (studentId) {
+                // Show loading
+                studentInfoContent.innerHTML = `
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2 mb-0">Loading student information...</p>
+                    </div>
+                `;
+                studentInfoCard.style.display = 'block';
+                
+                // Fetch student details
+                fetch(`/api/students/${studentId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        studentInfoContent.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 class="mb-1">${data.full_name}</h6>
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-person me-1"></i>${data.gender || 'Not specified'} 
+                                        | <i class="bi bi-calendar me-1"></i>${data.date_of_birth || 'No DOB'}
+                                    </p>
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-person-badge me-1"></i>${data.admission_number || 'No ID'}
+                                    </p>
+                                    ${data.parent ? `
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-people me-1"></i>Parent: ${data.parent.full_name}
+                                        <br><small>${data.parent.phone_number || ''}</small>
+                                    </p>
+                                    ` : ''}
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <a href="/students/${studentId}/" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>View Profile
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    })
+                    .catch(error => {
+                        console.error('Error loading student:', error);
+                        studentInfoContent.innerHTML = `
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Could not load student information.
+                            </div>
+                        `;
+                    });
+            } else {
+                studentInfoCard.style.display = 'none';
+            }
+        });
+        
+        // Trigger change on page load if student is already selected
+        if (studentSelect.value) {
+            studentSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    // Date validation
+    const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+    if (startDateInput) {
+        // Set default to today if empty
+        if (!startDateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            startDateInput.value = today;
+        }
+        
+        startDateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            
+            if (selectedDate > today) {
+                // Allow future dates but show warning
+                this.classList.add('is-warning');
+            } else {
+                this.classList.remove('is-warning');
+            }
+        });
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            if (studentSelect && !studentSelect.value) {
+                studentSelect.classList.add('is-invalid');
+                if (isValid) studentSelect.focus();
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                showToast('Please select a student for the monitor role.', 'warning');
+            }
+        });
+    }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="bi ${type === 'danger' ? 'bi-exclamation-triangle' : 'bi-info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+.is-warning {
+    border-color: #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

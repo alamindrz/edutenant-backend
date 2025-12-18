@@ -1,0 +1,210 @@
+<!-- core/templates/core/class_category_confirm_delete.html -->
+{% extends "base.html" %}
+
+{% block title %}Delete Class Category - {{ school.name }}{% endblock %}
+
+{% block page_title %}Delete Class Category{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Delete Class Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone.
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Category Information</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th style="width: 140px;">Category Name:</th>
+                                    <td>
+                                        <strong>{{ category.name }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Section:</th>
+                                    <td>
+                                        <span class="badge 
+                                            {% if category.section == 'primary' %}bg-primary
+                                            {% elif category.section == 'secondary' %}bg-secondary
+                                            {% elif category.section == 'jss' %}bg-info
+                                            {% elif category.section == 'sss' %}bg-success
+                                            {% else %}bg-dark{% endif %}">
+                                            {{ category.get_section_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Display Order:</th>
+                                    <td>{{ category.display_order }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge {% if category.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ category.is_active|yesno:"Active,Inactive" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Classes in Category:</th>
+                                    <td>
+                                        <span class="badge 
+                                            {% if category.class_count == 0 %}bg-secondary
+                                            {% elif category.class_count > 10 %}bg-success
+                                            {% else %}bg-primary{% endif %}">
+                                            {{ category.class_count }} classes
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            {% if category.description %}
+                            <div class="mt-3">
+                                <strong>Description:</strong>
+                                <p class="text-muted mb-0">{{ category.description }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if category.class_count > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Cannot Delete:</strong> This category contains 
+                        <strong>{{ category.class_count }}</strong> active class{{ category.class_count|pluralize:"es" }}.
+                        <br><br>
+                        You must either:
+                        <ul class="mb-0">
+                            <li>Delete or reassign all classes in this category first, or</li>
+                            <li>Deactivate the category instead (classes will remain)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'core:class_category_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Categories
+                        </a>
+                        <a href="{% url 'core:class_category_edit' category.id %}" class="btn btn-warning">
+                            <i class="bi bi-toggle-off me-1"></i>Deactivate Instead
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        This category has no classes and can be safely deleted.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="confirmDelete" class="form-label">
+                                Type "DELETE" to confirm:
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="confirmDelete" 
+                                   name="confirm_delete" 
+                                   placeholder="Type DELETE here"
+                                   required
+                                   pattern="DELETE">
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:class_category_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                <i class="bi bi-trash me-1"></i>Delete Category Permanently
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if category.class_count == 0 %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-question-circle me-2"></i>About Category Deletion
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Deleted categories are permanently removed from the system</li>
+                        <li>This action cannot be undone</li>
+                        <li>Only empty categories (with 0 classes) can be deleted</li>
+                        <li>Consider deactivating instead if you might need the category later</li>
+                        <li>Deactivated categories can be reactivated anytime</li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmDelete');
+    const deleteButton = document.getElementById('deleteButton');
+    
+    if (confirmInput && deleteButton) {
+        confirmInput.addEventListener('input', function() {
+            if (this.value === 'DELETE') {
+                deleteButton.disabled = false;
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                deleteButton.disabled = true;
+                this.classList.remove('is-valid');
+                if (this.value) {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            }
+        });
+        
+        // Form validation
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (confirmInput.value !== 'DELETE') {
+                    e.preventDefault();
+                    confirmInput.focus();
+                    confirmInput.classList.add('is-invalid');
+                    
+                    const toast = document.createElement('div');
+                    toast.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                    toast.innerHTML = `
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> Please type "DELETE" to confirm.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        if (toast.parentNode) toast.remove();
+                    }, 5000);
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
