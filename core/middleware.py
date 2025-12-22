@@ -477,7 +477,6 @@ class RequestLoggingMiddleware:
 
         if settings.DEBUG:
             logger.debug("Response", extra={
-                "status": response.status_code,
                 "path": request.path,
                 "user": getattr(request.user, "id", None) if hasattr(request, 'user') else None,
                 "school": getattr(request, "school", None),

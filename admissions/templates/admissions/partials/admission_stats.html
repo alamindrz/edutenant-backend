@@ -1,0 +1,78 @@
+<!-- templates/admissions/partials/admission_stats.html -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Total Applications</h6>
+                        <h3 class="mb-0">{{ stats.total_applications }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x text-primary"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-success"><i class="fas fa-caret-up"></i> Today: {{ stats.today_applications|default:0 }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Pending Review</h6>
+                        <h3 class="mb-0">{{ stats.pending_review }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-inbox fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-danger"><i class="fas fa-clock"></i> Review needed</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Accepted</h6>
+                        <h3 class="mb-0">{{ stats.accepted }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-info">Rate: {{ stats.acceptance_rate }}%</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Enrolled</h6>
+                        <h3 class="mb-0">{{ stats.enrolled }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-graduate fa-2x text-info"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-success">Rate: {{ stats.enrollment_rate }}%</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

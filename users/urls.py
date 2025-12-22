@@ -1,4 +1,4 @@
-# users/urls.py
+# users/urls.py - CLEANED VERSION
 """
 URL Configuration for Users App
 Clean, well-organized URLs following RESTful conventions
@@ -12,6 +12,10 @@ urlpatterns = [
     # ============ DASHBOARD & PROFILE ============
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('profile/', views.profile_view, name='profile'),
+    
+    # ============ DASHBOARD COMPONENTS (HTMX) ============
+    path('dashboard/stats/', views.dashboard_stats_partial, name='dashboard_stats'),
+    path('dashboard/activity/', views.recent_activity_partial, name='recent_activity'),
     
     # ============ SCHOOL MANAGEMENT ============
     path('schools/', views.school_list_view, name='school_list'),
@@ -43,6 +47,11 @@ urlpatterns = [
     path('applications/<int:application_id>/reject/', 
          views.reject_application_view, name='reject_application'),
     
+    # ============ MY APPLICATIONS ============
+    path('my-applications/', views.my_applications_view, name='my_applications'),
+    path('applications/<int:application_id>/withdraw/', 
+         views.withdraw_application_view, name='withdraw_application'),
+    
     # ============ OPEN POSITIONS MANAGEMENT ============
     path('positions/', views.manage_open_positions_view, name='manage_open_positions'),
     
@@ -50,9 +59,6 @@ urlpatterns = [
     path('discover/', views.school_discovery_view, name='school_discovery'),
     path('apply/<int:school_id>/', 
          views.apply_to_school_view, name='apply_to_school'),
-    path('my-applications/', views.my_applications_view, name='my_applications'),
-    path('applications/<int:application_id>/withdraw/', 
-         views.withdraw_application_view, name='withdraw_application'),
     
     # ============ INVITATION ACCEPTANCE ============
     path('invitations/accept/<str:token>/', 
@@ -99,9 +105,5 @@ urlpatterns = [
     path('ajax/check-email/', 
          views.check_email_availability_view, name='check_email_availability'),
     
-    # Dashboard components
-    path('ajax/dashboard-stats/', 
-         views.dashboard_stats_partial, name='dashboard_stats'),
-    path('ajax/recent-activity/', 
-         views.recent_activity_partial, name='recent_activity'),
+
 ]

@@ -1,35 +1,211 @@
+<!-- templates/admissions/application_error.html -->
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Application Error{% endblock %}
+{% block title %}Application Error - {{ school.name|default:"School" }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-8 col-lg-6">
             <div class="card border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h4 class="card-title mb-0">
-                        <i class="bi bi-exclamation-triangle me-2"></i>Application Error
-                    </h4>
-                </div>
                 <div class="card-body text-center py-5">
-                    <i class="bi bi-file-earmark-x display-1 text-danger mb-4"></i>
-                    <h3 class="mb-3">Application Form Not Available</h3>
-                    <p class="text-muted mb-4">
-                        The application form you're looking for is either no longer available 
-                        or has been removed.
-                    </p>
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                        <a href="{% url 'school_discovery' %}" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i>Discover Schools
+                    <!-- Error Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+                        <h1 class="h3 text-danger">Application Error</h1>
+                        <p class="text-muted">We encountered an error while processing your request.</p>
+                    </div>
+                    
+                    <!-- Error Details -->
+                    <div class="alert alert-danger text-start mb-4">
+                        <div class="d-flex">
+                            <i class="fas fa-bug fa-2x me-3"></i>
+                            <div>
+                                <h5 class="alert-heading mb-2">Technical Issue Detected</h5>
+                                <p class="mb-0">
+                                    Our system encountered an unexpected error while loading the application.
+                                    This has been logged and our technical team has been notified.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- What to do -->
+                    <div class="text-start mb-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-wrench me-2"></i>Troubleshooting steps:
+                        </h6>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <span class="step-number me-3">1</span>
+                                <div>
+                                    <strong>Refresh the page</strong>
+                                    <p class="small text-muted mb-0">Sometimes a simple refresh fixes the issue</p>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <span class="step-number me-3">2</span>
+                                <div>
+                                    <strong>Clear browser cache</strong>
+                                    <p class="small text-muted mb-0">Clear cached data and try again</p>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <span class="step-number me-3">3</span>
+                                <div>
+                                    <strong>Try a different browser</strong>
+                                    <p class="small text-muted mb-0">Use Chrome, Firefox, or Safari</p>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <span class="step-number me-3">4</span>
+                                <div>
+                                    <strong>Wait a few minutes</strong>
+                                    <p class="small text-muted mb-0">Try again after a short wait</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Technical Information (for debugging) -->
+                    <div class="mb-4">
+                        <button class="btn btn-sm btn-outline-secondary mb-3" 
+                                type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#technicalDetails">
+                            <i class="fas fa-code me-1"></i>Technical Details
+                        </button>
+                        
+                        <div class="collapse" id="technicalDetails">
+                            <div class="alert alert-secondary text-start small">
+                                <h6 class="alert-heading">Debug Information</h6>
+                                <ul class="mb-0">
+                                    <li><strong>Error Code:</strong> 500 - Internal Server Error</li>
+                                    <li><strong>Timestamp:</strong> <span id="error-timestamp"></span></li>
+                                    <li><strong>URL:</strong> <code id="error-url"></code></li>
+                                    <li><strong>User Agent:</strong> <span id="user-agent" class="text-truncate d-inline-block" style="max-width: 300px;"></span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <button class="btn btn-primary" onclick="window.location.reload()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh Page
+                        </button>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>Return Home
                         </a>
-                        <a href="{% url 'users:dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        {% if school %}
+                        <a href="mailto:support@{{ school.domain|default:'example.com' }}?subject=Application%20System%20Error" 
+                           class="btn btn-outline-danger">
+                            <i class="fas fa-life-ring me-2"></i>Report Issue
                         </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Support Information -->
+                    <div class="mt-5 pt-4 border-top">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-headset me-2"></i>Need Help?
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body py-3">
+                                        <i class="fas fa-envelope fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-1">Email Support</h6>
+                                        <p class="small text-muted mb-0">support@{{ school.domain|default:'example.com' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body py-3">
+                                        <i class="fas fa-phone fa-2x text-primary mb-2"></i>
+                                        <h6 class="mb-1">Phone Support</h6>
+                                        <p class="small text-muted mb-0">{{ school.phone|default:'+234 XXX XXX XXXX' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Populate technical details
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    document.getElementById('error-timestamp').textContent = now.toISOString();
+    document.getElementById('error-url').textContent = window.location.href;
+    document.getElementById('user-agent').textContent = navigator.userAgent;
+    
+    // Log error to console (for debugging)
+    console.error('Application error page loaded:', {
+        timestamp: now.toISOString(),
+        url: window.location.href,
+        referrer: document.referrer,
+        userAgent: navigator.userAgent
+    });
+});
+
+// Auto-refresh after 30 seconds
+setTimeout(function() {
+    window.location.reload();
+}, 30000);
+
+// Track error occurrence
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'exception', {
+        'description': 'application_error_page',
+        'fatal': false
+    });
+}
+</script>
+
+<style>
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.list-group-item {
+    background: transparent;
+    border-color: rgba(0, 0, 0, 0.125);
+}
+
+.collapse {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#technicalDetails code {
+    word-break: break-all;
+    font-size: 0.875rem;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+</style>
 {% endblock %}

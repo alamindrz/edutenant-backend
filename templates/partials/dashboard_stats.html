@@ -1,234 +1,74 @@
 <!-- templates/partials/dashboard_stats.html -->
 <div class="row g-3">
-    <!-- Total Staff Card -->
     <div class="col-xl-3 col-md-6">
-        <div class="card stat-card card-primary h-100 border-0 shadow-sm">
-            <div class="card-body position-relative">
+        <a href="{% url 'students:student_list' %}" class="card text-decoration-none border-0 bg-primary bg-opacity-10 hover-lift">
+            <div class="card-body py-3">
                 <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small fw-semibold text-muted mb-1">Total Staff</div>
-                        <div class="h2 fw-bold text-primary mb-0">{{ stats.total_staff }}</div>
-                        <div class="small text-muted">
-                            <i class="bi bi-person-check me-1"></i>Active staff members
+                    <div class="flex-shrink-0">
+                        <div class="bg-primary text-white rounded-circle p-2">
+                            <i class="bi bi-people fs-4"></i>
                         </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-people-fill fs-2 text-primary"></i>
-                        </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.student_count|default:"0" }}</h3>
+                        <small class="text-muted">Students</small>
                     </div>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <small class="text-muted">
-                    <i class="bi bi-clock me-1"></i>Updated recently
-                </small>
-            </div>
-        </div>
+        </a>
     </div>
-
-    <!-- Total Students Card -->
+    
     <div class="col-xl-3 col-md-6">
-        <div class="card stat-card card-success h-100 border-0 shadow-sm">
-            <div class="card-body position-relative">
+        <a href="{% url 'users:staff_list' %}" class="card text-decoration-none border-0 bg-success bg-opacity-10 hover-lift">
+            <div class="card-body py-3">
                 <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small fw-semibold text-muted mb-1">Total Students</div>
-                        <div class="h2 fw-bold text-success mb-0">{{ stats.total_students }}</div>
-                        <div class="small text-muted">
-                            <i class="bi bi-person-badge me-1"></i>Active students
+                    <div class="flex-shrink-0">
+                        <div class="bg-success text-white rounded-circle p-2">
+                            <i class="bi bi-person-badge fs-4"></i>
                         </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-person-badge fs-2 text-success"></i>
-                        </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.staff_count|default:"0" }}</h3>
+                        <small class="text-muted">Staff</small>
                     </div>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <small class="text-muted">
-                    <i class="bi bi-people me-1"></i>Enrolled students
-                </small>
-            </div>
-        </div>
+        </a>
     </div>
-
-    <!-- Pending Invitations Card -->
+    
     <div class="col-xl-3 col-md-6">
-        <div class="card stat-card card-warning h-100 border-0 shadow-sm">
-            <div class="card-body position-relative">
+        <a href="{% url 'academics:core:class_list' %}" class="card text-decoration-none border-0 bg-warning bg-opacity-10 hover-lift">
+            <div class="card-body py-3">
                 <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small fw-semibold text-muted mb-1">Pending Invitations</div>
-                        <div class="h2 fw-bold text-warning mb-0">{{ stats.pending_invitations }}</div>
-                        <div class="small text-muted">
-                            <i class="bi bi-clock text-warning"></i>
-                            Awaiting response
-                        </div>
-                    </div>
                     <div class="flex-shrink-0">
-                        <div class="bg-warning bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-envelope fs-2 text-warning"></i>
+                        <div class="bg-warning text-white rounded-circle p-2">
+                            <i class="bi bi-journal fs-4"></i>
                         </div>
                     </div>
-                </div>
-                <!-- Quick action -->
-                <div class="position-absolute top-0 end-0 m-3">
-                    {% if stats.pending_invitations > 0 %}
-                    <a href="{% url 'users:staff_invite' %}" class="badge bg-warning text-dark text-decoration-none">
-                        <i class="bi bi-eye me-1"></i>View
-                    </a>
-                    {% endif %}
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.class_count|default:"0" }}</h3>
+                        <small class="text-muted">Classes</small>
+                    </div>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <small class="text-muted">
-                    <i class="bi bi-lightning me-1"></i>
-                    {% if stats.pending_invitations > 0 %}
-                    <a href="{% url 'users:staff_invite' %}" class="text-warning text-decoration-none">View invitations</a>
-                    {% else %}
-                    No pending invitations
-                    {% endif %}
-                </small>
-            </div>
-        </div>
+        </a>
     </div>
-
-    <!-- Active Classes Card -->
+    
     <div class="col-xl-3 col-md-6">
-        <div class="card stat-card card-info h-100 border-0 shadow-sm">
-            <div class="card-body position-relative">
+        <a href="{% url 'admissions:application_list' %}" class="card text-decoration-none border-0 bg-info bg-opacity-10 hover-lift">
+            <div class="card-body py-3">
                 <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small fw-semibold text-muted mb-1">Active Classes</div>
-                        <div class="h2 fw-bold text-info mb-0">{{ stats.total_classes }}</div>
-                        <div class="small text-muted">
-                            <i class="bi bi-check-circle text-success"></i>
-                            Active academic classes
+                    <div class="flex-shrink-0">
+                        <div class="bg-info text-white rounded-circle p-2">
+                            <i class="bi bi-door-open fs-4"></i>
                         </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <div class="bg-info bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-mortarboard fs-2 text-info"></i>
-                        </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3 class="mb-0">{{ stats.pending_applications|default:"0" }}</h3>
+                        <small class="text-muted">Pending Apps</small>
                     </div>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <small class="text-muted">
-                    <i class="bi bi-book me-1"></i>Academic classes
-                </small>
-            </div>
-        </div>
+        </a>
     </div>
 </div>
-
-<!-- Second Row: Additional Metrics -->
-<div class="row g-3 mt-2">
-    <!-- Parent Accounts -->
-    <div class="col-xl-3 col-md-6">
-        <div class="card stat-card card-purple h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="small fw-semibold text-muted mb-1">Parent Accounts</div>
-                        <div class="h2 fw-bold text-purple mb-0">{{ stats.total_parents }}</div>
-                        <div class="small text-muted">
-                            <i class="bi bi-house-check text-purple"></i>
-                            Registered parents
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <div class="bg-purple bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-house-door fs-2 text-purple"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-:root {
-    --bs-purple: #6f42c1;
-}
-
-.card-purple {
-    border-left: 4px solid var(--bs-purple) !important;
-}
-
-.text-purple {
-    color: var(--bs-purple) !important;
-}
-
-.bg-purple {
-    background-color: var(--bs-purple) !important;
-}
-
-.stat-card {
-    transition: all 0.3s ease;
-    border-left: 4px solid !important;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-}
-
-.stat-card .card-body {
-    padding: 1.5rem;
-}
-
-/* Dark mode support */
-[data-bs-theme="dark"] .stat-card {
-    background: var(--bs-dark);
-    border-color: var(--bs-border-color) !important;
-}
-
-[data-bs-theme="dark"] .stat-card:hover {
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .stat-card .card-body {
-        padding: 1.25rem;
-    }
-    
-    .stat-card .h2 {
-        font-size: 1.75rem;
-    }
-}
-</style>
-
-<script>
-// Add interactive functionality to stats cards
-document.addEventListener('DOMContentLoaded', function() {
-    const statCards = document.querySelectorAll('.stat-card');
-    
-    statCards.forEach(card => {
-        // Add click handlers for cards with actions
-        if (card.querySelector('a[href]')) {
-            card.style.cursor = 'pointer';
-            card.addEventListener('click', function(e) {
-                if (!e.target.closest('a') && !e.target.closest('button')) {
-                    const link = this.querySelector('a[href]');
-                    if (link) {
-                        window.location.href = link.href;
-                    }
-                }
-            });
-        }
-    });
-    
-    // Auto-refresh stats every 30 seconds
-    setInterval(() => {
-        const statsContainer = document.querySelector('[hx-get]');
-        if (statsContainer && statsContainer.id === 'stats-container') {
-            htmx.trigger(statsContainer, 'refresh');
-        }
-    }, 30000);
-});
-</script>

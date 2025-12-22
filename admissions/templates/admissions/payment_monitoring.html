@@ -1,245 +1,382 @@
+<!-- templates/admissions/payment_monitoring.html -->
 {% extends "base.html" %}
+{% load static humanize %}
 
 {% block title %}Payment Monitoring - {{ school.name }}{% endblock %}
 
-{% block extra_css %}
-<style>
-.stat-card {
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    text-align: center;
-    background: white;
-}
-
-.stat-number {
-    font-size: 1.75rem;
-    font-weight: bold;
-    color: var(--school-primary);
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-}
-
-.payment-status-badge {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Page Header -->
+<div class="container-fluid">
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h2 mb-0">Payment Monitoring</h1>
-            <p class="text-muted mb-0">Track and manage application fee payments</p>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}">Admissions</a></li>
+                    <li class="breadcrumb-item active">Payment Monitoring</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-1">Payment Monitoring</h1>
+            <p class="text-muted">Monitor and manage application fee payments for {{ school.name }}</p>
         </div>
-        <div class="btn-group">
-            <button class="btn btn-outline-primary" hx-get="{% url 'admissions:payment_stats' %}" 
-                    hx-target="#paymentStats" hx-trigger="load, every 30s">
-                <i class="bi bi-arrow-clockwise"></i> Refresh
+        <div>
+            <button class="btn btn-outline-primary" 
+                    hx-get="{% url 'admissions:payment_stats_partial' %}"
+                    hx-trigger="click, every 30s"
+                    hx-target="#payment-stats">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
             </button>
-            <a href="{% url 'admissions:dashboard' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Dashboard
-            </a>
         </div>
     </div>
-    
-    <!-- Payment Statistics -->
-    <div id="paymentStats" class="mb-4">
-        <!-- HTMX will load stats here -->
+
+    <!-- Payment Stats (HTMX loaded) -->
+    <div id="payment-stats" class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Pending Payments</h6>
+                            <h3 class="mb-0">{{ stats.pending_payments|default:0 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Conversion Rate</h6>
+                            <h3 class="mb-0">{{ stats.conversion_rate|default:0 }}%</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Failed Payments</h6>
+                            <h3 class="mb-0">{{ stats.failed_payments|default:0 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-times-circle fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Today's Successful</h6>
+                            <h3 class="mb-0">{{ stats.today_successful|default:0 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <!-- Pending Payments -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="bi bi-clock-history text-warning me-2"></i>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="paymentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button">
                 Pending Payments
-                <span class="badge bg-warning ms-2">{{ pending_applications|length }}</span>
-            </h5>
-            <small class="text-muted">Applications awaiting payment completion</small>
-        </div>
-        <div class="card-body p-0">
-            {% if pending_applications %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Application #</th>
-                            <th>Student</th>
-                            <th>Parent</th>
-                            <th>Amount</th>
-                            <th>Submitted</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for app in pending_applications %}
-                        <tr>
-                            <td>
-                                <strong>{{ app.application_number }}</strong><br>
-                                <small class="text-muted">{{ app.form.name }}</small>
-                            </td>
-                            <td>{{ app.student_full_name }}</td>
-                            <td>
-                                {{ app.parent.full_name }}<br>
-                                <small class="text-muted">{{ app.parent.email }}</small>
-                            </td>
-                            <td>
-                                {% if app.application_fee_invoice %}
-                                <strong>₦{{ app.application_fee_invoice.total_amount|floatformat:2 }}</strong>
-                                {% else %}
-                                <span class="text-muted">Not set</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {{ app.submitted_at|date:"M j, Y" }}<br>
-                                <small class="text-muted">{{ app.submitted_at|timesince }} ago</small>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'admissions:retry_payment' app.id %}" 
-                                       class="btn btn-outline-primary" title="Retry Payment">
-                                        <i class="bi bi-arrow-repeat"></i>
-                                    </a>
-                                    <button class="btn btn-outline-success" 
-                                            hx-post="{% url 'admissions:waive_fee' app.id %}"
-                                            hx-confirm="Waive application fee for {{ app.application_number }}?"
-                                            hx-target="closest tr"
-                                            hx-swap="outerHTML"
-                                            title="Waive Fee">
-                                        <i class="bi bi-check-circle"></i>
-                                    </button>
-                                    <a href="{% url 'admissions:application_detail' app.id %}" 
-                                       class="btn btn-outline-info" title="View Details">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-check-circle display-1 text-success mb-3"></i>
-                <h4>No Pending Payments</h4>
-                <p class="text-muted">All application fees have been processed.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    
-    <!-- Failed Payments -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="bi bi-x-circle text-danger me-2"></i>
+                <span class="badge bg-warning ms-1">{{ pending_applications.count }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button">
                 Failed Payments
-                <span class="badge bg-danger ms-2">{{ failed_invoices|length }}</span>
-            </h5>
-            <small class="text-muted">Payments that failed or were declined</small>
+                <span class="badge bg-danger ms-1">{{ failed_invoices.count }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="paymentTabsContent">
+        <!-- Pending Payments Tab -->
+        <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            <div class="card">
+                <div class="card-body p-0">
+                    {% if pending_applications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Application #</th>
+                                    <th>Student</th>
+                                    <th>Parent</th>
+                                    <th>Amount</th>
+                                    <th>Submitted</th>
+                                    <th>Invoice #</th>
+                                    <th width="120">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in pending_applications %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'admissions:application_detail' application.id %}" 
+                                           class="text-decoration-none">
+                                            {{ application.application_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ application.student_full_name }}</td>
+                                    <td>
+                                        <div>{{ application.parent_full_name }}</div>
+                                        <div class="small text-muted">{{ application.parent.email }}</div>
+                                    </td>
+                                    <td>
+                                        <strong class="text-primary">
+                                            ₦{{ application.form.application_fee|floatformat:"2" }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ application.submitted_at|date:"M j, Y" }}</div>
+                                        <div class="small text-muted">{{ application.submitted_at|timesince }} ago</div>
+                                    </td>
+                                    <td>
+                                        {% if application.application_fee_invoice %}
+                                        <code class="small">{{ application.application_fee_invoice.invoice_number }}</code>
+                                        {% else %}
+                                        <span class="text-muted small">No invoice</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'admissions:retry_payment' application.id %}" 
+                                               class="btn btn-outline-primary" title="Retry Payment">
+                                                <i class="fas fa-redo"></i>
+                                            </a>
+                                            <button class="btn btn-outline-success" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#waiveModal{{ application.id }}"
+                                                    title="Waive Fee">
+                                                <i class="fas fa-gift"></i>
+                                            </button>
+                                            <a href="mailto:{{ application.parent.email }}?subject=Payment%20Reminder%20-%20{{ application.application_number }}" 
+                                               class="btn btn-outline-warning" title="Send Reminder">
+                                                <i class="fas fa-envelope"></i>
+                                            </a>
+                                        </div>
+                                        
+                                        <!-- Waive Modal -->
+                                        <div class="modal fade" id="waiveModal{{ application.id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-sm">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Waive Application Fee</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST" action="{% url 'admissions:waive_application_fee' application.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-body">
+                                                            <p>Waive application fee for <strong>{{ application.application_number }}</strong>?</p>
+                                                            <p class="small text-muted">
+                                                                Student: {{ application.student_full_name }}<br>
+                                                                Amount: ₦{{ application.form.application_fee|floatformat:"2" }}
+                                                            </p>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-success">Waive Fee</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5>No pending payments</h5>
+                            <p class="mb-0">All application fees have been paid</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <div class="card-body p-0">
-            {% if failed_invoices %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>Student</th>
-                            <th>Amount</th>
-                            <th>Failed On</th>
-                            <th>Reason</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for invoice in failed_invoices %}
-                        <tr>
-                            <td>
-                                <strong>{{ invoice.invoice_number }}</strong><br>
-                                <small class="text-muted">{{ invoice.parent.email }}</small>
-                            </td>
-                            <td>
-                                {% if invoice.student %}
-                                {{ invoice.student.full_name }}
-                                {% else %}
-                                <span class="text-muted">No student linked</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong>₦{{ invoice.total_amount|floatformat:2 }}</strong><br>
-                                <small class="text-muted">{{ invoice.invoice_type|title }} Fee</small>
-                            </td>
-                            <td>
-                                {{ invoice.created_at|date:"M j, Y" }}<br>
-                                <small class="text-muted">{{ invoice.created_at|timesince }} ago</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-danger payment-status-badge">
-                                    Payment Failed
-                                </span>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="#" class="btn btn-outline-primary" 
-                                       hx-get="#"
-                                       hx-target="#invoiceModal"
-                                       hx-trigger="click"
-                                       data-bs-toggle="modal"
-                                       data-bs-target="#invoiceModal"
-                                       title="View Details">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="mailto:{{ invoice.parent.email }}?subject=Payment Failed - {{ invoice.invoice_number }}"
-                                       class="btn btn-outline-warning" title="Contact Parent">
-                                        <i class="bi bi-envelope"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        
+        <!-- Failed Payments Tab -->
+        <div class="tab-pane fade" id="failed" role="tabpanel">
+            <div class="card">
+                <div class="card-body p-0">
+                    {% if failed_invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Application #</th>
+                                    <th>Student</th>
+                                    <th>Parent</th>
+                                    <th>Amount</th>
+                                    <th>Error</th>
+                                    <th>Attempted</th>
+                                    <th width="100">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in failed_invoices %}
+                                <tr class="table-danger">
+                                    <td>
+                                        <a href="{% url 'admissions:application_detail' application.id %}" 
+                                           class="text-decoration-none">
+                                            {{ application.application_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ application.student_full_name }}</td>
+                                    <td>
+                                        <div>{{ application.parent_full_name }}</div>
+                                        <div class="small text-muted">{{ application.parent.email }}</div>
+                                    </td>
+                                    <td>
+                                        <strong class="text-danger">
+                                            ₦{{ application.form.application_fee|floatformat:"2" }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger small">
+                                            {{ application.application_fee_invoice.payment_status|default:"Failed" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ application.submitted_at|date:"M j, Y" }}</div>
+                                        <div class="small text-muted">{{ application.submitted_at|timesince }} ago</div>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'admissions:retry_payment' application.id %}" 
+                                           class="btn btn-sm btn-danger">
+                                            <i class="fas fa-redo me-1"></i>Retry
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fas fa-thumbs-up fa-3x text-success mb-3"></i>
+                            <h5>No failed payments</h5>
+                            <p class="mb-0">All payments have been successful</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-emoji-smile display-1 text-success mb-3"></i>
-                <h4>No Failed Payments</h4>
-                <p class="text-muted">Great! All payments are processing successfully.</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Invoice Details Modal -->
-<div class="modal fade" id="invoiceModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Invoice Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="invoiceModalBody">
-                <!-- HTMX will load content here -->
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block extra_js %}
 <script>
 // Auto-refresh stats every 30 seconds
 setInterval(() => {
-    htmx.trigger('#paymentStats', 'refresh');
+    htmx.trigger('#payment-stats', 'refresh');
 }, 30000);
+
+// Tab persistence
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentTabs = document.getElementById('paymentTabs');
+    const activeTab = localStorage.getItem('activePaymentTab');
+    
+    if (activeTab) {
+        const tab = new bootstrap.Tab(paymentTabs.querySelector(`[data-bs-target="${activeTab}"]`));
+        tab.show();
+    }
+    
+    paymentTabs.addEventListener('shown.bs.tab', function(event) {
+        localStorage.setItem('activePaymentTab', event.target.getAttribute('data-bs-target'));
+    });
+});
+
+// Waive fee success handler
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.requestConfig.path.includes('/waive/')) {
+        if (event.detail.successful) {
+            // Show success toast
+            showToast('Fee waived successfully', 'success');
+            // Refresh the tab
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+    }
+});
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.toast-container');
+    if (!container) {
+        const newContainer = document.createElement('div');
+        newContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(newContainer);
+        newContainer.appendChild(toast);
+    } else {
+        container.appendChild(toast);
+    }
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
 </script>
+
+<style>
+.nav-tabs .nav-link {
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: white;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.toast {
+    z-index: 1060;
+}
+</style>
 {% endblock %}

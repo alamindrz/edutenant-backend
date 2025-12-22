@@ -1,6 +1,6 @@
 <!-- templates/admissions/admission_list.html -->
 {% extends "base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Admissions - {{ school.name }}{% endblock %}
 
@@ -9,199 +9,340 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}">Admissions</a></li>
+                    <li class="breadcrumb-item active">Admission Offers</li>
+                </ol>
+            </nav>
             <h1 class="h3 mb-1">Admission Offers</h1>
-            <p class="text-muted">Manage student admission offers and enrollment</p>
+            <p class="text-muted">Manage all admission offers for {{ school.name }}</p>
         </div>
-        <div class="btn-group">
-            <a href="{% url 'admissions:dashboard' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Dashboard
-            </a>
+        <div>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="fas fa-filter me-2"></i>Filters
+                {% if status_filter or class_filter or search_query %}
+                <span class="badge bg-danger">Active</span>
+                {% endif %}
+            </button>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label">Status Filter</label>
-                    <select class="form-select" onchange="window.location.href = this.value">
-                        <option value="?status=all" {% if request.GET.status == 'all' %}selected{% endif %}>All Admissions</option>
-                        <option value="?status=accepted" {% if request.GET.status == 'accepted' %}selected{% endif %}>Accepted</option>
-                        <option value="?status=pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending Acceptance</option>
-                        <option value="?status=expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired Offers</option>
-                    </select>
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Filter Admissions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Search</label>
-                    <input type="search" class="form-control" placeholder="Search by student name or admission number..."
-                           value="{{ request.GET.search|default:'' }}"
-                           onkeyup="if (event.keyCode === 13) window.location.href = '?search=' + this.value">
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-primary w-100" onclick="applyFilters()">Apply</button>
-                </div>
+                <form method="GET" id="filter-form">
+                    <div class="modal-body">
+                        <!-- Status Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Admissions</option>
+                                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Enrollment</option>
+                                <option value="enrolled" {% if status_filter == 'enrolled' %}selected{% endif %}>Enrolled</option>
+                                <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired Offers</option>
+                            </select>
+                        </div>
+
+                        <!-- Class Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Class</label>
+                            <select name="class" class="form-select">
+                                <option value="">All Classes</option>
+                                {% for class in classes %}
+                                <option value="{{ class.id }}" {% if class_filter == class.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ class.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search by name, admission number, or application number..."
+                                   value="{{ search_query }}">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{% url 'admissions:admission_list' %}" class="btn btn-outline-secondary me-auto">Clear All</a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Admissions Grid -->
-    <div class="row">
-        {% for admission in admissions %}
-        <div class="col-xl-4 col-lg-6 mb-4">
-            <div class="card admission-card h-100 
-                {% if admission.is_offer_expired and not admission.accepted %}border-danger
-                {% elif admission.accepted %}border-success
-                {% else %}border-primary{% endif %}">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">{{ admission.admission_number }}</h6>
-                    <span class="badge 
-                        {% if admission.accepted %}bg-success
-                        {% elif admission.is_offer_expired %}bg-danger
-                        {% else %}bg-warning{% endif %}">
-                        {% if admission.accepted %}Accepted
-                        {% elif admission.is_offer_expired %}Expired
-                        {% else %}Pending{% endif %}
-                    </span>
-                </div>
-                
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
                 <div class="card-body">
-                    <!-- Student Info -->
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="avatar avatar-sm">
-                                <div class="avatar-title rounded-circle bg-primary bg-opacity-10 text-primary">
-                                    <i class="fas fa-user"></i>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Total Offers</h6>
+                            <h3 class="mb-0">{{ admissions.count }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-contract fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Accepted</h6>
+                            <h3 class="mb-0">{{ admissions|length }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Enrolled</h6>
+                            <h3 class="mb-0">{{ admissions|enrolled_count }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-graduate fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted">Expiring Soon</h6>
+                            <h3 class="mb-0">{{ admissions|expiring_count:7 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admissions Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="120">Admission #</th>
+                            <th>Student</th>
+                            <th>Class</th>
+                            <th>Application #</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Expires</th>
+                            <th>Created</th>
+                            <th width="80">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admission in page_obj %}
+                        <tr {% if admission.is_offer_expired %}class="table-danger"{% elif admission.days_until_expiry <= 3 %}class="table-warning"{% endif %}>
+                            <td>
+                                <a href="{% url 'admissions:admission_detail' admission.id %}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ admission.admission_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'students:student_detail' admission.student.id %}" 
+                                   class="text-decoration-none">
+                                    {{ admission.student.full_name }}
+                                </a>
+                                <div class="small text-muted">
+                                    Parent: {{ admission.student.parent.full_name }}
                                 </div>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-0">{{ admission.student.full_name }}</h6>
-                            <small class="text-muted">{{ admission.offered_class.name }}</small>
-                        </div>
-                    </div>
-
-                    <!-- Progress -->
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <small class="text-muted">Enrollment Progress</small>
-                            <small>{{ admission.admission_progress }}%</small>
-                        </div>
-                        <div class="progress" style="height: 4px;">
-                            <div class="progress-bar" role="progressbar" 
-                                 style="width: {{ admission.admission_progress }}%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Key Dates -->
-                    <div class="small text-muted">
-                        <div class="d-flex justify-content-between">
-                            <span>Offer Expires:</span>
-                            <span class="{% if admission.is_offer_expired and not admission.accepted %}text-danger{% endif %}">
-                                {{ admission.offer_expires|date:"M j" }}
-                                ({{ admission.days_until_expiry }} days)
-                            </span>
-                        </div>
-                        {% if admission.enrollment_deadline %}
-                        <div class="d-flex justify-content-between">
-                            <span>Enrollment Due:</span>
-                            <span class="{% if admission.is_enrollment_overdue %}text-danger{% endif %}">
-                                {{ admission.enrollment_deadline|date:"M j" }}
-                                {% if admission.days_until_enrollment_deadline %}
-                                ({{ admission.days_until_enrollment_deadline }} days)
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ admission.offered_class.name }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'admissions:application_detail' admission.application.id %}" 
+                                   class="text-decoration-none">
+                                    {{ admission.application.application_number }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if admission.enrollment_completed %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-user-graduate me-1"></i>Enrolled
+                                </span>
+                                {% elif admission.is_offer_expired %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-clock me-1"></i>Expired
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-hourglass-half me-1"></i>Pending
+                                </span>
                                 {% endif %}
-                            </span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="card-footer bg-transparent">
-                    <div class="btn-group w-100">
-                        <a href="{% url 'students:student_detail' admission.student.id %}" 
-                           class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        <a href="#" class="btn btn-sm btn-outline-success">
-                            <i class="fas fa-envelope"></i>
-                        </a>
-                        {% if not admission.accepted and not admission.is_offer_expired %}
-                        <button class="btn btn-sm btn-outline-warning"
-                                hx-post="#"
-                                hx-vals='{"action": "resend_offer"}'
-                                hx-confirm="Resend admission offer?">
-                            <i class="fas fa-redo"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
+                            </td>
+                            <td width="150">
+                                <div class="progress" style="height: 6px;" title="{{ admission.admission_progress }}% Complete">
+                                    <div class="progress-bar {% if admission.admission_progress < 50 %}bg-warning{% elif admission.admission_progress < 100 %}bg-info{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ admission.admission_progress }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ admission.admission_progress }}%</small>
+                            </td>
+                            <td>
+                                <div class="small">{{ admission.offer_expires|date:"M j, Y" }}</div>
+                                <div class="small {% if admission.days_until_expiry <= 3 %}text-danger{% elif admission.days_until_expiry <= 7 %}text-warning{% else %}text-muted{% endif %}">
+                                    {% if admission.is_offer_expired %}
+                                    Expired
+                                    {% else %}
+                                    {{ admission.days_until_expiry }} days left
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">{{ admission.created_at|date:"M j, Y" }}</div>
+                                <div class="small text-muted">by {{ admission.created_by.user.get_short_name|default:"System" }}</div>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'admissions:admission_detail' admission.id %}">
+                                                <i class="fas fa-eye me-2"></i>View Details
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'students:student_detail' admission.student.id %}">
+                                                <i class="fas fa-user me-2"></i>View Student
+                                            </a>
+                                        </li>
+                                        {% if not admission.enrollment_completed and not admission.is_offer_expired %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'admissions:admission_detail' admission.id %}#complete-enrollment">
+                                                <i class="fas fa-user-check me-2"></i>Complete Enrollment
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item"
+                                                    hx-post="{% url 'admissions:admission_detail' admission.id %}"
+                                                    hx-vals='{"action": "resend_letter", "method": "email"}'>
+                                                <i class="fas fa-envelope me-2"></i>Resend Letter
+                                            </button>
+                                        </li>
+                                        {% endif %}
+                                        {% if admission.requires_acceptance_fee and not admission.acceptance_fee_paid %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="#">
+                                                <i class="fas fa-money-bill-wave me-2"></i>Acceptance Fee
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-file-contract fa-2x mb-3"></i>
+                                    <h5>No admission offers found</h5>
+                                    <p>{% if status_filter or class_filter or search_query %}Try adjusting your filters{% else %}No admission offers have been created yet{% endif %}</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-user-graduate fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No Admission Offers</h5>
-                    <p class="text-muted">There are no admission offers matching your criteria.</p>
-                    {% if request.GET %}
-                    <a href="{% url 'admissions:admission_list' %}" class="btn btn-primary">Clear Filters</a>
+        
+        <!-- Pagination -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Admission pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if class_filter %}&class={{ class_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if class_filter %}&class={{ class_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+                    </li>
                     {% endif %}
-                </div>
-            </div>
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if class_filter %}&class={{ class_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if class_filter %}&class={{ class_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
-        {% endfor %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function applyFilters() {
-    const status = document.querySelector('select').value;
-    const search = document.querySelector('input[type="search"]').value;
-    let url = '{% url "admissions:admission_list" %}';
-    
-    const params = new URLSearchParams();
-    if (status && status !== '?status=all') params.set('status', status.replace('?status=', ''));
-    if (search) params.set('search', search);
-    
-    if (params.toString()) {
-        url += '?' + params.toString();
-    }
-    
-    window.location.href = url;
-}
-
-// Auto-refresh page every 2 minutes to check for expired offers
-setTimeout(() => {
-    window.location.reload();
-}, 120000);
+// Submit filter form when modal is closed
+document.getElementById('filterModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('filter-form').submit();
+});
 </script>
 
 <style>
-.admission-card:hover {
-    transform: translateY(-2px);
-    transition: transform 0.2s ease;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+.progress {
+    background-color: #e9ecef;
 }
 
-.avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-}
-
-.avatar-sm {
-    width: 2rem;
-    height: 2rem;
-}
-
-.avatar-lg {
-    width: 4rem;
-    height: 4rem;
+.progress-bar {
+    transition: width 0.6s ease;
 }
 </style>
 {% endblock %}

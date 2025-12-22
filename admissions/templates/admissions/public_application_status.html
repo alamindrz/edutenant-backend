@@ -1,179 +1,311 @@
+<!-- templates/admissions/public_application_status.html -->
 {% extends "base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Application Status - {{ school.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- Status Header -->
-            <div class="text-center mb-5">
-                <div class="status-icon mb-4">
-                    {% if application.status == 'submitted' %}
-                    <i class="bi bi-clock-history text-warning" style="font-size: 4rem;"></i>
-                    {% elif application.status == 'under_review' %}
-                    <i class="bi bi-search text-info" style="font-size: 4rem;"></i>
-                    {% elif application.status == 'accepted' %}
-                    <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
-                    {% elif application.status == 'rejected' %}
-                    <i class="bi bi-x-circle text-danger" style="font-size: 4rem;"></i>
-                    {% else %}
-                    <i class="bi bi-file-text text-primary" style="font-size: 4rem;"></i>
-                    {% endif %}
-                </div>
-                
-                <h1 class="display-5 fw-bold">
-                    {% if application.status == 'submitted' %}Application Submitted
-                    {% elif application.status == 'under_review' %}Under Review
-                    {% elif application.status == 'accepted' %}Application Accepted!
-                    {% elif application.status == 'rejected' %}Application Not Accepted
-                    {% else %}Application Status{% endif %}
-                </h1>
-                <p class="lead text-muted">Check your application progress for {{ school.name }}</p>
-            </div>
-
-            <!-- Application Details Card -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-file-text me-2"></i>Application Details
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Application Information</h6>
-                            <p><strong>Application Number:</strong><br>
-                               <span class="text-primary">{{ application.application_number }}</span></p>
-                            <p><strong>Student Name:</strong><br>
-                               {{ application.student.full_name }}</p>
-                            <p><strong>Applied Class:</strong><br>
-                               {{ application.applied_class.name }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Status & Timeline</h6>
-                            <p><strong>Current Status:</strong><br>
-                               <span class="badge 
-                                   {% if application.status == 'submitted' %}bg-warning
-                                   {% elif application.status == 'under_review' %}bg-info
-                                   {% elif application.status == 'accepted' %}bg-success
-                                   {% elif application.status == 'rejected' %}bg-danger
-                                   {% else %}bg-secondary{% endif %}">
-                                   {{ application.get_status_display }}
-                               </span>
-                            </p>
-                            <p><strong>Submitted:</strong><br>
-                               {{ application.submitted_at|date:"F j, Y" }}</p>
-                            <p><strong>Last Updated:</strong><br>
-                               {{ application.updated_at|date:"F j, Y" }}</p>
-                        </div>
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-body p-4">
+                    <!-- Header -->
+                    <div class="text-center mb-5">
+                        <h1 class="h2 mb-3">Application Status</h1>
+                        <p class="text-muted">Track the status of your application to {{ school.name }}</p>
                     </div>
 
-                    <!-- Admission Offer (if accepted) -->
-                    {% if application.admission %}
-                    <div class="mt-4 p-3 bg-success bg-opacity-10 border border-success rounded">
-                        <h6 class="text-success">
-                            <i class="bi bi-award me-2"></i>Admission Offer Available!
-                        </h6>
-                        <p class="mb-2">Admission Number: <strong>{{ application.admission.admission_number }}</strong></p>
-                        <p class="mb-0">Offer expires: {{ application.admission.offer_expires|date:"F j, Y" }}</p>
+                    <!-- Application Overview -->
+                    <div class="row mb-5">
+                        <div class="col-md-4">
+                            <div class="card text-center h-100">
+                                <div class="card-body py-4">
+                                    <div class="avatar avatar-lg bg-primary rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-file-alt text-white"></i>
+                                    </div>
+                                    <h5 class="card-title">{{ application.application_number }}</h5>
+                                    <p class="text-muted small mb-0">Application Number</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card text-center h-100">
+                                <div class="card-body py-4">
+                                    <div class="avatar avatar-lg bg-success rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-user-graduate text-white"></i>
+                                    </div>
+                                    <h5 class="card-title">{{ application.student_full_name }}</h5>
+                                    <p class="text-muted small mb-0">Student</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card text-center h-100">
+                                <div class="card-body py-4">
+                                    <div class="avatar avatar-lg bg-info rounded-circle mb-3 mx-auto">
+                                        <i class="fas fa-calendar text-white"></i>
+                                    </div>
+                                    <h5 class="card-title">{{ application.submitted_at|date:"F j, Y" }}</h5>
+                                    <p class="text-muted small mb-0">Submitted Date</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    {% endif %}
 
                     <!-- Status Timeline -->
-                    <div class="mt-4">
-                        <h6>Application Timeline</h6>
+                    <div class="mb-5">
+                        <h4 class="mb-4">Application Progress</h4>
                         <div class="timeline">
-                            <div class="timeline-item {% if application.status == 'submitted' %}active{% endif %}">
-                                <div class="timeline-marker"></div>
+                            <!-- Step 1: Submitted -->
+                            <div class="timeline-item {% if application.status != 'submitted' %}completed{% endif %}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-paper-plane"></i>
+                                </div>
                                 <div class="timeline-content">
-                                    <strong>Application Submitted</strong>
-                                    <small class="text-muted">{{ application.submitted_at|date:"M j, Y" }}</small>
+                                    <h5>Application Submitted</h5>
+                                    <p class="text-muted mb-0">{{ application.submitted_at|date:"F j, Y g:i A" }}</p>
+                                    {% if application.status == 'submitted' %}
+                                    <div class="alert alert-warning mt-2 mb-0 p-2 small">
+                                        <i class="fas fa-clock me-1"></i> Awaiting review
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <div class="timeline-item {% if application.status == 'under_review' %}active{% endif %}">
-                                <div class="timeline-marker"></div>
+                            
+                            <!-- Step 2: Review -->
+                            <div class="timeline-item {% if application.status == 'under_review' or application.status == 'accepted' or application.status == 'rejected' or application.status == 'waitlisted' %}completed{% endif %}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-eye"></i>
+                                </div>
                                 <div class="timeline-content">
-                                    <strong>Under Review</strong>
-                                    <small class="text-muted">Being processed by admissions team</small>
+                                    <h5>Under Review</h5>
+                                    {% if application.status == 'under_review' %}
+                                    <div class="alert alert-info mt-2 mb-0 p-2 small">
+                                        <i class="fas fa-spinner fa-spin me-1"></i> Currently being reviewed
+                                    </div>
+                                    {% elif application.reviewed_at %}
+                                    <p class="text-muted mb-0">{{ application.reviewed_at|date:"F j, Y g:i A" }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <div class="timeline-item {% if application.status == 'accepted' or application.status == 'rejected' %}active{% endif %}">
-                                <div class="timeline-marker"></div>
+                            
+                            <!-- Step 3: Decision -->
+                            <div class="timeline-item {% if application.status == 'accepted' or application.status == 'rejected' or application.status == 'waitlisted' %}completed{% endif %}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-gavel"></i>
+                                </div>
                                 <div class="timeline-content">
-                                    <strong>Decision Made</strong>
-                                    <small class="text-muted">
-                                        {% if application.status == 'accepted' %}Application accepted
-                                        {% elif application.status == 'rejected' %}Application not accepted
-                                        {% else %}Pending decision{% endif %}
-                                    </small>
+                                    <h5>Decision</h5>
+                                    {% if application.status == 'accepted' %}
+                                    <div class="alert alert-success mt-2 mb-0 p-2 small">
+                                        <i class="fas fa-check-circle me-1"></i> Application Accepted
+                                    </div>
+                                    {% elif application.status == 'rejected' %}
+                                    <div class="alert alert-danger mt-2 mb-0 p-2 small">
+                                        <i class="fas fa-times-circle me-1"></i> Application Rejected
+                                    </div>
+                                    {% elif application.status == 'waitlisted' %}
+                                    <div class="alert alert-warning mt-2 mb-0 p-2 small">
+                                        <i class="fas fa-clock me-1"></i> Waitlisted
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted mb-0">Pending decision</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Step 4: Admission (if accepted) -->
+                            {% if application.status == 'accepted' and admission %}
+                            <div class="timeline-item {% if admission.enrollment_completed %}completed{% endif %}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h5>Admission Offer</h5>
+                                    <div class="alert alert-success mt-2 mb-0 p-2 small">
+                                        <i class="fas fa-award me-1"></i> Admission #{{ admission.admission_number }}
+                                    </div>
+                                    {% if admission.enrollment_completed %}
+                                    <p class="text-muted mb-0 mt-2">Enrolled on {{ admission.enrollment_completed_at|date:"F j, Y" }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Application Details -->
+                    <div class="row">
+                        <!-- Student Information -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-user-graduate me-2"></i>Student Information
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Full Name</dt>
+                                        <dd class="col-sm-8">{{ application.student_full_name }}</dd>
+                                        
+                                        <dt class="col-sm-4">Date of Birth</dt>
+                                        <dd class="col-sm-8">{{ application.data.date_of_birth|default:"Not provided" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Gender</dt>
+                                        <dd class="col-sm-8">{{ application.data.gender|default:"Not provided"|title }}</dd>
+                                        
+                                        <dt class="col-sm-4">Class Applied</dt>
+                                        <dd class="col-sm-8">
+                                            {% if application.applied_class %}
+                                            <span class="badge bg-primary">{{ application.applied_class.name }}</span>
+                                            {% else %}
+                                            <span class="text-muted">Not specified</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parent Information -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-user-friends me-2"></i>Parent/Guardian Information
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Full Name</dt>
+                                        <dd class="col-sm-8">{{ application.parent_full_name }}</dd>
+                                        
+                                        <dt class="col-sm-4">Email</dt>
+                                        <dd class="col-sm-8">{{ application.parent.email|default:"Not provided" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Phone</dt>
+                                        <dd class="col-sm-8">{{ application.parent.phone_number|default:"Not provided" }}</dd>
+                                        
+                                        <dt class="col-sm-4">Application Fee</dt>
+                                        <dd class="col-sm-8">
+                                            {% if application.form.is_free %}
+                                            <span class="badge bg-success">Free</span>
+                                            {% else %}
+                                            <span class="badge {% if application.application_fee_paid %}bg-success{% else %}bg-warning{% endif %}">
+                                                {{ application.form.application_fee }} {{ application.form.currency }}
+                                                {% if application.application_fee_paid %}(Paid){% else %}(Pending){% endif %}
+                                            </span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Next Steps -->
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-info-circle me-2"></i>Next Steps
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if application.status == 'submitted' %}
-                    <p>Your application has been received and is in the queue for review.</p>
-                    <ul>
-                        <li>We'll review your application within 3-5 business days</li>
-                        <li>You'll receive an email when there's an update</li>
-                        <li>Check back here for status updates</li>
-                    </ul>
-                    {% elif application.status == 'under_review' %}
-                    <p>Your application is currently being reviewed by our admissions team.</p>
-                    <ul>
-                        <li>This process typically takes 5-7 business days</li>
-                        <li>We may contact you if additional information is needed</li>
-                        <li>You'll be notified immediately once a decision is made</li>
-                    </ul>
-                    {% elif application.status == 'accepted' %}
-                    <p>Congratulations! Your application has been accepted.</p>
-                    <ul>
-                        <li>Check your email for the official admission letter</li>
-                        <li>Complete any required acceptance procedures</li>
-                        <li>Contact the school if you have any questions</li>
-                    </ul>
-                    {% elif application.status == 'rejected' %}
-                    <p>Thank you for your interest in {{ school.name }}.</p>
-                    <ul>
-                        <li>We appreciate you taking the time to apply</li>
-                        <li>Consider applying for future academic sessions</li>
-                        <li>Contact admissions for feedback on your application</li>
-                    </ul>
+                    <!-- Admission Details (if accepted) -->
+                    {% if application.status == 'accepted' and admission %}
+                    <div class="card border-success mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-award me-2"></i>Admission Offer Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Admission Number</dt>
+                                        <dd class="col-sm-8">
+                                            <strong>{{ admission.admission_number }}</strong>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Class Offered</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="badge bg-success">{{ admission.offered_class.name }}</span>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-4">Admission Type</dt>
+                                        <dd class="col-sm-8">{{ admission.get_admission_type_display }}</dd>
+                                        
+                                        <dt class="col-sm-4">Offer Expires</dt>
+                                        <dd class="col-sm-8">
+                                            {{ admission.offer_expires|date:"F j, Y" }}
+                                            {% if admission.is_offer_expired %}
+                                            <span class="badge bg-danger ms-2">Expired</span>
+                                            {% elif admission.days_until_expiry <= 3 %}
+                                            <span class="badge bg-warning ms-2">Soon</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Enrollment Status</dt>
+                                        <dd class="col-sm-8">
+                                            {% if admission.enrollment_completed %}
+                                            <span class="badge bg-success">Enrolled</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">Pending Enrollment</span>
+                                            {% endif %}
+                                        </dd>
+                                        
+                                        {% if admission.requires_acceptance_fee %}
+                                        <dt class="col-sm-4">Acceptance Fee</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="badge {% if admission.acceptance_fee_paid %}bg-success{% else %}bg-warning{% endif %}">
+                                                {{ admission.application.form.acceptance_fee }} {{ admission.application.form.currency }}
+                                                {% if admission.acceptance_fee_paid %}(Paid){% else %}(Pending){% endif %}
+                                            </span>
+                                        </dd>
+                                        {% endif %}
+                                        
+                                        <dt class="col-sm-4">Admission Letter</dt>
+                                        <dd class="col-sm-8">
+                                            {% if admission.admission_letter_sent %}
+                                            <span class="badge bg-info">Sent via {{ admission.admission_letter_method }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Not sent</span>
+                                            {% endif %}
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% endif %}
 
-                    <div class="mt-3">
-                        <strong>Need Help?</strong>
-                        <p class="mb-0">
-                            Contact the admissions office at 
-                            <a href="mailto:{{ school.contact_email }}">{{ school.contact_email }}</a>
-                            or call {{ school.phone_number|default:"the school office" }}
-                        </p>
+                    <!-- Action Buttons -->
+                    <div class="text-center mt-5">
+                        <div class="d-grid gap-2 d-md-flex justify-content-center">
+                            {% if application.status == 'accepted' and admission and not admission.enrollment_completed and not admission.is_offer_expired %}
+                            <a href="#" class="btn btn-success">
+                                <i class="fas fa-user-check me-2"></i>Complete Enrollment
+                            </a>
+                            {% endif %}
+                            
+                            <a href="mailto:{{ school.email|default:'support@example.com' }}?subject=Inquiry%20about%20application%20{{ application.application_number }}" 
+                               class="btn btn-outline-primary">
+                                <i class="fas fa-envelope me-2"></i>Contact School
+                            </a>
+                            
+                            <button onclick="window.print()" class="btn btn-outline-secondary">
+                                <i class="fas fa-print me-2"></i>Print Status
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Share Link -->
-            <div class="text-center mt-4">
-                <div class="alert alert-info">
-                    <h6><i class="bi bi-share me-2"></i>Share Application Status</h6>
-                    <p class="mb-2">Share this link with family members to check application status:</p>
-                    <div class="input-group">
-                        <input type="text" class="form-control" value="{{ request.build_absolute_uri }}" readonly>
-                        <button class="btn btn-outline-primary" onclick="copyToClipboard(this)">
-                            <i class="bi bi-clipboard me-1"></i>Copy
-                        </button>
+                    <!-- Footer Notes -->
+                    <div class="text-center mt-4">
+                        <p class="small text-muted mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            For questions about your application, contact {{ school.name }} directly.
+                            This page will be updated as your application progresses.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -182,78 +314,125 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
+{% block extra_js %}
+<script>
+// Auto-refresh status every 60 seconds
+setTimeout(function() {
+    window.location.reload();
+}, 60000);
+
+// Print-friendly styles
+const printStyles = `
+    @media print {
+        .navbar, .footer, .btn, .no-print {
+            display: none !important;
+        }
+        .card {
+            border: 1px solid #dee2e6 !important;
+            box-shadow: none !important;
+        }
+        .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        body {
+            padding: 20px !important;
+        }
+    }
+`;
+
+// Add print styles to head
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = printStyles;
+document.head.appendChild(styleSheet);
+
+// Track page view
+document.addEventListener('DOMContentLoaded', function() {
+    // You can add analytics tracking here
+    console.log('Application status viewed:', '{{ application.application_number }}');
+});
+</script>
+
 <style>
-.timeline {
-    position: relative;
-    padding-left: 2rem;
+.avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
 }
 
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 0.75rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--bs-border-color);
+.avatar-lg {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 3rem;
 }
 
 .timeline-item {
     position: relative;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-left: 2px solid #dee2e6;
+}
+
+.timeline-item.completed {
+    border-left-color: #198754;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-left: 2px solid transparent;
 }
 
 .timeline-marker {
     position: absolute;
-    left: -2rem;
-    top: 0.25rem;
-    width: 1rem;
-    height: 1rem;
+    left: -1.25rem;
+    top: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: white;
+    border: 2px solid #dee2e6;
     border-radius: 50%;
-    background: var(--bs-secondary);
-    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
 }
 
-.timeline-item.active .timeline-marker {
-    background: var(--bs-primary);
-    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.2);
+.timeline-item.completed .timeline-marker {
+    border-color: #198754;
+    background-color: #198754;
+    color: white;
 }
 
 .timeline-content {
-    padding-left: 0.5rem;
+    margin-left: 1rem;
 }
 
-.status-icon {
-    animation: bounceIn 1s ease-in-out;
+/* Status badges */
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
 }
 
-@keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); opacity: 1; }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 2rem;
+    }
+    
+    .timeline-marker {
+        width: 2rem;
+        height: 2rem;
+        left: -1rem;
+        font-size: 0.875rem;
+    }
 }
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function copyToClipboard(button) {
-    const input = button.closest('.input-group').querySelector('input');
-    input.select();
-    document.execCommand('copy');
-    
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
-    button.classList.remove('btn-outline-primary');
-    button.classList.add('btn-success');
-    
-    setTimeout(() => {
-        button.innerHTML = originalText;
-        button.classList.remove('btn-success');
-        button.classList.add('btn-outline-primary');
-    }, 2000);
-}
-</script>
 {% endblock %}

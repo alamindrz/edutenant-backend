@@ -1,0 +1,84 @@
+<!-- templates/admissions/partials/payment_stats.html -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Pending Payments</h6>
+                        <h3 class="mb-0">{{ stats.pending_count|default:0 }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-warning">Require attention</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Conversion Rate</h6>
+                        <h3 class="mb-0">{{ stats.conversion_rate|default:0 }}%</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x text-success"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    {% if stats.conversion_rate > 70 %}
+                    <span class="text-success">Excellent</span>
+                    {% elif stats.conversion_rate > 50 %}
+                    <span class="text-info">Good</span>
+                    {% else %}
+                    <span class="text-warning">Needs improvement</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Failed Today</h6>
+                        <h3 class="mb-0">{{ stats.failed_today|default:0 }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-times-circle fa-2x text-danger"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-danger">Today's failures</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted">Today's Revenue</h6>
+                        <h3 class="mb-0">₦{{ stats.revenue_today|default:0|floatformat:"2"|intcomma }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-money-bill-wave fa-2x text-info"></i>
+                    </div>
+                </div>
+                <p class="mb-0 mt-2 small">
+                    <span class="text-info">From successful payments</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

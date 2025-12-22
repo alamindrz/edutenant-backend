@@ -24,7 +24,12 @@ from shared.services.payment.payment import PaymentCoreService
 from shared.constants import StatusChoices, PARENT_PHONE_FIELD
 from shared.utils.field_mapping import FieldMapper
 
-# LOCAL EXCEPTIONS (moved from core.exceptions)
+from django.contrib.auth import get_user_model
+
+
+
+
+
 class SchoolOnboardingError(Exception):
     """Exception raised during school onboarding."""
     
@@ -60,7 +65,7 @@ def _get_model(model_name, app_label='users'):
 
 def _get_or_create_user(email, user_data=None):
     """Get or create user with proper defaults."""
-    User = settings.AUTH_USER_MODEL
+    User = get_user_model()
     
     try:
         user = User.objects.get(email=email)
@@ -417,7 +422,7 @@ class SchoolOnboardingService:
             ValidationService.validate_onboarding_data(onboarding_data)
             
             # Step 2: Check if admin user already exists
-            User = settings.AUTH_USER_MODEL
+            User = get_user_model()
             admin_email = onboarding_data['admin_email']
             if User.objects.filter(email=admin_email).exists():
                 raise SchoolOnboardingError(
@@ -455,12 +460,20 @@ class SchoolOnboardingService:
             SchoolOnboardingService._cleanup_failed_onboarding(locals())
             raise SchoolOnboardingError(f"School creation failed: {str(e)}", user_friendly=True)
     
+    
     @staticmethod
     def _create_school_record(onboarding_data: Dict):
         """Create the school database record."""
         try:
             School = _get_model('School', 'core')
-            subdomain = onboarding_data.get('subdomain', '').strip()
+            
+            # Handle subdomain (could be None, empty string, or actual value)
+            subdomain = onboarding_data.get('subdomain', '')
+            if subdomain:  # Check if it's truthy (not None and not empty)
+                subdomain = subdomain.strip()
+            else:
+                subdomain = None  # Set to None for database
+            
             subdomain_status = 'none'  # Default to no subdomain
             
             # Determine subdomain status
@@ -469,7 +482,7 @@ class SchoolOnboardingService:
             
             school = School.objects.create(
                 name=onboarding_data['school_name'],
-                subdomain=subdomain or None,
+                subdomain=subdomain,  # Could be None or cleaned string
                 school_type=onboarding_data['school_type'],
                 contact_email=onboarding_data['contact_email'],
                 phone_number=onboarding_data.get(PARENT_PHONE_FIELD),  # ✅ Use shared constant
@@ -487,7 +500,7 @@ class SchoolOnboardingService:
             
         except Exception as e:
             logger.error(f"Failed to create school record: {e}", exc_info=True)
-            raise SchoolOnboardingError("Failed to create school record") from e
+            raise SchoolOnboardingError("Failed to create school record")
     
     @staticmethod
     def _apply_configuration_template(school, school_type: str):
@@ -527,7 +540,7 @@ class SchoolOnboardingService:
     def _create_school_admin(school, onboarding_data: Dict):
         """Create school admin user and principal role."""
         try:
-            User = settings.AUTH_USER_MODEL
+            User = get_user_model()
             Role = _get_model('Role')
             Profile = _get_model('Profile')
             
@@ -771,7 +784,7 @@ class StaffService:
             Role = _get_model('Role')
             StaffInvitation = _get_model('StaffInvitation')
             Profile = _get_model('Profile')
-            User = settings.AUTH_USER_MODEL
+            User = get_user_model()
             
             # Check if user already exists and has access
             existing_user = User.objects.filter(email=email).first()

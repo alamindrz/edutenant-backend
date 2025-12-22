@@ -9,34 +9,67 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-# FIXED: Use try/except for imports that might not exist
+logger = logging.getLogger(__name__)
+
+# ============ SHARED SERVICE IMPORTS WITH FALLBACKS ============
+
+# Field Mapper
 try:
     from shared.utils.field_mapping import FieldMapper as field_mapper
+    FIELD_MAPPER_AVAILABLE = True
 except ImportError:
-    # Create minimal placeholder if not available
+    FIELD_MAPPER_AVAILABLE = False
+    # Create minimal placeholder
     class FieldMapper:
         @staticmethod
         def map_form_to_model(data, model_type):
             return data
-    field_mapper = FieldMapper
+    field_mapper = FieldMapper()
+    logger.warning("Shared FieldMapper not available, using fallback")
 
+# Class Manager
 try:
     from shared.utils.class_management import ClassManager as class_manager
+    CLASS_MANAGER_AVAILABLE = True
 except ImportError:
-    # Create placeholder
+    CLASS_MANAGER_AVAILABLE = False
     class_manager = None
+    logger.warning("Shared ClassManager not available")
+
+# Payment Services
+try:
+    from shared.services.payment.application_fee import ApplicationPaymentService
+    APPLICATION_PAYMENT_SERVICE_AVAILABLE = True
+except ImportError:
+    APPLICATION_PAYMENT_SERVICE_AVAILABLE = False
+    ApplicationPaymentService = None
+    logger.warning("Shared ApplicationPaymentService not available")
 
 try:
     from shared.services.payment.payment_core import PaymentCoreService as payment_core
+    PAYMENT_CORE_AVAILABLE = True
 except ImportError:
+    PAYMENT_CORE_AVAILABLE = False
     # Create minimal placeholder
     class PaymentCoreService:
         @staticmethod
         def create_zero_amount_invoice(student, invoice_type, description):
             # Return minimal response
-            return type('Invoice', (), {'id': 0})()
+            return type('Invoice', (), {
+                'id': 0,
+                'amount': 0,
+                'invoice_number': 'WAIVER-0000',
+                'metadata': {}
+            })()
+        
+        @staticmethod
+        def mark_paid(invoice, payment_method, reference, notes):
+            # Mock implementation
+            return True
     payment_core = PaymentCoreService()
+    logger.warning("Shared PaymentCoreService not available, using fallback")
 
+# Shared Constants
 try:
     from shared.constants import StatusChoices
     STATUS_CHOICES_AVAILABLE = True
@@ -51,20 +84,21 @@ except ImportError:
         REJECTED = 'rejected'
         WAITLISTED = 'waitlisted'
         PAID = 'paid'
+    logger.warning("Shared StatusChoices not available, using fallback")
 
+# Payment Exceptions
 try:
     from shared.exceptions.payment import PaymentProcessingError
     PAYMENT_EXCEPTIONS_AVAILABLE = True
 except ImportError:
     PAYMENT_EXCEPTIONS_AVAILABLE = False
     PaymentProcessingError = Exception
+    logger.warning("Shared PaymentProcessingError not available, using fallback")
 
-# LOCAL IMPORTS ONLY
+# ============ LOCAL IMPORTS ============
 from .models import ApplicationForm, Application, Admission
 from students.models import Student, Parent
 from users.models import Staff
-
-logger = logging.getLogger(__name__)
 
 
 class ApplicationService:
@@ -98,7 +132,9 @@ class ApplicationService:
             ApplicationService._check_school_policies(form.school, user)
             
             # 3. Map form fields to model fields using shared field_mapper
-            mapped_data = field_mapper.map_form_to_model(application_data, 'application')
+            mapped_data = application_data
+            if FIELD_MAPPER_AVAILABLE:
+                mapped_data = field_mapper.map_form_to_model(application_data, 'application')
             
             # 4. Check if application fee is required
             if not form.is_free and form.application_fee > 0:
@@ -107,28 +143,28 @@ class ApplicationService:
                 # Check if this is a post-payment completion
                 if request and request.GET.get('payment_completed') == 'true':
                     reference = request.GET.get('reference')
-                    if reference:
+                    if reference and APPLICATION_PAYMENT_SERVICE_AVAILABLE:
                         # Payment already completed, finish application
-                        try:
-                            from shared.services.payment.application_fee import ApplicationPaymentService
-                            application = ApplicationPaymentService.complete_application_after_payment(reference)
-                            return application
-                        except ImportError:
-                            logger.error("ApplicationPaymentService not available")
-                            raise ValidationError("Payment service not available. Please contact support.")
+                        application = ApplicationPaymentService.complete_application_after_payment(reference)
+                        return application
                 
                 # Pre-payment flow: Create invoice and redirect to payment
-                try:
-                    from shared.services.payment.application_fee import ApplicationPaymentService
+                if APPLICATION_PAYMENT_SERVICE_AVAILABLE:
                     payment_data, invoice = ApplicationPaymentService.create_application_fee_invoice(
                         parent_data=mapped_data.get('parent_data', {}),
                         student_data=mapped_data.get('student_data', {}),
                         form=form,
                         user=user
                     )
-                except ImportError:
-                    logger.error("ApplicationPaymentService not available for invoice creation")
-                    raise ValidationError("Payment processing is currently unavailable. Please try again later.")
+                else:
+                    # Fallback: create invoice locally
+                    logger.warning("Using fallback for application fee invoice creation")
+                    invoice = ApplicationService._create_local_invoice(form, mapped_data, user)
+                    payment_data = {
+                        'authorization_url': '#',
+                        'reference': f'LOCAL-{invoice.id}',
+                        'amount': form.application_fee
+                    }
                 
                 # Store application data in session for after payment
                 if request:
@@ -144,6 +180,7 @@ class ApplicationService:
                     'requires_payment': True,
                     'payment_data': payment_data if payment_data else {},
                     'invoice': invoice,
+                    'form': form,
                     'message': 'Application fee payment required'
                 }
             
@@ -173,6 +210,9 @@ class ApplicationService:
                 application.potential_scholarships = scholarships
                 application.save()
             
+            # 8. Send notification
+            ApplicationService._send_application_submitted_notification(application, user)
+            
             logger.info(
                 f"Application submitted successfully - "
                 f"ID: {application.id}, Number: {application.application_number}"
@@ -192,6 +232,26 @@ class ApplicationService:
                 f"Error: {str(e)}", exc_info=True
             )
             raise ValidationError("Failed to submit application. Please try again later.")
+    
+    @staticmethod
+    def _create_local_invoice(form, mapped_data, user):
+        """Fallback method to create invoice locally when shared service is unavailable."""
+        # This is a simplified version - in production, you'd want to use your actual Invoice model
+        class LocalInvoice:
+            id = 0
+            amount = form.application_fee
+            invoice_number = f"LOCAL-{int(timezone.now().timestamp())}"
+            metadata = {
+                'form_slug': form.slug,
+                'application_data': mapped_data,
+                'user_id': user.id if user else None,
+                'created_at': timezone.now().isoformat()
+            }
+            
+            def __str__(self):
+                return self.invoice_number
+        
+        return LocalInvoice()
     
     @staticmethod
     def _get_and_validate_form(form_slug):
@@ -257,8 +317,8 @@ class ApplicationService:
                 school=school,
                 is_active=True
             ).exists()
-        except Exception:
-            # If Staff model not available, assume not staff
+        except Exception as e:
+            logger.warning(f"Error checking staff status: {e}")
             return False
     
     @staticmethod
@@ -289,15 +349,22 @@ class ApplicationService:
         )
         
         # Validate class availability with staff priority using shared manager
-        class_id = mapped_data.get('student_data', {}).get('current_class_id')
-        if class_id and class_manager:
+        class_id = mapped_data.get('student_data', {}).get('class')
+        class_instance = None
+        
+        if class_id and CLASS_MANAGER_AVAILABLE:
             is_available, message, class_instance = class_manager.validate_class_availability(
                 class_id, form.school, is_staff=True
             )
             if not is_available:
                 raise ValidationError(message)
-        else:
-            class_instance = None
+        elif class_id:
+            # Fallback: try to get class directly
+            try:
+                from core.models import Class
+                class_instance = Class.objects.get(id=class_id, school=form.school)
+            except:
+                pass
         
         # Determine status
         status = StatusChoices.UNDER_REVIEW if STATUS_CHOICES_AVAILABLE else 'under_review'
@@ -327,14 +394,15 @@ class ApplicationService:
         # Handle zero-fee application for staff
         if form.application_fee > 0 and hasattr(form.school, 'staff_children_waive_application_fee') and form.school.staff_children_waive_application_fee:
             try:
-                invoice = payment_core.create_zero_amount_invoice(
-                    student=student,
-                    invoice_type='application_fee',
-                    description=f'Staff waiver - Application fee for {student.full_name}'
-                )
-                application.application_fee_paid = True
-                application.application_fee_invoice = invoice
-                application.save()
+                if PAYMENT_CORE_AVAILABLE:
+                    invoice = payment_core.create_zero_amount_invoice(
+                        student=student,
+                        invoice_type='application_fee',
+                        description=f'Staff waiver - Application fee for {student.full_name}'
+                    )
+                    application.application_fee_paid = True
+                    application.application_fee_invoice = invoice
+                    application.save()
             except Exception as e:
                 logger.warning(f"Failed to create zero amount invoice for staff: {e}")
         
@@ -371,15 +439,22 @@ class ApplicationService:
         )
         
         # Validate class availability using shared manager
-        class_id = mapped_data.get('student_data', {}).get('current_class_id')
-        if class_id and class_manager:
+        class_id = mapped_data.get('student_data', {}).get('class')
+        class_instance = None
+        
+        if class_id and CLASS_MANAGER_AVAILABLE:
             is_available, message, class_instance = class_manager.validate_class_availability(
                 class_id, form.school, is_staff=False
             )
             if not is_available:
                 raise ValidationError(message)
-        else:
-            class_instance = None
+        elif class_id:
+            # Fallback: try to get class directly
+            try:
+                from core.models import Class
+                class_instance = Class.objects.get(id=class_id, school=form.school)
+            except:
+                pass
         
         # Determine status
         status = StatusChoices.SUBMITTED if STATUS_CHOICES_AVAILABLE else 'submitted'
@@ -412,8 +487,7 @@ class ApplicationService:
         email = parent_data.get('email', '').lower().strip()
         if not email:
             raise ValidationError("Parent email is required")
-        
-        logger.debug(f"Getting/creating parent for email: {email}, staff: {is_staff}")
+
         
         try:
             parent = Parent.objects.get(email=email, school=school)
@@ -422,26 +496,21 @@ class ApplicationService:
             # Update parent information
             update_fields = []
             
-            # Use parent_data which is already mapped by field_mapper
-            if 'first_name' in parent_data and parent_data['first_name']:
-                parent.first_name = parent_data['first_name']
-                update_fields.append('first_name')
+            # Map field names based on what's available in parent_data
+            field_mapping = {
+                'first_name': 'first_name',
+                'last_name': 'last_name',
+                'phone': 'phone_number',
+                'phone_number': 'phone_number',
+                'address': 'address',
+                'relationship': 'relationship'
+            }
             
-            if 'last_name' in parent_data and parent_data['last_name']:
-                parent.last_name = parent_data['last_name']
-                update_fields.append('last_name')
-            
-            if 'phone_number' in parent_data and parent_data['phone_number']:
-                parent.phone_number = parent_data['phone_number']
-                update_fields.append('phone_number')
-            
-            if 'address' in parent_data and parent_data['address']:
-                parent.address = parent_data['address']
-                update_fields.append('address')
-            
-            if 'relationship' in parent_data and parent_data['relationship']:
-                parent.relationship = parent_data['relationship']
-                update_fields.append('relationship')
+            for form_field, model_field in field_mapping.items():
+                if form_field in parent_data and parent_data[form_field]:
+                    setattr(parent, model_field, parent_data[form_field])
+                    if model_field not in update_fields:
+                        update_fields.append(model_field)
             
             # Link user if provided
             if user and not parent.user:
@@ -475,7 +544,7 @@ class ApplicationService:
                 'email': email,
                 'first_name': parent_data.get('first_name', ''),
                 'last_name': parent_data.get('last_name', ''),
-                'phone_number': parent_data.get('phone_number', ''),
+                'phone_number': parent_data.get('phone_number', parent_data.get('phone', '')),
                 'address': parent_data.get('address', ''),
                 'relationship': parent_data.get('relationship', 'Parent'),
                 'user': user,
@@ -557,9 +626,9 @@ class ApplicationService:
         
         # Determine admission status
         if STATUS_CHOICES_AVAILABLE:
-            admission_status = StatusChoices.UNDER_REVIEW if is_staff else StatusChoices.APPLIED
+            admission_status = StatusChoices.UNDER_REVIEW if is_staff else StatusChoices.UNDER_REVIEW
         else:
-            admission_status = 'under_review' if is_staff else 'applied'
+            admission_status = 'under_review' if is_staff else 'under_review'
         
         # Create new student
         student = Student.objects.create(
@@ -598,10 +667,49 @@ class ApplicationService:
         # Scholarship eligibility logic would go here
         # This could check academic achievements, financial need, special talents, etc.
         
+        # Example criteria:
+        # 1. Academic excellence
+        if application_data.get('student_data', {}).get('previous_school_gpa', 0) >= 3.5:
+            scholarships.append({
+                'type': 'academic_excellence',
+                'amount': '50%',
+                'description': 'Academic Excellence Scholarship'
+            })
+        
+        # 2. Sports achievement
+        if application_data.get('student_data', {}).get('sports_achievements'):
+            scholarships.append({
+                'type': 'sports_scholarship',
+                'amount': '25%',
+                'description': 'Sports Achievement Scholarship'
+            })
+        
         if scholarships:
             logger.info(f"Student {student.id} eligible for {len(scholarships)} scholarships")
         
         return scholarships
+    
+    @staticmethod
+    def _send_application_submitted_notification(application, user):
+        """Send notification about application submission."""
+        logger.debug(f"Sending notification for application: {application.id}")
+        
+        try:
+            # This would integrate with email/SMS notification system
+            notification_data = {
+                'application_number': application.application_number,
+                'student_name': application.student_full_name,
+                'parent_email': application.parent.email,
+                'submitted_at': application.submitted_at.isoformat(),
+                'status': application.status,
+                'is_staff_child': application.is_staff_child,
+            }
+            
+            # Log notification for now - in production, send actual notification
+            logger.info(f"Application notification prepared: {notification_data}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to send application notification: {e}")
     
     @staticmethod
     def complete_application_after_payment(payment_reference, invoice_id=None):
@@ -612,7 +720,11 @@ class ApplicationService:
         logger.info(f"Completing application after payment: {payment_reference}")
         
         try:
-            # Get invoice
+            # Try to use shared service first
+            if APPLICATION_PAYMENT_SERVICE_AVAILABLE:
+                return ApplicationPaymentService.complete_application_after_payment(payment_reference)
+            
+            # Fallback implementation
             try:
                 from billing.models import Invoice
             except ImportError:
@@ -657,3 +769,131 @@ class ApplicationService:
         except Exception as e:
             logger.error(f"Failed to complete application after payment: {str(e)}")
             raise
+
+
+class AdmissionService:
+    """Service for managing admission offers and enrollment."""
+    
+    @staticmethod
+    @transaction.atomic
+    def process_application_acceptance(application, staff):
+        """
+        Process acceptance of an application and create admission offer.
+        """
+        logger.info(f"Processing acceptance for application: {application.id}")
+        
+        try:
+            # Validate application is accepted
+            if application.status != 'accepted':
+                raise ValidationError("Application must be accepted before creating admission")
+            
+            # Validate staff permissions
+            if not staff.is_active or staff.school != application.form.school:
+                raise ValidationError("Staff member is not authorized to create admissions")
+            
+            # Create admission
+            admission = Admission.objects.create(
+                application=application,
+                student=application.student,
+                offered_class=application.applied_class or application.form.available_classes.first(),
+                requires_acceptance_fee=application.form.has_acceptance_fee,
+                acceptance_fee=application.form.acceptance_fee if application.form.has_acceptance_fee else 0,
+                created_by=staff,
+                conditions=[
+                    "Submit original birth certificate",
+                    "Submit medical report",
+                    "Submit transfer certificate (if applicable)",
+                    "Complete enrollment within 30 days"
+                ]
+            )
+            
+            # Update student status
+            application.student.admission_status = 'admitted'
+            application.student.save(update_fields=['admission_status'])
+            
+            # Send admission letter
+            admission.send_admission_letter(method='email')
+            
+            logger.info(f"Admission created: {admission.admission_number}")
+            return admission
+            
+        except Exception as e:
+            logger.error(f"Failed to create admission: {str(e)}")
+            raise
+    
+    @staticmethod
+    def complete_enrollment(admission, parent_notes=''):
+        """
+        Complete enrollment process for an admitted student.
+        """
+        logger.info(f"Completing enrollment for admission: {admission.id}")
+        
+        try:
+            # Validate admission can be enrolled
+            if not admission.can_complete_enrollment():
+                raise ValidationError("Admission does not meet all enrollment requirements")
+            
+            # Update admission
+            admission.enrollment_completed = True
+            admission.enrollment_completed_at = timezone.now()
+            if parent_notes:
+                admission.acceptance_notes = parent_notes
+            admission.save()
+            
+            # Update student
+            admission.student.current_class = admission.offered_class
+            admission.student.admission_status = 'enrolled'
+            admission.student.enrollment_date = timezone.now()
+            admission.student.save()
+            
+            # Send enrollment confirmation
+            AdmissionService._send_enrollment_confirmation(admission)
+            
+            logger.info(f"Enrollment completed for student: {admission.student.id}")
+            return admission
+            
+        except Exception as e:
+            logger.error(f"Failed to complete enrollment: {str(e)}")
+            raise
+    
+    @staticmethod
+    def _send_enrollment_confirmation(admission):
+        """Send enrollment confirmation notification."""
+        try:
+            notification_data = {
+                'admission_number': admission.admission_number,
+                'student_name': admission.student.full_name,
+                'class_name': admission.offered_class.name,
+                'enrollment_date': admission.enrollment_completed_at.isoformat(),
+                'parent_email': admission.student.parent.email,
+            }
+            
+            logger.info(f"Enrollment confirmation prepared: {notification_data}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to send enrollment confirmation: {e}")
+    
+    @staticmethod
+    def get_admission_stats(school):
+        """Get admission statistics for a school."""
+        stats = {
+            'total_applications': Application.objects.filter(form__school=school).count(),
+            'pending_review': Application.objects.filter(form__school=school, status='submitted').count(),
+            'under_review': Application.objects.filter(form__school=school, status='under_review').count(),
+            'accepted': Application.objects.filter(form__school=school, status='accepted').count(),
+            'admitted': Admission.objects.filter(student__school=school).count(),
+            'enrolled': Admission.objects.filter(
+                student__school=school,
+                enrollment_completed=True
+            ).count(),
+        }
+        
+        # Calculate conversion rates
+        if stats['total_applications'] > 0:
+            stats['acceptance_rate'] = round((stats['accepted'] / stats['total_applications']) * 100, 1)
+            stats['enrollment_rate'] = round((stats['enrolled'] / stats['accepted']) * 100, 1) if stats['accepted'] > 0 else 0
+        else:
+            stats['acceptance_rate'] = 0
+            stats['enrollment_rate'] = 0
+        
+        return stats

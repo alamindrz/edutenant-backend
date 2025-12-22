@@ -1,230 +1,107 @@
 <!-- templates/admissions/application_success.html -->
 {% extends "base.html" %}
-{% load static humanize %}
+{% load static %}
 
 {% block title %}Application Submitted - {{ school.name }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- Success Header -->
-            <div class="text-center mb-5">
-                <div class="mb-4">
-                    <i class="bi bi-check-circle-fill text-success display-1"></i>
-                </div>
-                <h1 class="display-5 fw-bold text-success">Application Submitted Successfully!</h1>
-                <p class="lead text-muted">
-                    Thank you for applying to {{ school.name }}
-                </p>
-                
-                <!-- Application Number Badge -->
-                <div class="d-inline-block px-4 py-2 bg-light rounded-pill mb-4">
-                    <h4 class="mb-0">
-                        <i class="bi bi-file-earmark-text me-2"></i>
-                        {{ application.application_number }}
-                    </h4>
-                </div>
-            </div>
-
-            <!-- Application Details Card -->
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-info-circle me-2"></i>Application Details
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Student Information</h6>
-                            <p class="mb-1">
-                                <strong>Name:</strong> {{ student.full_name }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>Applied Class:</strong> 
-                                {% if application.applied_class %}
-                                {{ application.applied_class.name }}
-                                {% else %}
-                                <span class="text-muted">Not specified</span>
-                                {% endif %}
-                            </p>
-                            <p class="mb-0">
-                                <strong>Status:</strong>
-                                <span class="badge 
-                                    {% if application.status == 'submitted' %}bg-warning
-                                    {% elif application.status == 'staff_review' %}bg-info
-                                    {% elif application.status == 'accepted' %}bg-success
-                                    {% elif application.status == 'rejected' %}bg-danger
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ application.status|title }}
-                                </span>
-                            </p>
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-success">
+                <div class="card-body text-center py-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle fa-4x text-success"></i>
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted">Submission Details</h6>
-                            <p class="mb-1">
-                                <strong>Submitted:</strong> {{ application.submitted_at|date:"F j, Y g:i A" }}
-                            </p>
-                            <p class="mb-1">
-                                <strong>Application Form:</strong> {{ form.name }}
-                            </p>
-                            <p class="mb-0">
-                                <strong>Reference ID:</strong> <code>{{ application.public_uuid }}</code>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fee Information (if applicable) -->
-            {% if has_fee %}
-            <div class="card mb-4 border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-credit-card me-2"></i>Application Fee
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <p class="mb-2">
-                            <strong>Application Fee:</strong> {{ school.currency }} {{ invoice.amount|floatformat:2|intcomma }}
-                        </p>
-                        <p class="mb-0 small">
-                            Please pay this fee to complete your application. 
-                            Unpaid applications may not be processed.
-                        </p>
+                        <h1 class="h3 text-success mt-3">Application Submitted!</h1>
                     </div>
                     
-                    <div class="d-grid gap-2 d-md-flex">
-                        <a href="{% url 'billing:invoice_detail' invoice.id %}" 
-                           class="btn btn-primary">
-                            <i class="bi bi-credit-card me-2"></i>Pay Now
-                        </a>
-                        <button class="btn btn-outline-secondary" onclick="window.print()">
-                            <i class="bi bi-printer me-2"></i>Print Invoice
-                        </button>
+                    <!-- Application Details -->
+                    <div class="alert alert-success text-start mb-4">
+                        <div class="d-flex">
+                            <i class="fas fa-file-alt fa-2x me-3"></i>
+                            <div>
+                                <h5 class="alert-heading mb-2">Application #{{ application.application_number }}</h5>
+                                <ul class="mb-0">
+                                    <li><strong>Student:</strong> {{ application.student_full_name }}</li>
+                                    <li><strong>Class:</strong> {{ application.applied_class.name|default:"Not specified" }}</li>
+                                    <li><strong>Submitted:</strong> {{ application.submitted_at|date:"F j, Y g:i A" }}</li>
+                                    <li><strong>Status:</strong> <span class="badge bg-warning">Under Review</span></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Scholarship Information (if eligible) -->
-            {% if scholarship_eligible and potential_scholarships %}
-            <div class="card mb-4 border-success">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-award me-2"></i>Scholarship Eligibility
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-success">
+                    
+                    <!-- Next Steps -->
+                    <div class="text-start mb-4">
+                        <h5 class="mb-3">What happens next?</h5>
+                        <div class="timeline timeline-sm">
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <strong>Application Submitted</strong>
+                                    <p class="small text-muted mb-0">Your application has been received</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-light"></div>
+                                <div class="timeline-content">
+                                    <strong>Review Process</strong>
+                                    <p class="small text-muted mb-0">Application will be reviewed by school administration</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-light"></div>
+                                <div class="timeline-content">
+                                    <strong>Decision</strong>
+                                    <p class="small text-muted mb-0">You will be notified of the decision via email</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Information (if applicable) -->
+                    {% if has_fee and invoice %}
+                    <div class="alert alert-info text-start mb-4">
                         <h6 class="alert-heading">
-                            <i class="bi bi-stars me-2"></i>Scholarship Opportunities Available!
+                            <i class="fas fa-credit-card me-2"></i>Payment Information
                         </h6>
-                        <p>
-                            Your application may be eligible for the following scholarships:
+                        <p class="mb-2">Application Fee: <strong>₦{{ invoice.amount|floatformat:"2" }}</strong></p>
+                        <p class="mb-0">
+                            {% if application.application_fee_paid %}
+                            <span class="badge bg-success">Paid</span>
+                            {% else %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% endif %}
                         </p>
-                        
-                        <ul class="mb-3">
-                            {% for scholarship in potential_scholarships %}
-                            <li>
-                                <strong>{{ scholarship.name }}</strong> - {{ scholarship.type|title }}
-                                {% if scholarship.discount_percentage %}
-                                <br><small>{{ scholarship.discount_percentage }}% fee discount</small>
-                                {% elif scholarship.fixed_amount %}
-                                <br><small>{{ school.currency }} {{ scholarship.fixed_amount|floatformat:2|intcomma }} discount</small>
-                                {% endif %}
-                            </li>
-                            {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-center mb-4">
+                        <a href="{% url 'admissions:public_application_status' application.public_uuid %}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-eye me-2"></i>Track Application Status
+                        </a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>Return Home
+                        </a>
+                    </div>
+                    
+                    <!-- Important Information -->
+                    <div class="border-top pt-4 mt-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Important Information
+                        </h6>
+                        <ul class="small text-muted mb-0">
+                            <li>Save your application number for future reference: <code>{{ application.application_number }}</code></li>
+                            <li>Check your email for confirmation and updates</li>
+                            <li>You can track your application status using the link above</li>
+                            <li>Contact the school if you have any questions</li>
                         </ul>
-                        
-                        {% if school.scholarship_application_required %}
-                        <div class="d-grid">
-                            <a href="#" class="btn btn-outline-success">
-                                <i class="bi bi-pencil-square me-2"></i>Apply for Scholarship
-                            </a>
-                        </div>
-                        {% endif %}
                     </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Next Steps -->
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-list-check me-2"></i>Next Steps
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">1. Application Review</h6>
-                                <span class="badge bg-secondary">Pending</span>
-                            </div>
-                            <p class="mb-1 small">
-                                Our admissions team will review your application within 5-7 business days.
-                            </p>
-                        </div>
-                        
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">2. Fee Payment</h6>
-                                {% if has_fee %}
-                                <span class="badge {% if invoice.is_paid %}bg-success{% else %}bg-warning{% endif %}">
-                                    {% if invoice.is_paid %}Paid{% else %}Pending{% endif %}
-                                </span>
-                                {% else %}
-                                <span class="badge bg-success">Not Required</span>
-                                {% endif %}
-                            </div>
-                            <p class="mb-1 small">
-                                {% if has_fee %}
-                                Complete your application fee payment to avoid delays.
-                                {% else %}
-                                No application fee required for your application.
-                                {% endif %}
-                            </p>
-                        </div>
-                        
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">3. Admission Decision</h6>
-                                <span class="badge bg-secondary">Pending</span>
-                            </div>
-                            <p class="mb-1 small">
-                                You will be notified via email about the admission decision.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="text-center mt-5">
-                <div class="btn-group" role="group">
-                    <a href="{% url 'users:my_applications' %}" class="btn btn-primary">
-                        <i class="bi bi-file-earmark-person me-2"></i>View My Applications
-                    </a>
-                    <a href="{% url 'users:dashboard' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                    </a>
-                    <button class="btn btn-outline-success" onclick="window.print()">
-                        <i class="bi bi-printer me-2"></i>Print This Page
-                    </button>
-                </div>
-                
-                <div class="mt-4">
-                    <p class="text-muted small">
-                        <i class="bi bi-envelope me-1"></i>
-                        A confirmation email has been sent to {{ parent.email }}
-                    </p>
-                    <p class="text-muted small">
-                        Need help? <a href="mailto:{{ school.contact_email }}">Contact {{ school.name }}</a>
-                    </p>
                 </div>
             </div>
         </div>
@@ -234,18 +111,60 @@
 
 {% block extra_js %}
 <script>
-// Auto-print option (optional)
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('print') === 'true') {
-    window.print();
+// Copy application number to clipboard
+function copyApplicationNumber() {
+    const appNumber = "{{ application.application_number }}";
+    navigator.clipboard.writeText(appNumber).then(() => {
+        const button = document.getElementById('copy-button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-secondary');
+        }, 2000);
+    });
 }
 
-// Save application details to localStorage for recovery
-localStorage.setItem('last_application', JSON.stringify({
-    id: '{{ application.id }}',
-    number: '{{ application.application_number }}',
-    uuid: '{{ application.public_uuid }}',
-    timestamp: '{{ application.submitted_at|date:"c" }}'
-}));
+// Save application details to localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const appData = {
+        number: "{{ application.application_number }}",
+        student: "{{ application.student_full_name }}",
+        uuid: "{{ application.public_uuid }}",
+        timestamp: "{{ application.submitted_at|date:'c' }}"
+    };
+    
+    localStorage.setItem('last_application', JSON.stringify(appData));
+});
 </script>
+
+<style>
+.success-icon {
+    animation: successPulse 2s ease-in-out;
+}
+
+@keyframes successPulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.timeline-sm .timeline-item {
+    margin-bottom: 1rem;
+}
+
+.timeline-sm .timeline-marker {
+    width: 0.75rem;
+    height: 0.75rem;
+    left: -0.375rem;
+}
+
+.timeline-sm .timeline-content {
+    margin-left: 0.5rem;
+}
+</style>
 {% endblock %}

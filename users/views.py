@@ -18,12 +18,26 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from typing import Any
 
+from django.contrib.auth import get_user_model
+
+
 # SHARED IMPORTS
 from shared.decorators.permissions import require_role, require_school_context
 from shared.constants import PARENT_PHONE_FIELD, StatusChoices
 from shared.utils.field_mapping import FieldMapper
 
-# LOCAL SERVICES (already cleaned)
+
+# others
+from django.db.models import Count
+from django.utils import timezone
+from datetime import date
+from django.apps import apps
+from django.contrib import messages
+
+
+
+
+# LOCAL SERVICES
 from .services import (
     SchoolOnboardingService,
     StaffService,
@@ -33,7 +47,7 @@ from .services import (
     SchoolOnboardingError,
 )
 
-# LOCAL FORMS (should be cleaned separately)
+# LOCAL FORMS 
 from .forms import (
     SchoolOnboardingForm,
     TeacherApplicationForm,
@@ -107,7 +121,7 @@ def school_onboarding_start(request):
             logger.info(f"School created successfully: {school.name}")
             
             # Get the admin user and set backend
-            User = settings.AUTH_USER_MODEL
+            User = get_user_model()
             admin_user = User.objects.get(email=form.cleaned_data['admin_email'])
             
             # Set the authentication backend
@@ -242,56 +256,285 @@ def validate_school_name(request):
 
 
 # ============ AUTHENTICATED VIEWS ============
-
 @login_required
+@require_school_context()
 def dashboard_view(request):
-    """Enhanced dashboard with school context recovery."""
-    context = {}
-    
-    # If no school in request, try to recover it
-    if not hasattr(request, 'school') or not request.school:
-        school = recover_school_context(request)
-        if school:
-            request.school = school
-        else:
-            messages.warning(request, "Please select a school to continue.")
-            return redirect('users:school_list')
-    
+    """
+    Main dashboard view for authenticated users with school context.
+    Shows basic information and quick links.
+    """
     school = request.school
     
-    try:
-        # Get user's profile for this school
-        Profile = _get_model('Profile')
-        profile = Profile.objects.get(user=request.user, school=school)
-        context['user_profile'] = profile
-        context['user_role'] = profile.role.name
-        
-        # Add school statistics
-        Student = _get_model('Student', 'students')
-        Parent = _get_model('Parent', 'students')
-        Staff = _get_model('Staff')
-        Class = _get_model('Class', 'core')
-        
-        context.update({
-            'school': school,
-            'stats': {
-                'total_staff': Staff.objects.filter(school=school, is_active=True).count(),
-                'total_students': Student.objects.filter(school=school, is_active=True).count(),
-                'total_parents': Parent.objects.filter(school=school).count(),
-                'total_classes': Class.objects.filter(school=school, is_active=True).count(),
-            }
-        })
-        
-    except Profile.DoesNotExist:
-        # User doesn't have access to this school
-        messages.error(request, f"You don't have access to {school.name}")
+    if not school:
+        messages.warning(request, "Please select a school first.")
         return redirect('users:school_list')
-    except Exception as e:
-        logger.error(f"Dashboard error: {e}", exc_info=True)
-        messages.error(request, "Error loading dashboard data")
+    
+    # Get user's profile - FIXED: Profile model doesn't have is_active field
+    try:
+        Profile = apps.get_model('users', 'Profile')
+        profile = Profile.objects.select_related('role').get(
+            user=request.user,
+            school=school,
+            # REMOVED: is_active=True - Profile doesn't have this field
+        )
+        role = profile.role
+    except Profile.DoesNotExist:
+        messages.warning(request, "You don't have a profile in this school.")
+        # If user has other profiles, redirect to school selection
+        other_profiles = Profile.objects.filter(user=request.user).exists()
+        if other_profiles:
+            return redirect('users:school_list')
+        else:
+            # If no profiles at all, maybe show onboarding
+            return redirect('users:profile')
+    
+    # Get basic stats
+    stats = get_dashboard_stats(school, role, request.user)
+    
+    # Get quick links based on role
+    quick_links = get_quick_links(role, school)
+    
+    # Get recent activities
+    recent_activities = get_recent_activities(school)
+    
+    context = {
+        'school': school,
+        'user_role': role,
+        'user_profile': profile,
+        'stats': stats,
+        'quick_links': quick_links,
+        'recent_activities': recent_activities,
+        'page_title': 'Dashboard',
+        'page_subtitle': f'Welcome to {school.name}',
+    }
     
     return render(request, 'dashboard.html', context)
 
+
+def get_dashboard_stats(school, role, user):
+    """
+    Get dashboard statistics.
+    """
+    stats = {}
+    
+    # Basic stats for all roles
+    try:
+        Student = apps.get_model('students', 'Student')
+        stats['total_students'] = Student.objects.filter(school=school).count()
+    except:
+        stats['total_students'] = 0
+    
+    try:
+        Staff = apps.get_model('users', 'Staff')
+        stats['total_staff'] = Staff.objects.filter(school=school).count()
+    except:
+        stats['total_staff'] = 0
+    
+    try:
+        Class = apps.get_model('core', 'Class')
+        stats['total_classes'] = Class.objects.filter(school=school).count()
+    except:
+        stats['total_classes'] = 0
+    
+    # Pending applications
+    try:
+        Application = apps.get_model('admissions', 'Application')
+        stats['pending_applications'] = Application.objects.filter(
+            school=school,
+            status='pending'
+        ).count()
+    except:
+        stats['pending_applications'] = 0
+    
+    # Unpaid invoices
+    try:
+        Invoice = apps.get_model('billing', 'Invoice')
+        stats['unpaid_invoices'] = Invoice.objects.filter(
+            school=school,
+            status='unpaid'
+        ).count()
+    except:
+        stats['unpaid_invoices'] = 0
+    
+    # Role-specific stats
+    if role and hasattr(role, 'system_role_type'):
+        role_type = role.system_role_type
+        
+        # Teacher stats
+        if role_type == 'teacher':
+            try:
+                # Get teacher's classes
+                Staff = apps.get_model('users', 'Staff')
+                teacher = Staff.objects.get(user=user, school=school)
+                
+                # Check if teacher has assigned_classes relationship
+                if hasattr(teacher, 'assigned_classes'):
+                    stats['assigned_classes'] = teacher.assigned_classes.count()
+                    
+                    # Count students in assigned classes
+                    student_count = 0
+                    for class_obj in teacher.assigned_classes.all():
+                        if hasattr(class_obj, 'students'):
+                            student_count += class_obj.students.count()
+                    stats['assigned_students'] = student_count
+                else:
+                    # Alternative: Check through SubjectAssignment or similar
+                    stats['assigned_classes'] = 0
+                    stats['assigned_students'] = 0
+            except Staff.DoesNotExist:
+                stats['assigned_classes'] = 0
+                stats['assigned_students'] = 0
+        
+        # Parent stats
+        elif role_type == 'parent':
+            try:
+                Parent = apps.get_model('students', 'Parent')
+                parent = Parent.objects.get(user=user, school=school)
+                stats['children_count'] = parent.children.count()
+            except Parent.DoesNotExist:
+                stats['children_count'] = 0
+    
+    return stats
+
+
+def get_quick_links(role, school):
+    """
+    Get quick action links based on user role.
+    """
+    quick_links = []
+    
+    if not role:
+        return quick_links
+    
+    # Common links for all authenticated users
+    quick_links.append({
+        'title': 'My Profile',
+        'url': 'users:profile',
+        'icon': 'bi-person',
+        'description': 'View and update your profile'
+    })
+    
+    quick_links.append({
+        'title': 'Switch School',
+        'url': 'users:school_list',
+        'icon': 'bi-building',
+        'description': 'Change your current school'
+    })
+    
+    # Admin/Principal links
+    if hasattr(role, 'system_role_type') and role.system_role_type in ['principal', 'admin_staff']:
+        quick_links.extend([
+            {
+                'title': 'Manage Staff',
+                'url': 'users:staff_list',
+                'icon': 'bi-person-badge',
+                'description': 'Add and manage staff members'
+            },
+            {
+                'title': 'View Students',
+                'url': 'students:student_list',
+                'icon': 'bi-people',
+                'description': 'Browse student directory'
+            },
+            {
+                'title': 'Admissions',
+                'url': 'admissions:dashboard',
+                'icon': 'bi-door-open',
+                'description': 'Manage applications'
+            },
+            {
+                'title': 'Billing',
+                'url': 'billing:dashboard',
+                'icon': 'bi-cash-coin',
+                'description': 'Manage fees and invoices'
+            },
+        ])
+    
+    # Teacher links
+    if hasattr(role, 'system_role_type') and role.system_role_type == 'teacher':
+        quick_links.extend([
+            {
+                'title': 'Take Attendance',
+                'url': 'attendance:dashboard',
+                'icon': 'bi-check-circle',
+                'description': 'Mark student attendance'
+            },
+            {
+                'title': 'My Classes',
+                'url': '#',
+                'icon': 'bi-journal',
+                'description': 'View assigned classes'
+            },
+        ])
+    
+    # Parent links
+    if hasattr(role, 'system_role_type') and role.system_role_type == 'parent':
+        quick_links.extend([
+            {
+                'title': 'My Children',
+                'url': 'students:parent_children',
+                'icon': 'bi-people',
+                'description': 'View your children'
+            },
+            {
+                'title': 'Invoices',
+                'url': 'billing:parent_invoices',
+                'icon': 'bi-receipt',
+                'description': 'View and pay invoices'
+            },
+        ])
+    
+    return quick_links[:6]  # Limit to 6 links
+
+
+def get_recent_activities(school):
+    """
+    Get recent activities for the school.
+    """
+    activities = []
+    
+    # Recent students
+    try:
+        Student = apps.get_model('students', 'Student')
+        recent_students = Student.objects.filter(
+            school=school
+        ).order_by('-created_at')[:3]
+        
+        for student in recent_students:
+            activities.append({
+                'type': 'student',
+                'title': 'New student enrolled',
+                'description': student.get_full_name() if hasattr(student, 'get_full_name') else student.name,
+                'time': student.created_at if hasattr(student, 'created_at') else timezone.now(),
+                'icon': 'bi-person-plus',
+                'color': 'primary'
+            })
+    except:
+        pass
+    
+    # Recent invoices
+    try:
+        Invoice = apps.get_model('billing', 'Invoice')
+        recent_invoices = Invoice.objects.filter(
+            school=school
+        ).order_by('-created_at')[:3]
+        
+        for invoice in recent_invoices:
+            activities.append({
+                'type': 'invoice',
+                'title': 'Invoice created',
+                'description': f'#{invoice.invoice_number}' if hasattr(invoice, 'invoice_number') else 'New invoice',
+                'time': invoice.created_at if hasattr(invoice, 'created_at') else timezone.now(),
+                'icon': 'bi-receipt',
+                'color': 'success'
+            })
+    except:
+        pass
+    
+    # Sort by time
+    activities.sort(key=lambda x: x['time'], reverse=True)
+    
+    return activities[:5]
 
 @login_required
 def profile_view(request):
@@ -356,6 +599,132 @@ def switch_school_view(request, school_id: int):
     messages.success(request, f"Switched to {school.name}")
     return redirect('users:dashboard')
 
+
+
+
+@login_required
+@require_school_context()
+def dashboard_stats_partial(request):
+    """
+    HTMX partial for dashboard stats.
+    """
+    school = request.school
+    
+    # Calculate basic stats
+    stats = {
+        'student_count': 0,
+        'staff_count': 0,
+        'class_count': 0,
+        'pending_applications': 0,
+        'unpaid_invoices': 0,
+    }
+    
+    # Student count
+    try:
+        Student = apps.get_model('students', 'Student')
+        stats['student_count'] = Student.objects.filter(school=school, is_active=True).count()
+    except:
+        pass
+    
+    # Staff count
+    try:
+        Staff = apps.get_model('users', 'Staff')
+        stats['staff_count'] = Staff.objects.filter(school=school, is_active=True).count()
+    except:
+        pass
+    
+    # Class count
+    try:
+        Class = apps.get_model('core', 'Class')
+        stats['class_count'] = Class.objects.filter(school=school, is_active=True).count()
+    except:
+        pass
+    
+    # Pending applications
+    try:
+        Application = apps.get_model('admissions', 'Application')
+        stats['pending_applications'] = Application.objects.filter(
+            school=school,
+            status='pending'
+        ).count()
+    except:
+        pass
+    
+    # Unpaid invoices
+    try:
+        Invoice = apps.get_model('billing', 'Invoice')
+        stats['unpaid_invoices'] = Invoice.objects.filter(
+            school=school,
+            status='unpaid'
+        ).count()
+    except:
+        pass
+    
+    context = {
+        'stats': stats,
+        'school': school,
+    }
+    
+    return render(request, 'partials/dashboard_stats.html', context)
+
+
+@login_required
+@require_school_context()
+def recent_activity_partial(request):
+    """
+    HTMX partial for recent activity feed.
+    """
+    school = request.school
+    activities = []
+    
+    # Recent students
+    try:
+        Student = apps.get_model('students', 'Student')
+        recent_students = Student.objects.filter(
+            school=school,
+            is_active=True
+        ).order_by('-created_at')[:3]
+        
+        for student in recent_students:
+            activities.append({
+                'type': 'student',
+                'title': 'New student enrolled',
+                'description': student.get_full_name() if hasattr(student, 'get_full_name') else student.name,
+                'time': student.created_at,
+                'icon': 'bi-person-plus',
+                'color': 'primary'
+            })
+    except:
+        pass
+    
+    # Recent invoices
+    try:
+        Invoice = apps.get_model('billing', 'Invoice')
+        recent_invoices = Invoice.objects.filter(
+            school=school
+        ).order_by('-created_at')[:3]
+        
+        for invoice in recent_invoices:
+            activities.append({
+                'type': 'invoice',
+                'title': 'Invoice created',
+                'description': f'#{invoice.invoice_number}' if hasattr(invoice, 'invoice_number') else 'New invoice',
+                'time': invoice.created_at,
+                'icon': 'bi-receipt',
+                'color': 'success'
+            })
+    except:
+        pass
+    
+    # Sort by time
+    activities.sort(key=lambda x: x['time'], reverse=True)
+    
+    context = {
+        'activities': activities[:5],
+        'school': school,
+    }
+    
+    return render(request, 'partials/recent_activity.html', context)
 
 # ============ STAFF MANAGEMENT VIEWS ============
 
@@ -1181,7 +1550,7 @@ def check_email_availability_view(request):
     if not email:
         return JsonResponse({'error': 'No email provided'}, status=400)
     
-    User = settings.AUTH_USER_MODEL
+    User = get_user_model()
     Profile = _get_model('Profile')
     StaffInvitation = _get_model('StaffInvitation')
     

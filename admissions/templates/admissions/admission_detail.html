@@ -1,0 +1,48 @@
+<!-- templates/admissions/partials/filter_widgets.html -->
+<div class="row g-2">
+    <div class="col-12">
+        <label class="form-label small text-muted">Status</label>
+        <div class="d-flex flex-wrap gap-1">
+            <a href="?status=" class="badge text-decoration-none {% if not status_filter %}bg-primary{% else %}bg-light text-dark{% endif %}">
+                All
+            </a>
+            {% for status in status_counts %}
+            <a href="?status={{ status.status }}" 
+               class="badge text-decoration-none 
+                      {% if status_filter == status.status %}bg-primary{% else %}bg-light text-dark{% endif %}">
+                {{ status.status|title }}
+                <span class="ms-1">{{ status.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-12">
+        <label class="form-label small text-muted">Priority</label>
+        <div class="d-flex flex-wrap gap-1">
+            <a href="?priority=" class="badge text-decoration-none {% if not priority_filter %}bg-primary{% else %}bg-light text-dark{% endif %}">
+                All
+            </a>
+            {% for priority in priority_counts %}
+            <a href="?priority={{ priority.priority }}" 
+               class="badge text-decoration-none 
+                      {% if priority_filter == priority.priority %}bg-primary{% else %}bg-light text-dark{% endif %}">
+                {{ priority.priority|title }}
+                <span class="ms-1">{{ priority.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-12">
+        <label class="form-label small text-muted">Form</label>
+        <select class="form-select form-select-sm" onchange="window.location.href='?form='+this.value">
+            <option value="">All Forms</option>
+            {% for form in forms %}
+            <option value="{{ form.id }}" {% if form_filter == form.id|stringformat:"i" %}selected{% endif %}>
+                {{ form.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>

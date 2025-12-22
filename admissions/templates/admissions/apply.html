@@ -1,0 +1,764 @@
+<!-- templates/admissions/apply.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Apply - {{ form.name }} - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Form Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h1 class="h3 mb-1">{{ form.name }}</h1>
+                            <p class="text-muted mb-0">{{ school.name }}</p>
+                        </div>
+                        <div class="btn-group">
+                            {% if request.user.is_authenticated %}
+                            <a href="{% url 'users:my_applications' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-file-alt me-1"></i>My Applications
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'school_discovery' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-school me-1"></i>Discover Schools
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" id="form-progress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>Parent Information</span>
+                        <span>Student Information</span>
+                        <span>Review & Submit</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body py-3">
+                            <div class="fs-2 text-primary mb-1">{{ form.applications_so_far }}</div>
+                            <div class="text-muted small">Applications</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body py-3">
+                            <div class="fs-2 text-success mb-1">
+                                {% if form.is_free %}FREE{% else %}₦{{ form.application_fee|floatformat:"0" }}{% endif %}
+                            </div>
+                            <div class="text-muted small">Application Fee</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body py-3">
+                            <div class="fs-2 text-warning mb-1">{{ form.days_remaining }}</div>
+                            <div class="text-muted small">Days Remaining</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body py-3">
+                            <div class="fs-2 text-info mb-1">
+                                {% if form.max_applications %}{{ form.max_applications }}{% else %}∞{% endif %}
+                            </div>
+                            <div class="text-muted small">Max Applications</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Form -->
+            <form id="application-form" 
+                  method="POST" 
+                  action="{% url 'admissions:apply' form.slug %}"
+                  enctype="multipart/form-data"
+                  novalidate>
+                {% csrf_token %}
+                
+                <!-- Parent Information Section -->
+                <div class="card mb-4" id="parent-section">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-friends me-2"></i>Parent/Guardian Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="parent_first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="parent_first_name" 
+                                       name="parent_first_name" required
+                                       value="{{ request.user.first_name|default:'' }}">
+                                <div class="invalid-feedback">Please enter your first name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="parent_last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="parent_last_name" 
+                                       name="parent_last_name" required
+                                       value="{{ request.user.last_name|default:'' }}">
+                                <div class="invalid-feedback">Please enter your last name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="parent_email" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control" id="parent_email" 
+                                       name="parent_email" required
+                                       value="{{ request.user.email|default:'' }}">
+                                <div class="invalid-feedback">Please enter a valid email address</div>
+                                <div class="form-text">We'll send application updates to this email</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="parent_phone" class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" id="parent_phone" 
+                                       name="parent_phone" required>
+                                <div class="invalid-feedback">Please enter your phone number</div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="parent_address" class="form-label">Address</label>
+                                <textarea class="form-control" id="parent_address" 
+                                          name="parent_address" rows="2"></textarea>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="parent_relationship" class="form-label">Relationship to Student *</label>
+                                <select class="form-select" id="parent_relationship" name="parent_relationship" required>
+                                    <option value="">Select relationship</option>
+                                    <option value="Father">Father</option>
+                                    <option value="Mother">Mother</option>
+                                    <option value="Guardian">Guardian</option>
+                                    <option value="Sibling">Sibling</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <div class="invalid-feedback">Please select your relationship to the student</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Information Section -->
+                <div class="card mb-4" id="student-section">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-graduate me-2"></i>Student Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="student_first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="student_first_name" 
+                                       name="student_first_name" required>
+                                <div class="invalid-feedback">Please enter student's first name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="student_last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="student_last_name" 
+                                       name="student_last_name" required>
+                                <div class="invalid-feedback">Please enter student's last name</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="student_gender" class="form-label">Gender *</label>
+                                <select class="form-select" id="student_gender" name="student_gender" required>
+                                    <option value="">Select gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                </select>
+                                <div class="invalid-feedback">Please select student's gender</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="student_dob" class="form-label">Date of Birth *</label>
+                                <input type="date" class="form-control" id="student_dob" 
+                                       name="student_dob" max="{{ today|date:'Y-m-d' }}" required>
+                                <div class="invalid-feedback">Please enter a valid date of birth</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="previous_school" class="form-label">Previous School</label>
+                                <input type="text" class="form-control" id="previous_school" 
+                                       name="previous_school">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="previous_class" class="form-label">Previous Class</label>
+                                <input type="text" class="form-control" id="previous_class" 
+                                       name="previous_class">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="class" class="form-label">Class Applying For *</label>
+                                <select class="form-select" id="class" name="class" required>
+                                    <option value="">Select class</option>
+                                    {% for class in available_classes %}
+                                    <option value="{{ class.id }}">
+                                        {{ class.name }}
+                                        {% if class.is_full %}(Full){% endif %}
+                                    </option>
+                                    {% empty %}
+                                    <option value="">No classes available</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Please select a class</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Form Fields -->
+                {% if form.fields %}
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-file-alt me-2"></i>Additional Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for field in form.fields %}
+                        <div class="mb-3">
+                            <label for="field_{{ forloop.counter }}" class="form-label">
+                                {{ field.label }}{% if field.required %} *{% endif %}
+                            </label>
+                            
+                            {% if field.type == 'text' %}
+                            <input type="text" class="form-control" 
+                                   id="field_{{ forloop.counter }}" 
+                                   name="{{ field.name }}"
+                                   {% if field.required %}required{% endif %}>
+                            
+                            {% elif field.type == 'textarea' %}
+                            <textarea class="form-control" 
+                                      id="field_{{ forloop.counter }}" 
+                                      name="{{ field.name }}"
+                                      rows="3"
+                                      {% if field.required %}required{% endif %}></textarea>
+                            
+                            {% elif field.type == 'select' %}
+                            <select class="form-select" 
+                                    id="field_{{ forloop.counter }}" 
+                                    name="{{ field.name }}"
+                                    {% if field.required %}required{% endif %}>
+                                <option value="">Select {{ field.label }}</option>
+                                {% for option in field.options %}
+                                <option value="{{ option.value }}">{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                            
+                            {% elif field.type == 'checkbox' %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="field_{{ forloop.counter }}" 
+                                       name="{{ field.name }}"
+                                       {% if field.required %}required{% endif %}>
+                                <label class="form-check-label" for="field_{{ forloop.counter }}">
+                                    {{ field.label }}
+                                </label>
+                            </div>
+                            
+                            {% elif field.type == 'radio' %}
+                            <div>
+                                {% for option in field.options %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" 
+                                           id="field_{{ forloop.counter }}_{{ option.value }}" 
+                                           name="{{ field.name }}" 
+                                           value="{{ option.value }}"
+                                           {% if forloop.first and field.required %}required{% endif %}>
+                                    <label class="form-check-label" for="field_{{ forloop.counter }}_{{ option.value }}">
+                                        {{ option.label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Required Documents -->
+                {% if form.required_documents %}
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-paperclip me-2"></i>Required Documents
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <p class="mb-2">Please prepare the following documents for submission:</p>
+                            <ul class="mb-0">
+                                {% for doc in form.required_documents %}
+                                <li>{{ doc }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <!-- Document Uploads -->
+                        <div class="mb-3">
+                            <label class="form-label">Upload Documents (Optional during application)</label>
+                            {% for document in form.required_documents %}
+                            <div class="mb-2">
+                                <label class="form-label small">{{ document }}</label>
+                                <input type="file" class="form-control form-control-sm" 
+                                       name="document_{{ forloop.counter }}"
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="documents_acknowledge" required>
+                            <label class="form-check-label" for="documents_acknowledge">
+                                I acknowledge that I will need to submit these documents to complete the application process.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <!-- Additional Notes -->
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-sticky-note me-2"></i>Additional Notes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="additional_notes" class="form-label">Additional Notes (Optional)</label>
+                            <textarea class="form-control" id="additional_notes" name="additional_notes" rows="4" 
+                                      placeholder="Any additional information you'd like to share..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fee Information -->
+                {% if form.application_fee > 0 %}
+                <div class="alert alert-primary mb-4">
+                    <div class="d-flex">
+                        <i class="fas fa-credit-card fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading">Application Fee: ₦{{ form.application_fee|floatformat:"2" }}</h6>
+                            <p class="mb-2">
+                                A non-refundable application fee of <strong>₦{{ form.application_fee|floatformat:"2" }}</strong> 
+                                is required to process your application.
+                            </p>
+                            {% if request.user.is_authenticated and request.user.staff_profile and request.user.staff_profile.school == school %}
+                            <p class="mb-0 small text-success">
+                                <i class="fas fa-user-tie me-1"></i>
+                                Staff discount may apply to your application
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Terms and Conditions -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="terms_accept" required>
+                            <label class="form-check-label" for="terms_accept">
+                                I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a> 
+                                and confirm that all information provided is accurate.
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="privacy_accept" required>
+                            <label class="form-check-label" for="privacy_accept">
+                                I have read and agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success btn-lg" id="submit-btn">
+                        {% if form.is_free %}
+                        <i class="fas fa-paper-plane me-2"></i>Submit Application
+                        {% else %}
+                        <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                        {% endif %}
+                    </button>
+                    
+                    <p class="text-muted mt-3 small">
+                        Need help? Contact {{ school.name }} at 
+                        {% if school.phone %}{{ school.phone }}{% endif %}
+                        {% if school.email %}<a href="mailto:{{ school.email }}">{{ school.email }}</a>{% endif %}
+                    </p>
+                </div>
+            </form>
+
+            <!-- Messages Container -->
+            <div id="form-messages" class="mt-4"></div>
+
+            <!-- Navigation -->
+            <div class="text-center mt-4">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'school_discovery' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-school me-1"></i>Discover Schools
+                    </a>
+                    {% if request.user.is_authenticated %}
+                    <a href="{% url 'users:my_applications' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-file-alt me-1"></i>My Applications
+                    </a>
+                    <a href="{% url 'users:dashboard' %}" class="btn btn-outline-info">
+                        <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms and Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Application Process</h6>
+                <p>By submitting this application, you acknowledge that:</p>
+                <ul>
+                    <li>All information provided is accurate and complete</li>
+                    <li>The application fee (if applicable) is non-refundable</li>
+                    <li>Submission does not guarantee admission</li>
+                    <li>The school reserves the right to verify all information provided</li>
+                    <li>Incomplete applications will not be processed</li>
+                </ul>
+                
+                <h6>Admission Process</h6>
+                <ul>
+                    <li>Applications are reviewed on a rolling basis</li>
+                    <li>You will be notified of the decision via email</li>
+                    <li>If accepted, you must complete enrollment within the specified timeframe</li>
+                    <li>Additional fees may apply upon acceptance</li>
+                </ul>
+                
+                <h6>Privacy Policy</h6>
+                <p>Your personal information will be used solely for the admission process and will not be shared with third parties without your consent.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Information Collection</h6>
+                <p>We collect information that you provide directly to us, including:</p>
+                <ul>
+                    <li>Personal identification information (name, email, phone number)</li>
+                    <li>Student information (name, date of birth, previous education)</li>
+                    <li>Application documents and supporting materials</li>
+                </ul>
+                
+                <h6>Use of Information</h6>
+                <p>Your information is used for:</p>
+                <ul>
+                    <li>Processing your application</li>
+                    <li>Communicating application status</li>
+                    <li>Administrative purposes within the school</li>
+                    <li>Improving our application process</li>
+                </ul>
+                
+                <h6>Data Protection</h6>
+                <p>We implement appropriate security measures to protect your personal information and maintain data accuracy.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form progress tracking
+function updateProgress() {
+    const form = document.getElementById('application-form');
+    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+    const filled = Array.from(inputs).filter(input => {
+        if (input.type === 'checkbox' || input.type === 'radio') {
+            return input.checked;
+        }
+        return input.value.trim() !== '';
+    }).length;
+    
+    const progress = (filled / inputs.length) * 100;
+    document.getElementById('form-progress').style.width = `${progress}%`;
+}
+
+// Initialize progress tracking
+document.addEventListener('DOMContentLoaded', function() {
+    const requiredFields = document.querySelectorAll('#application-form [required]');
+    requiredFields.forEach(field => {
+        field.addEventListener('input', updateProgress);
+        field.addEventListener('change', updateProgress);
+    });
+    
+    updateProgress();
+    
+    // Date validation
+    const dobField = document.getElementById('student_dob');
+    if (dobField) {
+        dobField.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            
+            if (selectedDate > today) {
+                this.setCustomValidity('Date of birth cannot be in the future');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Email validation
+    const emailField = document.getElementById('parent_email');
+    if (emailField) {
+        emailField.addEventListener('blur', function() {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(this.value)) {
+                this.setCustomValidity('Please enter a valid email address');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Phone validation (basic)
+    const phoneField = document.getElementById('parent_phone');
+    if (phoneField) {
+        phoneField.addEventListener('blur', function() {
+            const phoneRegex = /^[0-9+\-\s]+$/;
+            if (this.value && !phoneRegex.test(this.value)) {
+                this.setCustomValidity('Please enter a valid phone number');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Form submission with enhanced validation
+    const form = document.getElementById('application-form');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        if (!form.checkValidity()) {
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            
+            // Scroll to first invalid field
+            const firstInvalid = form.querySelector(':invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = document.getElementById('submit-btn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        submitBtn.disabled = true;
+        
+        // Submit form
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                // If redirected (to payment or success page), follow the redirect
+                window.location.href = response.url;
+                return;
+            }
+            return response.json().then(data => {
+                if (data.requires_payment) {
+                    // Redirect to payment page
+                    window.location.href = data.payment_data.authorization_url;
+                } else if (data.success) {
+                    // Show success message and redirect
+                    showMessage('success', data.message);
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url || "{% url 'home' %}";
+                    }, 2000);
+                } else {
+                    // Show error
+                    showMessage('danger', data.error || 'Submission failed');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('danger', 'Network error. Please check your connection and try again.');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+});
+
+// Show message function
+function showMessage(type, message) {
+    const messagesDiv = document.getElementById('form-messages');
+    messagesDiv.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    messagesDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Auto-fill parent info if user is logged in
+document.addEventListener('DOMContentLoaded', function() {
+    {% if request.user.is_authenticated %}
+    const firstNameField = document.getElementById('parent_first_name');
+    const lastNameField = document.getElementById('parent_last_name');
+    const emailField = document.getElementById('parent_email');
+    
+    if (firstNameField && !firstNameField.value) {
+        firstNameField.value = "{{ request.user.first_name }}";
+    }
+    if (lastNameField && !lastNameField.value) {
+        lastNameField.value = "{{ request.user.last_name }}";
+    }
+    if (emailField && !emailField.value) {
+        emailField.value = "{{ request.user.email }}";
+    }
+    
+    updateProgress();
+    {% endif %}
+});
+</script>
+
+<style>
+/* Progress bar animation */
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Section highlighting */
+.card-header {
+    transition: all 0.3s ease;
+}
+
+.card:hover .card-header {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Invalid field styling */
+.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+/* Button loading state */
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+/* Form text improvements */
+.form-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

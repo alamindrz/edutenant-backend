@@ -1,0 +1,59 @@
+<!-- templates/debug_context.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Context</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .type { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Debug Context Variables</h1>
+    
+    <h2>User Info</h2>
+    <p><strong>User:</strong> {{ user_username }}</p>
+    <p><strong>Authenticated:</strong> {{ user_is_authenticated }}</p>
+    <p><strong>Has School:</strong> {{ has_school }}</p>
+    <p><strong>School:</strong> {{ school_name }}</p>
+    
+    <h2>Request Info</h2>
+    <p><strong>Path:</strong> {{ request_path }}</p>
+    <p><strong>Method:</strong> {{ request_method }}</p>
+    
+    <h2>Session Data</h2>
+    <ul>
+    {% for key in session_keys %}
+        <li>{{ key }}</li>
+    {% empty %}
+        <li>No session data</li>
+    {% endfor %}
+    </ul>
+    
+    <h2>All Context Variables</h2>
+    <table>
+        <tr>
+            <th>Variable Name</th>
+            <th>Type</th>
+            <th>Value</th>
+        </tr>
+        {% for key, value in sorted_context.items %}
+        <tr>
+            <td><strong>{{ key }}</strong></td>
+            <td class="type">{{ value|default:"None"|cut:"<class '"|cut:"'>" }}</td>
+            <td>
+                {% if value|length > 100 %}
+                    {{ value|slice:":100" }}...
+                {% else %}
+                    {{ value|default:"None" }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

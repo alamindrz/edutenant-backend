@@ -1,6 +1,6 @@
 <!-- templates/admissions/application_list.html -->
 {% extends "base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Applications - {{ school.name }}{% endblock %}
 
@@ -9,71 +9,364 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admissions:dashboard' %}">Admissions</a></li>
+                    <li class="breadcrumb-item active">Applications</li>
+                </ol>
+            </nav>
             <h1 class="h3 mb-1">Applications</h1>
-            <p class="text-muted">Manage and review student applications</p>
+            <p class="text-muted">Manage all applications for {{ school.name }}</p>
         </div>
-        <div class="btn-group">
-            <button class="btn btn-outline-primary" hx-get="{% url 'admissions:application_filters_partial' %}" hx-target="#filter-widgets">
-                <i class="fas fa-filter"></i> Filters
+        <div>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="fas fa-filter me-2"></i>Filters
+                {% if status_filter or form_filter or search_query or priority_filter %}
+                <span class="badge bg-danger">Active</span>
+                {% endif %}
             </button>
-            <a href="{% url 'admissions:dashboard' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Dashboard
-            </a>
         </div>
     </div>
 
-    <!-- Filter Widgets (HTMX) -->
-    <div id="filter-widgets" class="mb-4">
-        <!-- Will be loaded via HTMX -->
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Filter Applications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="GET" id="filter-form">
+                    <div class="modal-body">
+                        <!-- Status Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
+                                <option value="under_review" {% if status_filter == 'under_review' %}selected{% endif %}>Under Review</option>
+                                <option value="accepted" {% if status_filter == 'accepted' %}selected{% endif %}>Accepted</option>
+                                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="waitlisted" {% if status_filter == 'waitlisted' %}selected{% endif %}>Waitlisted</option>
+                            </select>
+                        </div>
+
+                        <!-- Form Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Application Form</label>
+                            <select name="form" class="form-select">
+                                <option value="">All Forms</option>
+                                {% for form in forms %}
+                                <option value="{{ form.id }}" {% if form_filter == form.id|stringformat:"i" %}selected{% endif %}>
+                                    {{ form.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Priority Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Priority</label>
+                            <select name="priority" class="form-select">
+                                <option value="">All Priorities</option>
+                                <option value="urgent" {% if priority_filter == 'urgent' %}selected{% endif %}>Urgent</option>
+                                <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+                                <option value="normal" {% if priority_filter == 'normal' %}selected{% endif %}>Normal</option>
+                                <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+                            </select>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search by name, email, or application number..."
+                                   value="{{ search_query }}">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{% url 'admissions:application_list' %}" class="btn btn-outline-secondary me-auto">Clear All</a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        {% for status in status_counts %}
+        <div class="col-md-2 col-6">
+            <a href="?status={{ status.status }}" 
+               class="card text-decoration-none {% if status.status == status_filter %}border-primary{% endif %}">
+                <div class="card-body text-center py-3">
+                    <h3 class="mb-1 {% if status.status == 'submitted' %}text-warning{% elif status.status == 'accepted' %}text-success{% elif status.status == 'rejected' %}text-danger{% else %}text-info{% endif %}">
+                        {{ status.count }}
+                    </h3>
+                    <p class="text-muted mb-0 small">{{ status.status|title }}</p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
     </div>
 
     <!-- Applications Table -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">All Applications</h5>
-            <div class="d-flex gap-2">
-                <input type="search" 
-                       class="form-control form-control-sm" 
-                       placeholder="Search applications..." 
-                       name="search"
-                       hx-get="{% url 'admissions:application_table_partial' %}"
-                       hx-target="#applications-table"
-                       hx-trigger="keyup changed delay:500ms"
-                       hx-include="[name='status'], [name='form'], [name='priority']">
-                
-                <button class="btn btn-sm btn-outline-secondary" 
-                        hx-get="{% url 'admissions:application_table_partial' %}"
-                        hx-target="#applications-table"
-                        hx-include="[name='status'], [name='form'], [name='priority'], [name='search']">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="120">App #</th>
+                            <th>Student</th>
+                            <th>Parent</th>
+                            <th>Class</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned To</th>
+                            <th>Submitted</th>
+                            <th width="80">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in page_obj %}
+                        <tr {% if application.is_overdue %}class="table-warning"{% endif %}>
+                            <td>
+                                <a href="{% url 'admissions:application_detail' application.id %}" 
+                                   class="text-decoration-none fw-bold">
+                                    {{ application.application_number }}
+                                </a>
+                                {% if application.is_staff_child %}
+                                <span class="badge bg-success ms-1" title="Staff Child">S</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if application.student %}
+                                <a href="{% url 'students:student_detail' application.student.id %}" 
+                                   class="text-decoration-none">
+                                    {{ application.student.full_name }}
+                                </a>
+                                {% else %}
+                                {{ application.data.first_name }} {{ application.data.last_name }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if application.parent %}
+                                <a href="{% url 'students:parent_detail' application.parent.id %}" 
+                                   class="text-decoration-none">
+                                    {{ application.parent.full_name }}
+                                </a>
+                                <div class="small text-muted">{{ application.parent.email }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if application.applied_class %}
+                                <span class="badge bg-primary">{{ application.applied_class.name }}</span>
+                                {% else %}
+                                <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if application.status == 'submitted' %}bg-warning
+                                    {% elif application.status == 'under_review' %}bg-info
+                                    {% elif application.status == 'accepted' %}bg-success
+                                    {% elif application.status == 'rejected' %}bg-danger
+                                    {% elif application.status == 'waitlisted' %}bg-secondary
+                                    {% else %}bg-light text-dark{% endif %}">
+                                    {{ application.status|title }}
+                                </span>
+                                {% if application.is_overdue %}
+                                <span class="badge bg-danger ms-1" title="Overdue for review">!</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if application.priority == 'urgent' %}bg-danger
+                                    {% elif application.priority == 'high' %}bg-warning
+                                    {% elif application.priority == 'normal' %}bg-primary
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ application.priority|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if application.assigned_to %}
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar avatar-xs bg-info rounded-circle me-2">
+                                        {{ application.assigned_to.user.get_initials|default:"U" }}
+                                    </div>
+                                    <span class="small">{{ application.assigned_to.user.get_short_name }}</span>
+                                </div>
+                                {% else %}
+                                <span class="text-muted small">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small">{{ application.submitted_at|date:"M j, Y" }}</div>
+                                <div class="small text-muted">{{ application.submitted_at|timesince }} ago</div>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'admissions:application_detail' application.id %}">
+                                                <i class="fas fa-eye me-2"></i>View Details
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item"
+                                                    hx-post="{% url 'admissions:application_quick_actions' application.id %}"
+                                                    hx-vals='{"action": "assign_to_me"}'
+                                                    hx-target="closest tr">
+                                                <i class="fas fa-user-check me-2"></i>Assign to Me
+                                            </button>
+                                        </li>
+                                        {% if not application.application_fee_paid and not application.form.is_free %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'admissions:retry_payment' application.id %}">
+                                                <i class="fas fa-money-bill-wave me-2"></i>Retry Payment
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% if application.status == 'accepted' %}
+                                        <li>
+                                            <span class="dropdown-item text-success">
+                                                <i class="fas fa-check me-2"></i>Accepted
+                                            </span>
+                                        </li>
+                                        {% else %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'admissions:application_detail' application.id %}#review">
+                                                <i class="fas fa-edit me-2"></i>Review
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-3"></i>
+                                    <h5>No applications found</h5>
+                                    <p>{% if status_filter or form_filter or search_query %}Try adjusting your filters{% else %}No applications have been submitted yet{% endif %}</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         
-        <div class="card-body p-0">
-            <div id="applications-table">
-                {% include 'admissions/partials/application_table.html' %}
-            </div>
+        <!-- Pagination -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Application pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if form_filter %}&form={{ form_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if form_filter %}&form={{ form_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if form_filter %}&form={{ form_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if form_filter %}&form={{ form_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Handle filter changes
-document.addEventListener('change', function(event) {
-    if (event.target.matches('[name="status"], [name="form"], [name="priority"]')) {
-        htmx.trigger('input[name="search"]', 'change');
-    }
+// Submit filter form when modal is closed
+document.getElementById('filterModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('filter-form').submit();
 });
 
-// Auto-refresh every 2 minutes
-setInterval(() => {
-    htmx.ajax('GET', '{% url 'admissions:application_table_partial' %}', {
-        target: '#applications-table',
-        swap: 'innerHTML'
-    });
-}, 120000);
+// Quick assign actions
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.successful) {
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'toast-container position-fixed top-0 end-0 p-3';
+        notification.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-header bg-success text-white">
+                    <strong class="me-auto">Success</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">
+                    Action completed successfully
+                </div>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+});
 </script>
+
+<style>
+.avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+}
+
+.avatar-lg {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+}
+
+.avatar-xs {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.toast-container {
+    z-index: 1060;
+}
+</style>
 {% endblock %}

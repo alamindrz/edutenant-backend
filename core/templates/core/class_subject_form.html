@@ -9,7 +9,7 @@
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'users:dashboard' %}">Dashboard</a></li>
         <li class="breadcrumb-item"><a href="{% url 'core:class_list' %}">Classes</a></li>
         <li class="breadcrumb-item"><a href="{% url 'core:class_detail' class_instance.id %}">{{ class_instance.name }}</a></li>
         <li class="breadcrumb-item active" aria-current="page">{{ page_title|default:"Add Subject" }}</li>

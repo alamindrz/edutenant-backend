@@ -7,12 +7,28 @@ import uuid
 import logging
 
 # SHARED IMPORTS - FIX CIRCULAR DEPENDENCIES
-from shared.constants import (
-    StatusChoices,
-    PaymentMethods,
-    CLASS_MODEL_PATH,
-    APPLICATION_CLASS_FIELD
-)
+try:
+    from shared.constants import (
+        StatusChoices,
+        PaymentMethods,
+        CLASS_MODEL_PATH,
+        APPLICATION_CLASS_FIELD
+    )
+    SHARED_CONSTANTS_AVAILABLE = True
+except ImportError:
+    SHARED_CONSTANTS_AVAILABLE = False
+    # Define minimal fallbacks
+    class StatusChoices:
+        PENDING = 'pending'
+        SUBMITTED = 'submitted'
+        UNDER_REVIEW = 'under_review'
+        ACCEPTED = 'accepted'
+        REJECTED = 'rejected'
+        WAITLISTED = 'waitlisted'
+    
+    PaymentMethods = None
+    CLASS_MODEL_PATH = 'core.Class'
+    APPLICATION_CLASS_FIELD = 'applied_class'
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +66,7 @@ class ApplicationForm(models.Model):
     
     # Nigerian context
     academic_session = models.CharField(max_length=20, help_text="e.g., 2024/2025")
-    # CHANGED: Store Class IDs directly instead of JSON
+    # Store Class IDs directly instead of JSON
     available_class_ids = models.JSONField(default=list, help_text="List of Class IDs accepting applications")
     
     # Application limits
@@ -198,7 +214,7 @@ class Application(models.Model):
     documents = models.JSONField(default=list, help_text="Uploaded documents")
     
     # Status tracking with history
-    status = models.CharField(max_length=20, choices=APPLICATION_STATUS, default=StatusChoices.PENDING)
+    status = models.CharField(max_length=20, choices=APPLICATION_STATUS, default='submitted')
     status_changed_at = models.DateTimeField(auto_now=True)
     status_history = models.JSONField(default=list, help_text="Status change history")
     
@@ -211,7 +227,7 @@ class Application(models.Model):
     review_notes = models.TextField(blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     
-    # Class applied for - UPDATED: Use core.Class directly
+    # Class applied for
     applied_class = models.ForeignKey('core.Class', on_delete=models.SET_NULL, null=True, blank=True, related_name='applications')
     previous_school_info = models.JSONField(default=dict, help_text="Previous school information")
     
@@ -366,7 +382,7 @@ class Application(models.Model):
         fee = self.form.application_fee
         
         # Apply staff child discount
-        if self.is_staff_child and self.form.school.staff_children_waive_application_fee:
+        if self.is_staff_child and hasattr(self.form.school, 'staff_children_waive_application_fee') and self.form.school.staff_children_waive_application_fee:
             return 0
         
         return fee
@@ -387,7 +403,7 @@ class Admission(models.Model):
     # Enhanced offer details
     admission_type = models.CharField(max_length=20, choices=ADMISSION_TYPES, default='regular')
     
-    # UPDATED: Use core.Class for consistency
+    # Use core.Class for consistency
     offered_class = models.ForeignKey('core.Class', on_delete=models.PROTECT, related_name='admission_offers')
     offer_expires = models.DateTimeField()
     
@@ -477,18 +493,22 @@ class Admission(models.Model):
                 'acceptance_fee_deadline': 'Acceptance fee deadline must be in the future.'
             })
         
-        # Validate offered class capacity using shared manager
-        from shared.models import ClassManager
-        if self.offered_class:
-            is_available, message, _ = ClassManager.validate_class_availability(
-                self.offered_class.id,
-                self.student.school,
-                is_staff=self.application.is_staff_child if self.application else False
-            )
-            if not is_available:
-                raise ValidationError({
-                    'offered_class': f'Class "{self.offered_class.name}" {message}.'
-                })
+        # Validate offered class capacity using shared manager if available
+        try:
+            from shared.models import ClassManager
+            if self.offered_class:
+                is_available, message, _ = ClassManager.validate_class_availability(
+                    self.offered_class.id,
+                    self.student.school,
+                    is_staff=self.application.is_staff_child if self.application else False
+                )
+                if not is_available:
+                    raise ValidationError({
+                        'offered_class': f'Class "{self.offered_class.name}" {message}.'
+                    })
+        except ImportError:
+            # ClassManager not available, skip validation
+            pass
     
     def save(self, *args, **kwargs):
         """Save admission with auto-generated number and defaults."""

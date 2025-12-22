@@ -1,29 +1,30 @@
 <!-- templates/includes/mobile_menu_offcanvas.html -->
-{% load navigation_tags %}
-
-<!-- Mobile Menu Offcanvas -->
 <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="mobileMenuOffcanvas" aria-labelledby="mobileMenuOffcanvasLabel">
     <div class="offcanvas-header border-bottom">
         <div class="d-flex align-items-center w-100">
             <div class="flex-shrink-0">
-                {% if request.school.logo %}
-                <img src="{{ request.school.logo.url }}" alt="{{ request.school.name }}" style="height: 32px;">
+                {% if current_school and current_school.logo %}
+                <img src="{{ current_school.logo.url }}" alt="{{ current_school.name }}" 
+                     class="rounded" style="height: 40px; width: 40px; object-fit: contain;">
                 {% else %}
-                <i class="bi bi-building text-primary fs-4"></i>
+                <div class="rounded bg-primary d-flex align-items-center justify-content-center" 
+                     style="height: 40px; width: 40px;">
+                    <i class="bi bi-building text-white fs-5"></i>
+                </div>
                 {% endif %}
             </div>
             <div class="flex-grow-1 ms-2">
                 <h6 class="mb-0 fw-bold" id="mobileMenuOffcanvasLabel">
-                    {% if request.school %}
-                        {{ request.school.name }}
+                    {% if current_school %}
+                        {{ current_school.name|truncatechars:20 }}
                     {% else %}
-                        Edusuite
+                        SchoolSys
                     {% endif %}
                 </h6>
                 {% if request.user.is_authenticated %}
                 <small class="text-muted">
                     {{ request.user.get_full_name|default:request.user.username }}
-                    {% if user_role %} • {{ user_role }}{% endif %}
+                    {% if user_role %} • {{ user_role.name }}{% endif %}
                 </small>
                 {% endif %}
             </div>
@@ -33,17 +34,19 @@
     
     <div class="offcanvas-body p-0">
         <!-- Quick Actions -->
-        {% if request.user.is_authenticated and request.school %}
+        {% if request.user.is_authenticated %}
         <div class="p-3 bg-light border-bottom">
             <div class="d-grid gap-2">
-                <a href="{% url 'users:dashboard' %}" class="btn btn-primary">
+                {% if current_school %}
+                <a href="{% url 'users:dashboard' %}" class="btn btn-primary" data-bs-dismiss="offcanvas">
                     <i class="bi bi-speedometer2 me-2"></i>Dashboard
                 </a>
-                <a href="{% url 'users:profile' %}" class="btn btn-outline-primary">
+                {% endif %}
+                <a href="{% url 'users:profile' %}" class="btn btn-outline-primary" data-bs-dismiss="offcanvas">
                     <i class="bi bi-person me-2"></i>My Profile
                 </a>
-                <a href="{% url 'users:school_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-building me-2"></i>Switch School
+                <a href="{% url 'users:school_list' %}" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">
+                    <i class="bi bi-buildings me-2"></i>All Schools
                 </a>
             </div>
         </div>
@@ -51,28 +54,57 @@
 
         <!-- Full Navigation -->
         <nav class="nav flex-column py-2">
-            {% get_navigation_items as nav_items %}
-            {% for item in nav_items %}
-                {% if item.label == 'divider' %}
-                <hr class="my-2 mx-3">
-                {% elif item.label == 'header' %}
-                <div class="px-3 pt-3 small fw-bold text-uppercase text-muted">{{ item.label }}</div>
+            {% for item in desktop_navigation %}
+                {% if item.children %}
+                    <!-- Parent item with children -->
+                    <div class="nav-item">
+                        <a class="nav-link px-3 py-2 d-flex align-items-center" 
+                           data-bs-toggle="collapse" 
+                           href="#mobile-collapse-{{ forloop.counter }}"
+                           role="button"
+                           data-bs-dismiss="offcanvas">
+                            <i class="bi bi-{{ item.icon }} me-3 fs-5"></i>
+                            <div class="flex-grow-1">{{ item.label }}</div>
+                            <i class="bi bi-chevron-down"></i>
+                        </a>
+                        <div class="collapse" id="mobile-collapse-{{ forloop.counter }}">
+                            <div class="ps-4">
+                                {% for child in item.children %}
+                                    {% if child.is_visible %}
+                                    <a href="{{ child.get_url }}" 
+                                       class="nav-link px-3 py-2 d-flex align-items-center {% if child.is_active %}active{% endif %}"
+                                       data-bs-dismiss="offcanvas">
+                                        <i class="bi bi-{{ child.icon }} me-3"></i>
+                                        <div class="flex-grow-1">{{ child.label }}</div>
+                                        {% if child.badge_count > 0 %}
+                                        <span class="badge bg-{{ child.badge_color|default:'primary' }} rounded-pill">{{ child.badge_count }}</span>
+                                        {% endif %}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 {% else %}
-                <a href="{{ item.url }}" 
-                   class="nav-link px-3 py-2 d-flex align-items-center {% if item.is_active %}active{% endif %} {% if item.disabled %}disabled text-muted{% endif %}"
-                   {% if item.disabled %}onclick="return false;"{% endif %}
-                   data-bs-dismiss="offcanvas">
-                    <i class="bi bi-{{ item.icon }} me-3 fs-5"></i>
-                    <div class="flex-grow-1">{{ item.label }}</div>
-                    {% if item.badge_count > 0 %}
-                    <span class="badge bg-{{ item.badge_color|default:'primary' }} rounded-pill">{{ item.badge_count }}</span>
+                    <!-- Single item -->
+                    {% if item.is_visible %}
+                    <a href="{{ item.get_url }}" 
+                       class="nav-link px-3 py-2 d-flex align-items-center {% if item.is_active %}active{% endif %}"
+                       data-bs-dismiss="offcanvas">
+                        <i class="bi bi-{{ item.icon }} me-3 fs-5"></i>
+                        <div class="flex-grow-1">{{ item.label }}</div>
+                        {% if item.badge_count > 0 %}
+                        <span class="badge bg-{{ item.badge_color|default:'primary' }} rounded-pill">{{ child.badge_count }}</span>
+                        {% endif %}
+                    </a>
                     {% endif %}
-                </a>
                 {% endif %}
             {% endfor %}
             
             <!-- Theme Toggle -->
-            <button class="nav-link px-3 py-2 d-flex align-items-center border-0 bg-transparent" onclick="toggleDarkMode()" data-bs-dismiss="offcanvas">
+            <button class="nav-link px-3 py-2 d-flex align-items-center border-0 bg-transparent" 
+                    onclick="toggleDarkMode()" 
+                    data-bs-dismiss="offcanvas">
                 <i class="bi bi-moon me-3 fs-5"></i>
                 <span id="theme-toggle-mobile">Dark Mode</span>
             </button>
@@ -99,7 +131,6 @@
 </div>
 
 <style>
-/* Mobile offcanvas */
 #mobileMenuOffcanvas {
     width: 300px;
 }
@@ -114,11 +145,6 @@
     color: white !important;
 }
 
-.nav-link.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* Dark mode adjustments */
 [data-bs-theme="dark"] #mobileMenuOffcanvas {
     background-color: var(--bs-dark);
@@ -131,5 +157,11 @@
 
 [data-bs-theme="dark"] #mobileMenuOffcanvas .bg-light {
     background-color: rgba(var(--bs-dark-rgb), 0.5) !important;
+}
+
+/* Collapse transitions */
+.collapse .nav-link {
+    padding-left: 4rem !important;
+    font-size: 0.875rem;
 }
 </style>

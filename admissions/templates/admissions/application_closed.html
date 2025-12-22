@@ -1,0 +1,63 @@
+<!-- templates/admissions/application_closed.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Application Closed - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-danger">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-calendar-times fa-4x text-danger mb-3"></i>
+                        <h1 class="h3 text-danger">Application Form Closed</h1>
+                    </div>
+                    
+                    <p class="lead mb-4">
+                        The application form for <strong>{{ form.name }}</strong> is no longer accepting submissions.
+                    </p>
+                    
+                    <div class="alert alert-info text-start mb-4">
+                        <div class="d-flex">
+                            <i class="fas fa-info-circle fa-2x me-3 text-info"></i>
+                            <div>
+                                <h5 class="alert-heading">Form Details</h5>
+                                <ul class="mb-0">
+                                    <li><strong>Form:</strong> {{ form.name }}</li>
+                                    <li><strong>School:</strong> {{ school.name }}</li>
+                                    <li><strong>Academic Session:</strong> {{ form.academic_session }}</li>
+                                    <li><strong>Open Date:</strong> {{ form.open_date|date:"F j, Y" }}</li>
+                                    <li><strong>Close Date:</strong> {{ form.close_date|date:"F j, Y" }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <a href="{% url 'school_discovery' %}" class="btn btn-primary">
+                            <i class="fas fa-school me-2"></i>Browse Other Schools
+                        </a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>Return Home
+                        </a>
+                    </div>
+                    
+                    <div class="mt-5">
+                        <p class="text-muted small">
+                            If you believe this is an error or have special circumstances, 
+                            please contact the school administration directly.
+                        </p>
+                        {% if school.email %}
+                        <a href="mailto:{{ school.email }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-envelope me-1"></i>Contact School
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

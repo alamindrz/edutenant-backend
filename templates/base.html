@@ -1,11 +1,11 @@
 <!-- templates/base.html -->
 <!DOCTYPE html>
-{% load navigation_tags %}
+{% load static %}
 <html lang="en" data-bs-theme="{{ current_theme }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}School Management System{% endblock %} | {{ request.school.name|default:"Edusuite" }}</title>
+    <title>{% block title %}School Management System{% endblock %} | {{ request.school.name|default:"Edutenant" }}</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -42,6 +42,51 @@
         color: var(--bs-body-color);
     }
     
+    /* Navigation specific styles */
+    .sidebar-desktop {
+        width: 280px;
+        transition: transform 0.3s ease;
+    }
+    
+    .main-content.sidebar-active {
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+    }
+    
+    @media (max-width: 991.98px) {
+        .main-content.sidebar-active {
+            margin-left: 0;
+        }
+        
+        .sidebar-desktop {
+            transform: translateX(-100%);
+        }
+        
+        .sidebar-desktop.show {
+            transform: translateX(0);
+        }
+    }
+    
+    /* Mobile bottom nav */
+    .mobile-bottom-nav {
+        height: 60px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1030;
+    }
+    
+    .bottom-nav-item {
+        color: var(--bs-secondary);
+        transition: all 0.2s ease;
+    }
+    
+    .bottom-nav-item.active {
+        color: var(--bs-primary) !important;
+    }
+    
+    .bottom-nav-item.active i {
+        color: var(--bs-primary) !important;
+    }
+    
     /* Notification badges */
     .notification-badge {
         position: absolute;
@@ -54,6 +99,28 @@
         align-items: center;
         justify-content: center;
     }
+    
+    /* Navigation items */
+    .nav-link.active {
+        background-color: var(--bs-primary);
+        color: white !important;
+    }
+    
+    .nav-link.active i {
+        color: white !important;
+    }
+    
+    /* Submenu indicators */
+    .has-children::after {
+        content: "›";
+        margin-left: auto;
+        transform: rotate(90deg);
+        transition: transform 0.3s ease;
+    }
+    
+    .has-children[aria-expanded="true"]::after {
+        transform: rotate(-90deg);
+    }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -63,12 +130,14 @@
     {% include "includes/top_navbar.html" %}
     
     <!-- Desktop Sidebar -->
-    {% if request.user.is_authenticated %}
-    {% include "includes/desktop_sidebar.html" %}
+    {% if request.user.is_authenticated and has_school_context %}
+    <div class="offcanvas offcanvas-start d-none d-lg-block sidebar-desktop" tabindex="-1" id="sidebarDesktop" style="width: 280px;">
+        {% include "includes/desktop_sidebar.html" %}
+    </div>
     {% endif %}
     
     <!-- Main Content -->
-    <main class="main-content min-vh-100 {% if request.user.is_authenticated %}sidebar-active{% endif %}">
+    <main class="main-content min-vh-100 {% if request.user.is_authenticated and has_school_context %}sidebar-active{% endif %}">
         <!-- Messages -->
         {% if messages %}
         <div class="container mt-3">
@@ -124,7 +193,7 @@
     </main>
     
     <!-- Mobile Bottom Navigation -->
-    {% if request.user.is_authenticated %}
+    {% if request.user.is_authenticated and has_school_context %}
     {% include "includes/mobile_bottom_nav.html" %}
     {% endif %}
     
@@ -134,8 +203,69 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Theme Toggle Script -->
+    <!-- Navigation Script -->
     <script>
+    // Initialize navigation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle sidebar
+        const sidebarToggle = document.querySelector('[data-bs-target="#sidebarDesktop"]');
+        const sidebar = document.getElementById('sidebarDesktop');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('show');
+            });
+        }
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            if (window.innerWidth < 992 && sidebar && sidebar.classList.contains('show')) {
+                if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                    sidebar.classList.remove('show');
+                }
+            }
+        });
+        
+        // Adjust body padding for mobile bottom nav
+        function adjustBodyPadding() {
+            const mobileNav = document.getElementById('mobile-bottom-nav');
+            if (mobileNav && window.innerWidth < 992) {
+                const navHeight = mobileNav.offsetHeight;
+                document.body.style.paddingBottom = navHeight + 'px';
+            } else {
+                document.body.style.paddingBottom = '0';
+            }
+        }
+        
+        adjustBodyPadding();
+        window.addEventListener('resize', adjustBodyPadding);
+        
+        // Update active states on navigation
+        function updateActiveNavigation() {
+            const currentPath = window.location.pathname;
+            const navItems = document.querySelectorAll('.nav-link');
+            
+            navItems.forEach(item => {
+                const href = item.getAttribute('href');
+                if (href && href !== '#' && currentPath.startsWith(href)) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+        
+        updateActiveNavigation();
+        
+        // Re-initialize after HTMX swaps
+        document.body.addEventListener('htmx:afterSwap', function() {
+            adjustBodyPadding();
+            updateActiveNavigation();
+        });
+    });
+    
+
+    // Fixed theme toggle function
     function toggleDarkMode() {
         const html = document.documentElement;
         const currentTheme = html.getAttribute('data-bs-theme');
@@ -144,34 +274,47 @@
         // Apply theme
         html.setAttribute('data-bs-theme', newTheme);
         
-        // Update toggle text
-        const themeToggleText = document.getElementById('theme-toggle-text');
-        const themeToggleTop = document.getElementById('theme-toggle-top');
-        
-        if (themeToggleText) {
-            themeToggleText.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
-        }
-        if (themeToggleTop) {
-            themeToggleTop.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
-        }
-        
         // Save to localStorage
         localStorage.setItem('theme', newTheme);
         
-        // Set cookie for server-side detection
-        document.cookie = `theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
+        // Save to session via AJAX
+        fetch('/theme/set/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({theme: newTheme}),
+        });
         
-        // Send to server via HTMX
-        if (typeof htmx !== 'undefined') {
-            htmx.ajax('POST', '{% url "core:toggle_theme" %}', {
-                values: {theme: newTheme},
-                swap: 'none'
-            });
-        }
+        // Update all theme toggles
+        document.querySelectorAll('[id*="theme-toggle"]').forEach(toggle => {
+            if (toggle.tagName === 'SPAN') {
+                toggle.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            }
+        });
         
-        // Update navbar colors
-        updateNavbarTheme(newTheme);
+        document.querySelectorAll('[id*="theme-icon"]').forEach(icon => {
+            icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+        });
     }
+    
+    // Helper function for CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     
     function updateNavbarTheme(theme) {
         const navbars = document.querySelectorAll('.navbar');
@@ -198,53 +341,21 @@
         document.documentElement.setAttribute('data-bs-theme', theme);
         
         // Update toggle text
-        const themeToggleText = document.getElementById('theme-toggle-text');
-        const themeToggleTop = document.getElementById('theme-toggle-top');
+        const themeToggles = document.querySelectorAll('[id*="theme-toggle"]');
+        themeToggles.forEach(toggle => {
+            if (toggle.tagName === 'SPAN') {
+                toggle.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            }
+        });
         
-        if (themeToggleText) {
-            themeToggleText.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
-        }
-        if (themeToggleTop) {
-            themeToggleTop.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
-        }
+        // Update toggle icons
+        const themeIcons = document.querySelectorAll('[id*="theme-icon"]');
+        themeIcons.forEach(icon => {
+            icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+        });
         
         // Update navbar
         updateNavbarTheme(theme);
-        
-        // Set cookie
-        document.cookie = `theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
-        
-        // Adjust body padding for mobile nav
-        function adjustBodyPadding() {
-            const mobileNav = document.getElementById('mobile-bottom-nav');
-            if (mobileNav && window.innerWidth < 992) {
-                const navHeight = mobileNav.offsetHeight;
-                document.body.style.paddingBottom = navHeight + 'px';
-            } else {
-                document.body.style.paddingBottom = '0';
-            }
-        }
-        
-        adjustBodyPadding();
-        window.addEventListener('resize', adjustBodyPadding);
-        
-        // Initialize HTMX indicators
-        document.body.addEventListener('htmx:beforeRequest', function(evt) {
-            const target = evt.target;
-            if (target && !target.querySelector('.htmx-indicator')) {
-                target.insertAdjacentHTML('beforeend', 
-                    '<div class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status"></div>'
-                );
-            }
-        });
-        
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
-            const target = evt.target;
-            const indicator = target && target.querySelector('.htmx-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        });
     });
     
     // Listen for system theme changes
@@ -253,6 +364,14 @@
             const newTheme = e.matches ? 'dark' : 'light';
             document.documentElement.setAttribute('data-bs-theme', newTheme);
             updateNavbarTheme(newTheme);
+            
+            // Update toggle text
+            const themeToggles = document.querySelectorAll('[id*="theme-toggle"]');
+            themeToggles.forEach(toggle => {
+                if (toggle.tagName === 'SPAN') {
+                    toggle.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+                }
+            });
         }
     });
     </script>

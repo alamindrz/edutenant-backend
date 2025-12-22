@@ -1,5 +1,4 @@
 <!-- templates/includes/top_navbar.html -->
-{% load navigation_tags %}
 <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top" id="main-header">
     <div class="container-fluid">
         <!-- Logo & Brand -->
@@ -12,33 +11,72 @@
         <div class="d-none d-lg-flex align-items-center ms-auto">
             {% if request.user.is_authenticated %}
             <!-- School Selector -->
-            {% if request.user.profile_set.exists %}
+            {% if current_school %}
             <div class="dropdown me-3">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
                         type="button" 
                         data-bs-toggle="dropdown">
                     <i class="bi bi-building me-1"></i>
-                    {% if current_school %}
-                        {{ current_school.name|truncatechars:20 }}
-                    {% else %}
-                        Select School
-                    {% endif %}
+                    {{ current_school.name|truncatechars:20 }}
                 </button>
                 <ul class="dropdown-menu">
-                    {% for profile in request.user.profile_set.all %}
+                    {% if user_profile %}
                     <li>
-                        <a class="dropdown-item" href="{% url 'users:switch_school' profile.school.id %}">
-                            {{ profile.school.name }}
-                            {% if profile.role %}
-                            <small class="text-muted d-block">{{ profile.role.name }}</small>
-                            {% endif %}
+                        <a class="dropdown-item" href="#">
+                            {{ current_school.name }}
+                            <small class="text-muted d-block">
+                                {% if user_role %}{{ user_role.name }}{% else %}No Role{% endif %}
+                            </small>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% endif %}
+                    <li>
+                        <a class="dropdown-item" href="{% url 'users:school_list' %}">
+                            <i class="bi bi-buildings me-2"></i>All Schools
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'school_discovery' %}">
+                            <i class="bi bi-search me-2"></i>Discover Schools
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Notifications -->
+            {% if request.notification_count > 0 %}
+            <div class="dropdown me-3">
+                <button class="btn btn-outline-secondary btn-sm position-relative" 
+                        type="button" 
+                        data-bs-toggle="dropdown">
+                    <i class="bi bi-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ request.notification_count }}
+                    </span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><h6 class="dropdown-header">Notifications</h6></li>
+                    {% for notification in request.unread_notifications|slice:":5" %}
+                    <li>
+                        <a class="dropdown-item" href="#">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-info-circle text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <div class="small">{{ notification.title|truncatechars:30 }}</div>
+                                    <div class="text-muted">{{ notification.created_at|timesince }} ago</div>
+                                </div>
+                            </div>
                         </a>
                     </li>
                     {% endfor %}
                     <li><hr class="dropdown-divider"></li>
                     <li>
-                        <a class="dropdown-item" href="{% url 'users:school_list' %}">
-                            <i class="bi bi-plus-circle me-2"></i>Add School
+                        <a class="dropdown-item text-center" href="#">
+                            View All Notifications
                         </a>
                     </li>
                 </ul>
@@ -68,6 +106,13 @@
                             <i class="bi bi-building me-2"></i>My Schools
                         </a>
                     </li>
+                    {% if current_school %}
+                    <li>
+                        <a class="dropdown-item" href="{% url 'users:switch_school' current_school.id %}">
+                            <i class="bi bi-arrow-left-right me-2"></i>Switch School
+                        </a>
+                    </li>
+                    {% endif %}
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <button class="dropdown-item" onclick="toggleDarkMode()">
@@ -100,6 +145,14 @@
 
         <!-- Mobile Controls -->
         <div class="d-flex d-lg-none align-items-center">
+            {% if request.user.is_authenticated and request.notification_count > 0 %}
+            <a href="#" class="btn btn-link text-decoration-none me-2 position-relative">
+                <i class="bi bi-bell fs-5"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                    {{ request.notification_count }}
+                </span>
+            </a>
+            {% endif %}
             <button class="btn btn-link text-decoration-none me-2" onclick="toggleDarkMode()">
                 <i class="bi bi-moon fs-5"></i>
             </button>
@@ -117,6 +170,7 @@
 #main-header {
     z-index: 1020;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
 }
 
 [data-bs-theme="dark"] #main-header {
@@ -126,6 +180,7 @@
 
 .dropdown-menu {
     min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Adjust for mobile bottom nav */
@@ -135,25 +190,3 @@
     }
 }
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Update top theme toggle text
-    function updateTopThemeToggle() {
-        const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-        const textElement = document.getElementById('theme-toggle-top');
-        if (textElement) {
-            textElement.textContent = currentTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
-        }
-    }
-    
-    updateTopThemeToggle();
-    
-    // Update theme toggle when theme changes
-    const originalToggle = window.toggleDarkMode;
-    window.toggleDarkMode = function() {
-        originalToggle();
-        setTimeout(updateTopThemeToggle, 100);
-    };
-});
-</script>

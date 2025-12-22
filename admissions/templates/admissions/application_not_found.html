@@ -1,0 +1,141 @@
+<!-- templates/admissions/application_not_found.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Application Not Found - {{ school.name|default:"School" }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-danger">
+                <div class="card-body text-center py-5">
+                    <!-- Error Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-search fa-4x text-danger mb-3"></i>
+                        <h1 class="h3 text-danger">Application Not Found</h1>
+                        <p class="text-muted">We couldn't find the application you're looking for.</p>
+                    </div>
+                    
+                    <!-- Possible Reasons -->
+                    <div class="alert alert-warning text-start mb-4">
+                        <h6 class="alert-heading mb-3">
+                            <i class="fas fa-question-circle me-2"></i>Possible reasons:
+                        </h6>
+                        <ul class="mb-0">
+                            <li>The application link may be incorrect or expired</li>
+                            <li>The application may have been deleted or archived</li>
+                            <li>You may have entered the wrong application number</li>
+                            <li>The application may belong to a different school</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- What to do -->
+                    <div class="text-start mb-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-lightbulb me-2"></i>What you can do:
+                        </h6>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <i class="fas fa-check-circle text-success me-3"></i>
+                                <div>
+                                    <strong>Double-check the application number</strong>
+                                    <p class="small text-muted mb-0">Make sure you entered it correctly</p>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <i class="fas fa-envelope text-info me-3"></i>
+                                <div>
+                                    <strong>Check your email</strong>
+                                    <p class="small text-muted mb-0">Look for the original application confirmation email</p>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <i class="fas fa-phone text-primary me-3"></i>
+                                <div>
+                                    <strong>Contact the school</strong>
+                                    <p class="small text-muted mb-0">Reach out to the school administration for assistance</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <a href="{% url 'school_discovery' %}" class="btn btn-primary">
+                            <i class="fas fa-school me-2"></i>Browse Schools
+                        </a>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>Return Home
+                        </a>
+                        {% if school %}
+                        <a href="mailto:{{ school.email|default:'support@example.com' }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-envelope me-2"></i>Contact School
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Search Form -->
+                    <div class="mt-5 pt-4 border-top">
+                        <h6 class="text-muted mb-3">Search for Application</h6>
+                        <form method="GET" action="#" class="mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" 
+                                       placeholder="Enter application number or student name..."
+                                       aria-label="Search applications">
+                                <button class="btn btn-outline-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                        <p class="small text-muted mb-0">
+                            If you believe this is an error, please contact the school administration.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Focus on search input
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[type="text"]');
+    if (searchInput) {
+        searchInput.focus();
+    }
+});
+
+// Try to extract application number from URL
+const urlParams = new URLSearchParams(window.location.search);
+const appNumber = urlParams.get('number') || urlParams.get('app') || urlParams.get('id');
+
+if (appNumber) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.querySelector('input[type="text"]');
+        if (searchInput) {
+            searchInput.value = appNumber;
+        }
+    });
+}
+</script>
+
+<style>
+.list-group-item {
+    background: transparent;
+    border-color: rgba(0, 0, 0, 0.125);
+}
+
+.input-group {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.fa-search {
+    font-size: 1.25rem;
+}
+</style>
+{% endblock %}

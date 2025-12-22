@@ -1,0 +1,26 @@
+<!-- templates/test_urls.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>URL Resolution Test</h1>
+    <ul>
+    {% for result in results %}
+        {% if '✓' in result %}
+        <li class="success">{{ result }}</li>
+        {% else %}
+        <li class="error">{{ result }}</li>
+        {% endif %}
+    {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# settings/base.py
+# settings/base.py - FIXED
 """
 Base settings for Edusuite project.
 """
@@ -45,24 +45,30 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
-# settings.py
+# FIXED: Proper middleware order
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    
+    # Django core middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'core.middleware.SessionValidationMiddleware',  # ✅ ADD THIS
+    'corsheaders.middleware.CorsMiddleware',  # Add CORS if you have CORS_ORIGIN_ALLOW_ALL=True
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
-    'allauth.account.middleware.AccountMiddleware',
-
-    
-    'core.middleware.SchoolMiddleware',
-    'core.middleware.TimezoneMiddleware', 
+    # Custom middleware (FIXED order)
+    'core.middleware.SessionValidationMiddleware',  # Must come after SessionMiddleware
+    'core.middleware.SchoolMiddleware',  # Before TimezoneMiddleware
+    'core.middleware.TimezoneMiddleware',
     'core.middleware.NotificationMiddleware',
     'core.middleware.WhiteLabelMiddleware',
+    
+    # Allauth (must be after authentication middleware)
+    'allauth.account.middleware.AccountMiddleware',
+    
+    # Security and logging (end of chain)
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.RequestLoggingMiddleware',
     'core.middleware.ExceptionHandlingMiddleware',
@@ -86,9 +92,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',  # Required by allauth
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'core.context_processors.unified_context',
-                'users.context_processors.navigation_context',
-                
+                'shared.context_processors.unified_context',  # our unified context processor
             ],
         },
     },
@@ -97,7 +101,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-# In settings/base.py, replace the DATABASES section with:
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -131,7 +134,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Remove or comment out Whitenoise if not installed
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -142,7 +147,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
-# Allauth Configuration (ADD THIS SECTION)
+# Allauth Configuration
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
@@ -151,8 +156,8 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_SESSION_REMEMBER = True
 
 # Login URLs
-LOGIN_URL = '/accounts/login/'  # Allauth default
-LOGIN_REDIRECT_URL = '/'
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'  # Will be handled by dashboard_router
 LOGOUT_REDIRECT_URL = '/'
 
 # REST Framework
@@ -165,6 +170,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',  # Keep for development
     ],
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -176,39 +182,35 @@ REST_FRAMEWORK = {
     }
 }
 
-# CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "https://edusuite.com",
-    "https://*.edusuite.com",
-]
+# CORS settings (FIXED - enable for development)
+if os.getenv('DEBUG', 'True').lower() == 'true':
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "https://edusuite.com",
+        "https://*.edusuite.com",
+    ]
 
 ALLOWED_HOSTS = [
-    "102.212.246.160",
     "localhost",
     "127.0.0.1",
+    "102.212.246.160",  # Your server IP
 ]
 
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
+# Add wildcard for subdomains
+ALLOWED_HOSTS += ['.localhost', '127.0.0.1']  # Allow subdomains in development
 
 # Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Edusuite <noreply@edusuite.com>')
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Console for development
+
+# For production, use:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Edusuite <noreply@edusuite.com>')
 
 # Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', '')
@@ -224,9 +226,11 @@ CACHES = {
 }
 
 # Session configuration
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use db for now
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_NAME = 'edusuite_session'
+SESSION_SAVE_EVERY_REQUEST = True  # Helpful for session updates
 
 # Security settings (base - will be overridden in production)
 SECURE_BROWSER_XSS_FILTER = True
@@ -249,7 +253,7 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',  # Changed to DEBUG for development
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
@@ -264,14 +268,19 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'billing': {
+        'core': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': False,
         },
-        'attendance': {
+        'shared': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'users': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': False,
         },
     },
@@ -280,5 +289,10 @@ LOGGING = {
 # Create logs directory if it doesn't exist
 (BASE_DIR / 'logs').mkdir(exist_ok=True)
 
-# Import billing settings
-from .billing_settings import *
+# DEFAULT TIMEZONE for middleware
+DEFAULT_TIMEZONE = 'Africa/Lagos'
+
+# IMPORTANT: Remove or fix the broken import at the end
+# Comment out or fix this line:
+# from .billing_settings import *
+# If billing_settings.py doesn't exist, remove this line

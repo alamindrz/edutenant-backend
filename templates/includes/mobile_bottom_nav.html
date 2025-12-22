@@ -1,18 +1,16 @@
 <!-- templates/includes/mobile_bottom_nav.html -->
-{% load navigation_tags %}
-
 <nav class="navbar navbar-light bg-white border-top fixed-bottom d-lg-none mobile-bottom-nav" id="mobile-bottom-nav">
     <div class="container-fluid px-0">
         <div class="d-flex justify-content-around w-100">
-            {% get_navigation_items 'mobile_bottom' as mobile_items %}
-            {% for item in mobile_items %}
-                {% if item.url_name != '#' %}
-                <a href="{{ item.url }}" 
+            {% for item in mobile_navigation %}
+                {% if item.is_visible %}
+                {% if item.url_name != '#' and item.label != 'More' %}
+                <a href="{{ item.get_url }}" 
                    class="btn btn-link text-decoration-none bottom-nav-item py-2 flex-fill {% if item.is_active %}active{% endif %}"
-                   {% if item.disabled %}onclick="return false;"{% endif %}>
+                   data-bs-dismiss="offcanvas">
                     <div class="d-flex flex-column align-items-center position-relative">
                         <i class="bi bi-{{ item.icon }} fs-5 mb-1"></i>
-                        <small>{{ item.label }}</small>
+                        <small>{{ item.label|truncatechars:8 }}</small>
                         {% if item.badge_count > 0 %}
                         <span class="position-absolute notification-badge badge rounded-pill bg-{{ item.badge_color|default:'primary' }}">
                             {{ item.badge_count }}
@@ -33,7 +31,67 @@
                     </div>
                 </button>
                 {% endif %}
+                {% endif %}
             {% endfor %}
         </div>
     </div>
 </nav>
+
+<style>
+.mobile-bottom-nav {
+    height: 60px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1030;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-bs-theme="dark"] .mobile-bottom-nav {
+    background: rgba(33, 37, 41, 0.95) !important;
+    border-color: var(--bs-border-color);
+}
+
+.bottom-nav-item {
+    color: var(--bs-secondary);
+    transition: all 0.2s ease;
+    border-radius: 0;
+    min-height: 60px;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item.active {
+    color: var(--bs-primary) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.bottom-nav-item.active i {
+    color: var(--bs-primary) !important;
+}
+
+.bottom-nav-item small {
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+.notification-badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+    top: 5px;
+    right: 20px;
+}
+
+/* Ensure content doesn't hide behind nav */
+body {
+    padding-bottom: 60px !important;
+}
+
+@media (max-width: 575.98px) {
+    .bottom-nav-item small {
+        font-size: 0.65rem;
+    }
+    
+    .bottom-nav-item i {
+        font-size: 1.25rem !important;
+    }
+}
+</style>
