@@ -1,0 +1,6 @@
+ignore:
+  - "**/migrations/*.py"
+  - "venv/"
+  - ".venv/"
+  - "manage.py"
+  - "db.sqlite3"
