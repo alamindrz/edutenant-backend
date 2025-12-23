@@ -8,12 +8,12 @@ from django.core.cache import cache
 
 class IdempotencyService:
     """Service to ensure operations are processed only once."""
-    
+
     @staticmethod
     def get_key(event_type, identifier):
         """Generate unique key for idempotency."""
         return f"idempotency_{event_type}_{identifier}"
-    
+
     @staticmethod
     def check_and_lock(key, ttl=300):  # 5 minutes lock
         """
@@ -29,21 +29,21 @@ class IdempotencyService:
                 return False
             return True  # Proceed with processing
         return False  # Already being processed
-    
+
     @staticmethod
     def mark_processed(key, ttl=24*60*60):  # 24 hours
         """Mark operation as successfully processed."""
         cache.set(f"{key}_processed", True, ttl)
         cache.delete(f"{key}_lock")  # Release lock
-    
+
     @staticmethod
     def mark_failed(key):
         """Mark operation as failed (release lock for retry)."""
         cache.delete(f"{key}_lock")
-    
+
     @staticmethod
     def clear_all():
         """Clear all idempotency locks (for testing/maintenance)."""
         # This is destructive - use with caution
         # In production, you would use a more targeted approach
-        pass 
+        pass

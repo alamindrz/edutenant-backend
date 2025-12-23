@@ -36,11 +36,11 @@ class UserModelTest(TestCase):
             username="user1",
             password="pass123"
         )
-        
+
         user2 = User(
             email="duplicate@example.com",
             username="user2"
         )
-        
+
         with self.assertRaises(DjangoValidationError):
-            user2.clean() 
+            user2.clean()

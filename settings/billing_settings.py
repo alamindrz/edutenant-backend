@@ -117,7 +117,7 @@ def get_paystack_config():
     """Get Paystack configuration with validation."""
     if not PAYSTACK_SECRET_KEY:
         raise ValueError("PAYSTACK_SECRET_KEY is required for payment processing")
-    
+
     return {
         'public_key': PAYSTACK_PUBLIC_KEY,
         'secret_key': PAYSTACK_SECRET_KEY,
@@ -127,14 +127,14 @@ def get_paystack_config():
 def validate_billing_config():
     """Validate billing configuration on startup."""
     required_settings = ['PAYSTACK_PUBLIC_KEY', 'PAYSTACK_SECRET_KEY']
-    
+
     for setting in required_settings:
         if not getattr(settings, setting, None):
             print(f"Warning: {setting} is not configured. Payment features will not work.")
-    
+
     # Validate subscription plans
     for plan_id, plan in SUBSCRIPTION_PLANS.items():
         if plan['price_monthly'] < 0 or plan['price_yearly'] < 0:
             raise ValueError(f"Invalid price in {plan_id} plan")
-    
-    return True 
+
+    return True

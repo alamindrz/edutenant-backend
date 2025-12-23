@@ -4,7 +4,7 @@ from django.conf import settings
 
 class ThemeManager:
     """Manages theme switching and dark mode support."""
-    
+
     THEMES = {
         'light': {
             'primary': '#0d6efd',
@@ -29,7 +29,7 @@ class ThemeManager:
             'border-color': '#495057',
         },
     }
-    
+
     @staticmethod
     def get_theme(request):
         """Get current theme from session or default."""
@@ -37,27 +37,27 @@ class ThemeManager:
         theme_cookie = request.COOKIES.get('theme')
         if theme_cookie:
             return theme_cookie
-        
+
         # Check session
         theme_session = request.session.get('theme')
         if theme_session:
             return theme_session
-        
+
         # Default to light
         return 'light'
-    
+
     @staticmethod
     def set_theme(request, theme):
         """Set theme in session."""
         if theme in ['light', 'dark']:
             request.session['theme'] = theme
             request.session.modified = True
-    
+
     @staticmethod
     def get_theme_css(theme):
         """Generate CSS variables for the theme."""
         colors = ThemeManager.THEMES.get(theme, ThemeManager.THEMES['light'])
-        
+
         css = f"""
         :root {{
             --bs-primary: {colors['primary']};
@@ -71,7 +71,7 @@ class ThemeManager:
             --bs-border-color: {colors['border-color']};
         }}
         """
-        
+
         return css
 
 # core/context_processors.py - UPDATED
@@ -80,9 +80,9 @@ from core.theme import ThemeManager
 def theme_context(request):
     """Add theme context to all templates."""
     theme = ThemeManager.get_theme(request)
-    
+
     return {
         'current_theme': theme,
         'theme_css': ThemeManager.get_theme_css(theme),
         'is_dark_mode': theme == 'dark',
-    } 
+    }

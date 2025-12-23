@@ -6,7 +6,7 @@ Payment-related exceptions.
 
 class PaymentProcessingError(Exception):
     """Exception raised for payment processing errors."""
-    
+
     def __init__(self, message, user_friendly=False, original_error=None):
         self.message = message
         self.user_friendly = user_friendly
@@ -26,4 +26,4 @@ class InsufficientFundsError(Exception):
 
 class PaymentGatewayError(Exception):
     """Exception raised when payment gateway returns an error."""
-    pass 
+    pass

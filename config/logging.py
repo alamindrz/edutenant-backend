@@ -60,4 +60,4 @@ LOGGING = {
         'handlers': ['console', 'file', 'error_file'],
         'level': 'INFO',
     },
-} 
+}

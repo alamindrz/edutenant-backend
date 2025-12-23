@@ -8,14 +8,14 @@ register = template.Library()
 @register.simple_tag
 def get_navigation_items(context='default'):
     """Return navigation items based on context.
-    
+
     Args:
         context: 'default', 'mobile_bottom', etc.
-    
+
     Returns:
         List of navigation items with name, url, icon, active, etc.
     """
-    
+
     # Default public navigation items
     if context == 'mobile_bottom':
         return [
@@ -108,4 +108,4 @@ def get_url(item):
 @register.filter
 def has_badge(item):
     """Check if item has badge."""
-    return hasattr(item, 'badge_count') and item.badge_count > 0 
+    return hasattr(item, 'badge_count') and item.badge_count > 0

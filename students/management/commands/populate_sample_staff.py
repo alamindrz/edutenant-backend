@@ -10,20 +10,20 @@ User = get_user_model()
 
 class Command(BaseCommand):
     help = 'Populate sample staff data for testing'
-    
+
     def handle(self, *args, **options):
         school = School.objects.first()
-        
+
         if not school:
             self.stdout.write(self.style.ERROR('No school found. Please create a school first.'))
             return
-        
+
         # Sample staff data with enhanced fields
         staff_data = [
             # Principal
             {
                 'first_name': 'James', 'last_name': 'Wilson', 'email': 'principal@school.com',
-                'position': 'Principal', 'department': 'Administration', 
+                'position': 'Principal', 'department': 'Administration',
                 'gender': 'M', 'date_of_birth': date(1975, 5, 15),
                 'qualification': 'M.Ed Educational Management', 'years_of_experience': 15,
                 'phone_number': '08010000001', 'employment_type': 'full_time',
@@ -81,12 +81,12 @@ class Command(BaseCommand):
                 'marital_status': 'married', 'nationality': 'Nigerian', 'is_teaching_staff': False,
             },
         ]
-        
+
         staff_created = 0
         for i, staff_info in enumerate(staff_data):
             # Calculate employment date (1-10 years ago)
             employment_date = timezone.now().date() - timedelta(days=random.randint(365, 3650))
-            
+
             staff, created = Staff.objects.get_or_create(
                 school=school,
                 email=staff_info['email'],
@@ -111,11 +111,11 @@ class Command(BaseCommand):
                     'emergency_contact_relationship': 'Spouse',
                 }
             )
-            
+
             if created:
                 staff_created += 1
                 self.stdout.write(f'Created staff: {staff.full_name} - {staff.position}')
-        
+
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created {staff_created} staff members for {school.name}')
-        ) 
+        )

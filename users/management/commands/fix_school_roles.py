@@ -8,20 +8,20 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         schools = School.objects.all()
-        
+
         for school in schools:
             self.stdout.write(f"Checking roles for {school.name}...")
-            
+
             # Check if principal role exists
             if not Role.objects.filter(school=school, system_role_type='principal').exists():
                 self.stdout.write(f"  Creating missing principal role for {school.name}")
                 self.create_principal_role(school)
-            
+
             # Check if teacher role exists
             if not Role.objects.filter(school=school, system_role_type='teacher').exists():
                 self.stdout.write(f"  Creating missing teacher role for {school.name}")
                 self.create_teacher_role(school)
-            
+
             self.stdout.write(self.style.SUCCESS(f"✓ Completed role check for {school.name}"))
 
     def create_principal_role(self, school):
@@ -60,4 +60,4 @@ class Command(BaseCommand):
             can_manage_finances=False,
             can_view_reports=True,
             can_communicate=True,
-        ) 
+        )

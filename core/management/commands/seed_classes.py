@@ -208,7 +208,7 @@ class Command(BaseCommand):
 
             # Get appropriate class structure
             structure = CLASS_STRUCTURES.get(school.school_type, CLASS_STRUCTURES['primary'])
-            
+
             if reset and not dry_run:
                 # Delete existing classes and categories for this school
                 deleted_classes = Class.objects.filter(school=school).delete()
@@ -219,7 +219,7 @@ class Command(BaseCommand):
 
             # Get school principal for form master assignment
             principal = Staff.objects.filter(
-                school=school, 
+                school=school,
                 position__icontains='principal'
             ).first()
 
@@ -263,7 +263,7 @@ class Command(BaseCommand):
                         class_config=class_config,
                         principal=principal
                     )
-                    
+
                     if class_obj:
                         total_classes_created += 1
                         self.stdout.write(
@@ -289,32 +289,32 @@ class Command(BaseCommand):
         and manually handling code generation
         """
         from django.db import transaction
-        
+
         try:
             with transaction.atomic():
                 # Generate a base code
                 base_code = self.generate_class_code(school, category, class_config)
-                
+
                 # Ensure the code is unique
                 code = base_code
                 counter = 1
                 while Class.objects.filter(code=code).exists():
                     code = f"{base_code}_{counter}"
                     counter += 1
-                
+
                 # Check if class already exists with same name and school
                 existing_class = Class.objects.filter(
                     school=school,
                     category=category,
                     name=class_config['name']
                 ).first()
-                
+
                 if existing_class:
                     self.stdout.write(
                         self.style.WARNING(f"    Class already exists: {class_config['name']}")
                     )
                     return None
-                
+
                 # Create the class with the unique code
                 class_obj = Class(
                     school=school,
@@ -326,11 +326,11 @@ class Command(BaseCommand):
                     form_master=principal,
                     code=code  # Set the code explicitly to bypass auto-generation
                 )
-                
+
                 # Save without triggering code generation
                 class_obj.save()
                 return class_obj
-                
+
         except Exception as e:
             self.stdout.write(
                 self.style.ERROR(f"    Error creating class {class_config['name']}: {str(e)}")
@@ -345,15 +345,15 @@ class Command(BaseCommand):
         school_code = ''.join([word[0] for word in school.name.split()[:2]]).upper()
         if len(school_code) < 2:
             school_code = school.name[:2].upper()
-        
+
         # Use category section (first 2 chars)
         category_code = category.section[:2].upper()
-        
+
         # Use class name (remove spaces and take first 3 chars)
         class_code = class_config['name'].replace(' ', '')[:3].upper()
-        
+
         # Use room number as fallback if class code is not good
         if not class_code or class_code == class_config['name'][:3].upper():
             class_code = class_config['room_number']
-        
-        return f"{school_code}{category_code}{class_code}" 
+
+        return f"{school_code}{category_code}{class_code}"

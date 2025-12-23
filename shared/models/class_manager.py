@@ -56,4 +56,4 @@ class ClassManager:
         # Lazy import
         from core.models import Class
         classes = Class.objects.filter(school=school).order_by('name')
-        return [(c.id, c.name) for c in classes] 
+        return [(c.id, c.name) for c in classes]
