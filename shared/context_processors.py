@@ -119,4 +119,4 @@ def unified_context(request):
             'is_htmx': False,
         }
     
-    return context
+    return context 

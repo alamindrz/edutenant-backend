@@ -309,4 +309,4 @@ class SchoolSubscriptionAdmin(admin.ModelAdmin):
     days_remaining_display.short_description = 'Days Remaining'
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('school', 'plan')
+        return super().get_queryset(request).select_related('school', 'plan') 

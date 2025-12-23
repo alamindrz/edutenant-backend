@@ -15,4 +15,4 @@ class AttendanceConfig(AppConfig):
             from . import signals
             logger.info("Attendance app initialized successfully")
         except Exception as e:
-            logger.error(f"Error initializing attendance app: {str(e)}")
+            logger.error(f"Error initializing attendance app: {str(e)}") 

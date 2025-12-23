@@ -499,4 +499,4 @@ def connect_attendance_signals():
     """Explicitly connect all attendance signals."""
     # These are automatically connected via @receiver decorators,
     # but this function provides explicit control if needed
-    pass
+    pass 

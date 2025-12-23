@@ -17,4 +17,4 @@ def get_class_manager():
 def get_application_payment_service():
     """Safely get ApplicationPaymentService instance."""
     from shared.services.payment.application_fee import ApplicationPaymentService
-    return ApplicationPaymentService
+    return ApplicationPaymentService 

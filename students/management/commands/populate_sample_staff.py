@@ -118,4 +118,4 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created {staff_created} staff members for {school.name}')
-        )
+        ) 

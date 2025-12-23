@@ -65,4 +65,4 @@ class PaymentMethods:
     PAYSTACK = 'paystack'
     CASH = 'cash'
     TRANSFER = 'transfer'
-    WAIVER = 'waiver'
+    WAIVER = 'waiver' 

@@ -208,4 +208,4 @@ def unified_context(request):
             'BRAND_NAME': 'Edutenant',
         })
     
-    return context
+    return context 

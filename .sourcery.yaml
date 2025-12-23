@@ -1,5 +1,5 @@
 ignore:
-  - "**/migrations/*.py"
+  - "**/migrations/**/*.py"
   - "venv/"
   - ".venv/"
   - "manage.py"

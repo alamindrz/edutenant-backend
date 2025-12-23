@@ -1082,4 +1082,4 @@ def payment_stats_partial(request):
         ).aggregate(total=Sum('form__application_fee'))['total'] or 0,
     }
     
-    return render(request, 'admissions/partials/payment_stats.html', {'stats': stats})
+    return render(request, 'admissions/partials/payment_stats.html', {'stats': stats}) 

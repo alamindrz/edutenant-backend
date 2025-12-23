@@ -85,4 +85,4 @@ class FieldMapper:
                     return class_id.id, field
                 return class_id, field
         
-        return None, None
+        return None, None 

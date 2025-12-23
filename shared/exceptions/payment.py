@@ -26,4 +26,4 @@ class InsufficientFundsError(Exception):
 
 class PaymentGatewayError(Exception):
     """Exception raised when payment gateway returns an error."""
-    pass
+    pass 

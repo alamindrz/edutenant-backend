@@ -19,4 +19,4 @@ class SubjectAdmin(admin.ModelAdmin):
 admin.site.register(ClassCategory)
 admin.site.register(Class)
 admin.site.register(ClassSubject)
-admin.site.register(ClassCreationTemplate)
+admin.site.register(ClassCreationTemplate) 

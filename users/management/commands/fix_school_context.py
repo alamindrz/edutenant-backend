@@ -17,4 +17,4 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS(f'Successfully fixed school context for {users_fixed} users')
-        )
+        ) 

@@ -776,4 +776,4 @@ class ScoreForm(forms.ModelForm):
                     'score': f'Score ({score}) cannot exceed maximum score ({maximum_score}).'
                 })
         
-        return cleaned_data
+        return cleaned_data 

@@ -1094,4 +1094,4 @@ class StaffService:
             )
             
             logger.info(f"Invitation resent to {invitation.email}")
-            return invitation        
+            return invitation         

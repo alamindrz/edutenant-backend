@@ -136,4 +136,4 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             self.style.SUCCESS(f'Created {len(education_levels)} education levels and {len(class_groups)} class groups')
-        )
+        ) 

@@ -20,4 +20,4 @@ __all__ = [
     'FORM_TO_MODEL',
     'StatusChoices',
     'PaymentMethods'
-]
+] 

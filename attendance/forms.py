@@ -499,4 +499,4 @@ class AttendanceNotificationForm(forms.Form):
         initial=3,
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
         help_text="Notify after consecutive days of absence"
-    )
+    ) 

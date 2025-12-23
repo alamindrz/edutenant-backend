@@ -437,4 +437,4 @@ class TeacherPerformance(models.Model):
     def save(self, *args, **kwargs):
         """Recalculate scores before saving."""
         self.calculate_scores()
-        super().save(*args, **kwargs)
+        super().save(*args, **kwargs) 

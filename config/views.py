@@ -318,4 +318,4 @@ def debug_context(request):
         'page_title': 'Debug Context',
     }
     
-    return render(request, 'debug_context.html', context)
+    return render(request, 'debug_context.html', context) 

@@ -38,4 +38,4 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS('Term status update completed')
-        )
+        ) 

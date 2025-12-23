@@ -482,4 +482,4 @@ class NavigationBuilder:
             return False
         
         for item in navigation_items:
-            mark_item_and_children(item, current_path)
+            mark_item_and_children(item, current_path) 

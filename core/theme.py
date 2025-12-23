@@ -85,4 +85,4 @@ def theme_context(request):
         'current_theme': theme,
         'theme_css': ThemeManager.get_theme_css(theme),
         'is_dark_mode': theme == 'dark',
-    }
+    } 

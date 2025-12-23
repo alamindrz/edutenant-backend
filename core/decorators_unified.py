@@ -482,4 +482,4 @@ def _decorator_registry():
         'admin_only': admin_only,
         'htmx_required': htmx_required,
         'htmx_permission': htmx_permission_required,
-    }
+    } 

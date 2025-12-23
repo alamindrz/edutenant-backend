@@ -104,4 +104,4 @@ class SchoolAccountAdapter(DefaultAccountAdapter):
         logger = logging.getLogger(__name__)
         logger.warning(f"Failed login attempt for email: {kwargs.get('email', 'Unknown')}")
         
-        return super().authentication_failed(request, **kwargs)
+        return super().authentication_failed(request, **kwargs) 

@@ -535,4 +535,4 @@ class PaystackService:
                 return False, f"Paystack API error: {result.get('message', 'Unknown error')}"
                 
         except Exception as e:
-            return False, f"Paystack API unreachable: {str(e)}"
+            return False, f"Paystack API unreachable: {str(e)}" 

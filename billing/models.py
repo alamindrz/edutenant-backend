@@ -550,4 +550,4 @@ class SchoolSubscription(models.Model):
     @property
     def has_expired(self):
         """Check if subscription has expired."""
-        return self.current_period_end <= timezone.now()
+        return self.current_period_end <= timezone.now() 

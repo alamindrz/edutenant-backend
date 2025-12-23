@@ -1101,4 +1101,4 @@ def get_attendance_service() -> AttendanceService:
 student_service = StudentService()
 parent_service = ParentService()
 enrollment_service = EnrollmentService()
-attendance_service = AttendanceService()
+attendance_service = AttendanceService() 

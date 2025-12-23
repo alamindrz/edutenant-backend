@@ -108,4 +108,4 @@ def get_url(item):
 @register.filter
 def has_badge(item):
     """Check if item has badge."""
-    return hasattr(item, 'badge_count') and item.badge_count > 0
+    return hasattr(item, 'badge_count') and item.badge_count > 0 

@@ -106,4 +106,4 @@ urlpatterns = [
          views.check_email_availability_view, name='check_email_availability'),
     
 
-]
+] 

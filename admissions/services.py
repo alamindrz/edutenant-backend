@@ -896,4 +896,4 @@ class AdmissionService:
             stats['acceptance_rate'] = 0
             stats['enrollment_rate'] = 0
         
-        return stats
+        return stats 

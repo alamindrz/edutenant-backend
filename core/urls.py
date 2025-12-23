@@ -42,4 +42,4 @@ urlpatterns = [
     path('ajax/class-stats/', views.get_class_stats, name='get_class_stats'),
     path('ajax/class-bulk-actions/', views.class_bulk_actions_view, name='class_bulk_actions'),
     path('ajax/school-overview-stats/', views.school_overview_stats, name='school_overview_stats'),
-]
+] 

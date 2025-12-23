@@ -1918,4 +1918,4 @@ def bulk_staff_actions_view(request):
                 'staff_members': staff_members
             })
     
-    return redirect('users:staff_list')
+    return redirect('users:staff_list') 

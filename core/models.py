@@ -924,4 +924,4 @@ class ClassCreationTemplate(models.Model):
         except Exception as e:
             logger.error(f"Error creating classes from template {self.template_name}: {e}")
         
-        return created_classes
+        return created_classes 

@@ -43,4 +43,4 @@ class SubdomainMiddlewareTest(TestCase):
         request.META['HTTP_HOST'] = 'invalid.edusuite.localhost:8000'
         
         self.middleware(request)
-        self.assertIsNone(request.school)
+        self.assertIsNone(request.school) 

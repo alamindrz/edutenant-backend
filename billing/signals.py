@@ -271,4 +271,4 @@ def handle_transaction_save_errors(sender, instance, **kwargs):
 def get_billing_service():
     """Get billing service with lazy import to avoid circular dependencies."""
     from .services import BillingService
-    return BillingService()
+    return BillingService() 

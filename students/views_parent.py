@@ -712,4 +712,4 @@ def parent_notifications_ajax(request):
         return JsonResponse({
             'status': 'error',
             'message': 'Error loading notifications',
-        }, status=500)
+        }, status=500) 

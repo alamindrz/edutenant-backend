@@ -743,4 +743,4 @@ class TeacherApplication(models.Model):
         self.status = 'rejected'
         self.status_changed_by = rejected_by
         self.status_changed_at = timezone.now()
-        self.save()
+        self.save() 

@@ -75,4 +75,4 @@ HTMX patterns that should be included in templates:
    - Use: hx-get="/students/ajax/stats/"
    
 Note: All HTMX endpoints should be documented in template comments
-"""
+""" 

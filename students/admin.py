@@ -627,4 +627,4 @@ class AcademicTermAdmin(admin.ModelAdmin):
     def is_current_display(self, obj):
         return "Yes" if obj.is_current else "No"
     is_current_display.short_description = 'Current Term'
-    is_current_display.boolean = True
+    is_current_display.boolean = True 

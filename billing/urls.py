@@ -37,4 +37,4 @@ urlpatterns = [
     # HTMX Endpoints
     path('htmx/invoices/table/', views.invoice_table_partial, name='invoice_table_partial'),
     path('htmx/parent/invoices/table/', views.parent_invoice_table_partial, name='parent_invoice_table_partial'),
-]
+] 

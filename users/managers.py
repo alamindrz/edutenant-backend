@@ -186,4 +186,4 @@ class UserManager(BaseUserManager):
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
             Q(**{f'{PARENT_PHONE_FIELD}__icontains': query})  # ✅ Use shared constant
-        ).filter(is_active=True)
+        ).filter(is_active=True) 

@@ -54,4 +54,4 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created 3 sample terms for {school.name}')
-        )
+        ) 

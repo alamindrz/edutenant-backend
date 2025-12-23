@@ -8,4 +8,4 @@ if DJANGO_ENV == "production":
     from .production import *
 else:
     print("🛠️ Using DEVELOPMENT settings")
-    from .development import *
+    from .development import * 

@@ -923,4 +923,4 @@ def get_attendance_stats_api(request):
         return JsonResponse({
             'success': False,
             'error': 'Failed to load attendance statistics'
-        }, status=500)
+        }, status=500) 

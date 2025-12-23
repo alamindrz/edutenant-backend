@@ -40,4 +40,4 @@ __all__ = [
     # Models
     'ClassManager',
     'class_manager',
-]
+] 

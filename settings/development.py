@@ -107,4 +107,4 @@ CACHES['default'] = {
 }
 
 # Allauth development settings
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # Disable email verification in development
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Disable email verification in development 

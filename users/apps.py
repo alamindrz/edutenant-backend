@@ -10,4 +10,4 @@ class UsersConfig(AppConfig):
         try:
             import users.signals  # noqa
         except ImportError:
-            pass
+            pass 

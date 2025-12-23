@@ -759,4 +759,4 @@ class AcademicYearForm(forms.ModelForm):
                     'name': 'An academic year with this name already exists in this school.'
                 })
         
-        return cleaned_data
+        return cleaned_data 

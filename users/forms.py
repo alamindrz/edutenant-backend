@@ -629,4 +629,4 @@ class ClassMonitorForm(forms.ModelForm):
             self.fields['student'].queryset = Student.objects.filter(
                 current_class=self.class_instance, 
                 is_active=True
-            ).order_by('first_name', 'last_name')
+            ).order_by('first_name', 'last_name') 

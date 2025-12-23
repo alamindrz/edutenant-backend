@@ -492,4 +492,4 @@ class RequestLoggingMiddleware:
 
     def _get_client_ip(self, request) -> str:
         xff = request.META.get("HTTP_X_FORWARDED_FOR")
-        return xff.split(",")[0] if xff else request.META.get("REMOTE_ADDR", "unknown")
+        return xff.split(",")[0] if xff else request.META.get("REMOTE_ADDR", "unknown") 

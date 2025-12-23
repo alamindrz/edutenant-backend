@@ -1002,4 +1002,4 @@ def download_invoice_view(request, invoice_id):
     response.write(f"Amount: ₦{invoice.total_amount}\n")
     response.write(f"Status: {invoice.status}\n")
     
-    return response
+    return response 

@@ -13,4 +13,4 @@ def filter_status(queryset, status):
 @register.filter
 def dict_values(dictionary):
     """Get dictionary values."""
-    return dictionary.values() if dictionary else []
+    return dictionary.values() if dictionary else [] 

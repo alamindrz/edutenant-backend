@@ -154,4 +154,4 @@ def feature_flags_context(request):
         'enable_parent_portal': getattr(settings, 'ENABLE_PARENT_PORTAL', True),
     }
     
-    return context
+    return context 

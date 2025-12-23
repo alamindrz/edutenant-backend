@@ -993,4 +993,4 @@ def get_academic_year_service() -> AcademicYearService:
 class_service = ClassManagementService()
 category_service = ClassCategoryService()
 subject_service = SubjectService()
-academic_year_service = AcademicYearService()
+academic_year_service = AcademicYearService() 

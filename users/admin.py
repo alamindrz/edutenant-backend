@@ -151,4 +151,4 @@ class OpenPositionAdmin(admin.ModelAdmin):
         (None, {'fields': ('school', 'title', 'department', 'is_active')}),
         ('Details', {'fields': ('description', 'requirements')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
-    )
+    ) 

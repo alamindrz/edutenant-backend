@@ -848,4 +848,4 @@ def academic_term_delete_view(request, term_id):
             return redirect('students:academic_term_detail', term_id=term.id)
     
     context = {'term': term}
-    return render(request, 'students/academic_term_delete.html', context)
+    return render(request, 'students/academic_term_delete.html', context) 

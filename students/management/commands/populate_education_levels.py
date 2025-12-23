@@ -56,4 +56,4 @@ class Command(BaseCommand):
         
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created {created_count} education levels')
-        )
+        ) 

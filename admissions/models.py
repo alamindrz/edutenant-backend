@@ -616,4 +616,4 @@ class Admission(models.Model):
         self.save()
         
         logger.info(f"Admission letter sent via {method} for {self.admission_number}")
-        return True
+        return True 

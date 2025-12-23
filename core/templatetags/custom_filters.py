@@ -109,4 +109,4 @@ def percentage(value, arg=100):
     try:
         return f"{float(value) * 100:.1f}%"
     except (ValueError, TypeError):
-        return "0%"
+        return "0%" 

@@ -60,4 +60,4 @@ class Command(BaseCommand):
             can_manage_finances=False,
             can_view_reports=True,
             can_communicate=True,
-        )
+        ) 

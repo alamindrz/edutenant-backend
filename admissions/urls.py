@@ -38,4 +38,4 @@ urlpatterns = [
     path('ajax/application-filters/', views.application_filters_partial, name='application_filters_partial'),
     path('ajax/admission-stats/', views.admission_stats_partial, name='admission_stats_partial'),
     path('ajax/payment-stats/', views.payment_stats_partial, name='payment_stats_partial'),
-]
+] 

@@ -800,4 +800,4 @@ class Score(models.Model):
             )
         
         if self.maximum_score <= 0:
-            raise ValidationError("Maximum score must be greater than 0.")
+            raise ValidationError("Maximum score must be greater than 0.") 

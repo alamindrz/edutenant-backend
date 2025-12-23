@@ -16,4 +16,4 @@ class BillingConfig(AppConfig):
             from . import signals
             logger.info("Billing app initialized successfully")
         except Exception as e:
-            logger.error(f"Error initializing billing app: {str(e)}")
+            logger.error(f"Error initializing billing app: {str(e)}") 

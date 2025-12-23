@@ -32,4 +32,4 @@ class RolePermissionError(SchoolManagementException):
 class SchoolOnboardingError(SchoolManagementException):
     """Errors during school onboarding and setup."""
     def __init__(self, message=None, user_friendly=False, details=None):
-        super().__init__(message or "School setup failed", user_friendly, details, "ONBOARDING_ERROR")
+        super().__init__(message or "School setup failed", user_friendly, details, "ONBOARDING_ERROR") 

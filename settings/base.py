@@ -295,4 +295,4 @@ DEFAULT_TIMEZONE = 'Africa/Lagos'
 # IMPORTANT: Remove or fix the broken import at the end
 # Comment out or fix this line:
 # from .billing_settings import *
-# If billing_settings.py doesn't exist, remove this line# Triggering Sourcery Scan
+# If billing_settings.py doesn't exist, remove this line# Triggering Sourcery Scan 

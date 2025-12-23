@@ -356,4 +356,4 @@ class Command(BaseCommand):
         if not class_code or class_code == class_config['name'][:3].upper():
             class_code = class_config['room_number']
         
-        return f"{school_code}{category_code}{class_code}"
+        return f"{school_code}{category_code}{class_code}" 

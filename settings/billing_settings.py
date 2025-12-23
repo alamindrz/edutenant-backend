@@ -137,4 +137,4 @@ def validate_billing_config():
         if plan['price_monthly'] < 0 or plan['price_yearly'] < 0:
             raise ValueError(f"Invalid price in {plan_id} plan")
     
-    return True
+    return True 

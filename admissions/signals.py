@@ -90,4 +90,4 @@ def validate_admission_dates(sender, instance, **kwargs):
         raise ValueError("Offer expiration date cannot be in the past")
     
     if instance.enrollment_deadline and instance.enrollment_deadline < timezone.now():
-        raise ValueError("Enrollment deadline cannot be in the past")
+        raise ValueError("Enrollment deadline cannot be in the past") 

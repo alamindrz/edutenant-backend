@@ -1094,4 +1094,4 @@ def class_export_view(request):
         messages.info(request, "Excel export coming soon. Using CSV for now.")
         return redirect(f"{request.path}?format=csv")
     
-    return redirect('core:class_list')
+    return redirect('core:class_list') 

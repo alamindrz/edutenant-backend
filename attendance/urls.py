@@ -71,4 +71,4 @@ path('api/checkout/', views.api_student_checkout, name='api_student_checkout'),
 
 # Notifications
 path('notifications/', views.attendance_notifications_view, name='attendance_notifications'),
-"""
+""" 
