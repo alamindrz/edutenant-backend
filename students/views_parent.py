@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.apps import apps
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 
 # SHARED IMPORTS
 from shared.decorators.permissions import require_role, require_school_context

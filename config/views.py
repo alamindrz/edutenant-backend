@@ -107,7 +107,7 @@ def school_overview_view(request, school_id):
     context = {
         'school': school,
         'page_title': school.name,
-        'page_subtitle': f'{school.get_school_type_display()} • {school.city or school.address}',
+        'page_subtitle': f'{school.get_school_type_display()} • {school.address}',
     }
 
     return render(request, 'schools/overview.html', context)

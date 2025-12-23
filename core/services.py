@@ -12,6 +12,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.apps import apps
+from django.db.models import Q, Sum, Avg, F
+
 
 # SHARED IMPORTS
 from shared.constants import CLASS_MODEL_PATH, StatusChoices

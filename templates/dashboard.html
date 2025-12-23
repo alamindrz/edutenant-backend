@@ -83,7 +83,7 @@
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <a href="{% url 'academics:core:class_list' %}" class="card text-decoration-none border-0 bg-success bg-opacity-10 hover-lift">
+            <a href="{% url 'core:class_list' %}" class="card text-decoration-none border-0 bg-success bg-opacity-10 hover-lift">
                 <div class="card-body text-center d-flex flex-column py-4">
                     <div class="icon-lg bg-success text-white rounded-circle mb-3 mx-auto">
                         <i class="bi bi-journal fs-3"></i>
@@ -145,7 +145,7 @@
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <a href="{% url 'academics:core:class_list' %}" class="card text-decoration-none border-0 bg-warning bg-opacity-10 hover-lift">
+            <a href="{% url 'core:class_list' %}" class="card text-decoration-none border-0 bg-warning bg-opacity-10 hover-lift">
                 <div class="card-body text-center d-flex flex-column py-4">
                     <div class="icon-lg bg-warning text-white rounded-circle mb-3 mx-auto">
                         <i class="bi bi-journal fs-3"></i>
@@ -280,14 +280,14 @@
                         <i class="bi bi-clock-history me-2 text-primary"></i>Recent Activity
                     </h5>
                     <button class="btn btn-sm btn-outline-primary"
-                            hx-get="{% url 'recent_activity' %}"
+                            hx-get="{% url 'users:recent_activity' %}"
                             hx-target="#activity-container"
                             hx-indicator="#activity-spinner">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </div>
                 <div class="card-body p-0">
-                    <div id="activity-container" hx-get="{% url 'recent_activity' %}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+                    <div id="activity-container" hx-get="{% url 'users:recent_activity' %}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
                         <div class="text-center text-muted py-5">
                             <div class="spinner-border spinner-border-sm text-primary me-2" id="activity-spinner"></div>
                             Loading recent activity...

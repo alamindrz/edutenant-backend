@@ -7,7 +7,7 @@ from allauth.account.adapter import DefaultAccountAdapter
 from django.urls import reverse
 from django.conf import settings
 from django.core.exceptions import ValidationError
-
+from django.apps import apps
 # SHARED IMPORTS
 from shared.constants import PARENT_PHONE_FIELD
 

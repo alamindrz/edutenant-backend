@@ -1,0 +1,512 @@
+<!-- templates/schools/overview.html -->
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ school.name }} - School Overview{% endblock %}
+
+{% block page_title %}{{ school.name }}{% endblock %}
+{% block page_subtitle %}{{ school.get_school_type_display }} • {{ school.city|default:school.address }}{% endblock %}
+
+{% block page_header_actions %}
+<div class="d-flex gap-2">
+    {% if request.user.is_authenticated %}
+        {% if not is_member %}
+        <a href="{% url 'users:apply_to_school' school.id %}" class="btn btn-primary">
+            <i class="bi bi-send me-2"></i>Apply Now
+        </a>
+        {% else %}
+        <a href="{% url 'users:dashboard' %}" class="btn btn-success">
+            <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+        </a>
+        {% endif %}
+    {% else %}
+        <a href="{% url 'account_signup' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus me-2"></i>Join to Apply
+        </a>
+        <a href="{% url 'account_login' %}" class="btn btn-outline-primary">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- School Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            {% if school.logo %}
+                            <img src="{{ school.logo.url }}" alt="{{ school.name }}" 
+                                 class="img-fluid rounded" style="max-height: 120px;">
+                            {% else %}
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 120px; height: 120px;">
+                                <i class="bi bi-building fs-1"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <h1 class="h3 mb-2">{{ school.name }}</h1>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="badge bg-primary">
+                                    <i class="bi bi-mortarboard me-1"></i>
+                                    {{ school.get_school_type_display }}
+                                </span>
+                                {% if school.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Active
+                                </span>
+                                {% endif %}
+                                {% if school.application_form_enabled %}
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-door-open me-1"></i>Accepting Applications
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row g-3">
+                                {% if school.address %}
+                                <div class="col-lg-6">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-geo-alt text-muted me-2 mt-1"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Location</small>
+                                            <span class="d-block">{{ school.address }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if school.phone %}
+                                <div class="col-lg-6">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-telephone text-muted me-2 mt-1"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Contact</small>
+                                            <span class="d-block">{{ school.phone }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if school.email %}
+                                <div class="col-lg-6">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-envelope text-muted me-2 mt-1"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Email</small>
+                                            <a href="mailto:{{ school.email }}" class="text-decoration-none">{{ school.email }}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {% if school.website %}
+                                <div class="col-lg-6">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-globe text-muted me-2 mt-1"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Website</small>
+                                            <a href="{{ school.website }}" target="_blank" class="text-decoration-none">{{ school.website|truncatechars:30 }}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-md-end mt-3 mt-md-0">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" onclick="shareSchool({{ school.id }})">
+                                    <i class="bi bi-share me-1"></i> Share
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="followSchool({{ school.id }})">
+                                    <i class="bi bi-bookmark me-1"></i> Follow
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - School Info -->
+        <div class="col-lg-8">
+            <!-- About Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>About</h5>
+                </div>
+                <div class="card-body">
+                    {% if school.description %}
+                        <p class="mb-0">{{ school.description|linebreaks }}</p>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-info-circle text-muted fs-1 mb-3"></i>
+                            <p class="text-muted">No description provided.</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if school.mission_statement %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-muted mb-2">Mission Statement</h6>
+                        <p class="fst-italic mb-0">{{ school.mission_statement }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>At a Glance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-primary mb-1">
+                                    {{ stats.student_count|default:"0"|intcomma }}
+                                </h3>
+                                <small class="text-muted">Students</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-success mb-1">
+                                    {{ stats.staff_count|default:"0"|intcomma }}
+                                </h3>
+                                <small class="text-muted">Staff</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-info mb-1">
+                                    {{ stats.class_count|default:"0"|intcomma }}
+                                </h3>
+                                <small class="text-muted">Classes</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h3 class="text-warning mb-1">
+                                    {{ stats.active_applications|default:"0"|intcomma }}
+                                </h3>
+                                <small class="text-muted">Applications</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Quick Actions & Info -->
+        <div class="col-lg-4">
+            <!-- Application Status -->
+            <div class="card mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-door-open me-2"></i>Admissions</h5>
+                </div>
+                <div class="card-body">
+                    {% if school.application_form_enabled %}
+                        <div class="text-center mb-4">
+                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 d-inline-block mb-3">
+                                <i class="bi bi-check-circle-fill fs-1"></i>
+                            </div>
+                            <h5 class="mb-2">Accepting Applications</h5>
+                            <p class="text-muted mb-0">This school is currently accepting new applications.</p>
+                        </div>
+                        
+                        {% if request.user.is_authenticated %}
+                            {% if is_member %}
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                You're already a member of this school.
+                            </div>
+                            <a href="{% url 'users:dashboard' %}" class="btn btn-success w-100">
+                                <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+                            </a>
+                            {% else %}
+                            <a href="{% url 'users:apply_to_school' school.id %}" class="btn btn-primary w-100 mb-2">
+                                <i class="bi bi-send me-2"></i>Start Application
+                            </a>
+                            <small class="text-muted d-block text-center">
+                                <i class="bi bi-clock me-1"></i>Applications reviewed within 48 hours
+                            </small>
+                            {% endif %}
+                        {% else %}
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'account_signup' %}?next={{ request.path }}" class="btn btn-primary">
+                                    <i class="bi bi-person-plus me-2"></i>Sign Up to Apply
+                                </a>
+                                <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle p-3 d-inline-block mb-3">
+                                <i class="bi bi-x-circle-fill fs-1"></i>
+                            </div>
+                            <h5 class="mb-2">Applications Closed</h5>
+                            <p class="text-muted mb-0">This school is not currently accepting applications.</p>
+                        </div>
+                        <button class="btn btn-outline-secondary w-100" disabled>
+                            <i class="bi bi-envelope me-2"></i>Notify When Open
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Important Dates -->
+            <div class="card mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Key Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% if school.founded_year %}
+                        <div class="list-group-item px-0 border-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Founded</span>
+                                <span class="fw-medium">{{ school.founded_year }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="list-group-item px-0 border-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">School Type</span>
+                                <span class="fw-medium">{{ school.get_school_type_display }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="list-group-item px-0 border-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Curriculum</span>
+                                <span class="fw-medium">{{ school.curriculum|default:"National" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="list-group-item px-0 border-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Medium</span>
+                                <span class="fw-medium">{{ school.medium_of_instruction|default:"English" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="list-group-item px-0 border-0">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">On Edutenant</span>
+                                <span class="fw-medium">{{ school.created_at|timesince }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Actions -->
+            <div class="card">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Get in Touch</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if school.email %}
+                        <a href="mailto:{{ school.email }}" class="btn btn-outline-primary">
+                            <i class="bi bi-envelope me-2"></i>Send Email
+                        </a>
+                        {% endif %}
+                        
+                        {% if school.phone %}
+                        <a href="tel:{{ school.phone }}" class="btn btn-outline-success">
+                            <i class="bi bi-telephone me-2"></i>Call Now
+                        </a>
+                        {% endif %}
+                        
+                        {% if school.website %}
+                        <a href="{{ school.website }}" target="_blank" class="btn btn-outline-info">
+                            <i class="bi bi-globe me-2"></i>Visit Website
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Schools -->
+    {% if similar_schools %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">Similar Schools</h4>
+                <a href="{% url 'school_discovery' %}" class="btn btn-outline-primary btn-sm">
+                    View All <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
+            <div class="row">
+                {% for similar in similar_schools %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start mb-3">
+                                {% if similar.logo %}
+                                <img src="{{ similar.logo.url }}" alt="{{ similar.name }}" 
+                                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center me-3" 
+                                     style="width: 50px; height: 50px;">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ similar.name|truncatechars:30 }}</h6>
+                                    <small class="text-muted">{{ similar.get_school_type_display }}</small>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                {{ similar.description|truncatechars:80|default:"A leading educational institution." }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                    <i class="bi bi-geo-alt me-1"></i> {{ similar.city|default:"Location" }}
+                                </span>
+                                <a href="{% url 'school_overview' similar.id %}" class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.school-card {
+    transition: all 0.3s ease;
+}
+
+.school-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.list-group-item {
+    padding: 0.75rem 0;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function shareSchool(schoolId) {
+    const schoolUrl = window.location.href;
+    const schoolName = '{{ school.name|escapejs }}';
+    
+    if (navigator.share) {
+        navigator.share({
+            title: `Check out ${schoolName} on Edutenant`,
+            text: `I found ${schoolName} on Edutenant!`,
+            url: schoolUrl,
+        }).then(() => {
+            showToast('Shared successfully!', 'success');
+        }).catch(console.error);
+    } else {
+        navigator.clipboard.writeText(schoolUrl).then(() => {
+            showToast('Link copied to clipboard!', 'success');
+        }).catch(() => {
+            prompt('Copy this link:', schoolUrl);
+        });
+    }
+}
+
+function followSchool(schoolId) {
+    // Implement follow functionality
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Following...';
+    button.disabled = true;
+    
+    // Simulate API call
+    setTimeout(() => {
+        button.innerHTML = '<i class="bi bi-bookmark-check me-1"></i> Following';
+        button.classList.remove('btn-outline-secondary');
+        button.classList.add('btn-secondary');
+        button.disabled = false;
+        
+        showToast('You are now following this school!', 'success');
+        
+        // You would typically make an AJAX call here:
+        // fetch(`/api/schools/${schoolId}/follow/`, { method: 'POST' })
+    }, 1000);
+}
+
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    // Add to toast container
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+    
+    container.appendChild(toast);
+    
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove after hide
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+});
+</script>
+{% endblock %}
