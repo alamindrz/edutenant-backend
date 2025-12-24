@@ -1,210 +1,28 @@
-<!-- templates/includes/desktop_sidebar.html -->
-<div class="offcanvas-body p-0 h-100 d-flex flex-column">
-    <!-- School Header -->
-    <div class="p-3 border-bottom">
-        <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-                {% if current_school and current_school.logo %}
-                <img src="{{ current_school.logo.url }}" alt="{{ current_school.name }}" 
-                     class="rounded" style="height: 40px; width: 40px; object-fit: contain;">
-                {% else %}
-                <div class="rounded bg-primary d-flex align-items-center justify-content-center" 
-                     style="height: 40px; width: 40px;">
-                    <i class="bi bi-building text-white fs-5"></i>
-                </div>
-                {% endif %}
-            </div>
-            <div class="flex-grow-1 ms-3">
-                <h6 class="mb-0 fw-bold text-truncate" title="{{ current_school.name|default:'No School' }}">
-                    {{ current_school.name|default:"Select a School" }}
-                </h6>
-                {% if user_role %}
-                <small class="text-muted">{{ user_role.name }}</small>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Stats (only if we have a school) -->
-    {% if current_school %}
-    <div class="p-3 border-bottom">
-        <div class="row g-2 text-center">
-            <div class="col-6">
-                <div class="p-2 bg-light rounded">
-                    <div class="h6 mb-0 text-primary">
-                        {{ stats.student_count|default:"0" }}
+<nav class="nav flex-column py-3 sidebar-desktop">
+    {% for item in desktop_navigation %}
+        {% if item.children %}
+            <div class="mb-1">
+                <button class="nav-link w-100 border-0 bg-transparent d-flex align-items-center {% if item.is_active %}active{% endif %}" 
+                        data-bs-toggle="collapse" data-bs-target="#collapse-{{ forloop.counter }}">
+                    <i class="bi bi-{{ item.icon }} me-3"></i>
+                    <span>{{ item.label }}</span>
+                    <i class="bi bi-chevron-down ms-auto small"></i>
+                </button>
+                <div class="collapse {% if item.is_active %}show{% endif %}" id="collapse-{{ forloop.counter }}">
+                    <div class="nav flex-column ms-4 border-start">
+                        {% for child in item.children %}
+                            <a href="{{ child.get_url }}" class="nav-link small py-1 {% if child.is_active %}text-primary fw-bold{% endif %}">
+                                {{ child.label }}
+                            </a>
+                        {% endfor %}
                     </div>
-                    <small class="text-muted">Students</small>
                 </div>
             </div>
-            <div class="col-6">
-                <div class="p-2 bg-light rounded">
-                    <div class="h6 mb-0 text-success">
-                        {{ stats.staff_count|default:"0" }}
-                    </div>
-                    <small class="text-muted">Staff</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Main Navigation -->
-    <div class="flex-grow-1 overflow-auto">
-        <nav class="nav flex-column py-2">
-            {% for item in desktop_navigation %}
-                {% if item.children %}
-                    <!-- Parent item with children -->
-                    <div class="nav-item">
-                        <a class="nav-link px-3 py-2 d-flex align-items-center" 
-                           data-bs-toggle="collapse" 
-                           href="#collapse-{{ forloop.counter }}"
-                           role="button">
-                            <i class="bi bi-{{ item.icon }} me-3"></i>
-                            <span>{{ item.label }}</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <div class="collapse" id="collapse-{{ forloop.counter }}">
-                            <div class="ps-4">
-                                {% for child in item.children %}
-                                    {% if child.is_visible %}
-                                    <a href="{{ child.get_url }}" 
-                                       class="nav-link px-3 py-2 d-flex align-items-center {% if child.is_active %}active{% endif %}">
-                                        <i class="bi bi-{{ child.icon }} me-3"></i>
-                                        <span>{{ child.label }}</span>
-                                        {% if child.badge_count > 0 %}
-                                        <span class="badge bg-{{ child.badge_color|default:'primary' }} rounded-pill ms-auto">
-                                            {{ child.badge_count }}
-                                        </span>
-                                        {% endif %}
-                                    </a>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <!-- Single item -->
-                    {% if item.is_visible %}
-                    <a href="{{ item.get_url }}" 
-                       class="nav-link px-3 py-2 d-flex align-items-center {% if item.is_active %}active{% endif %}">
-                        <i class="bi bi-{{ item.icon }} me-3"></i>
-                        <span>{{ item.label }}</span>
-                        {% if item.badge_count > 0 %}
-                        <span class="badge bg-{{ item.badge_color|default:'primary' }} rounded-pill ms-auto">
-                            {{ item.badge_count }}
-                        </span>
-                        {% endif %}
-                    </a>
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
-            
-            <!-- Theme Toggle -->
-            <button class="nav-link px-3 py-2 d-flex align-items-center border-0 bg-transparent" 
-                    onclick="toggleDarkMode()">
-                <i class="bi bi-moon me-3"></i>
-                <span id="theme-toggle-sidebar">Dark Mode</span>
-            </button>
-        </nav>
-    </div>
-
-    <!-- Sidebar Footer -->
-    <div class="border-top p-3">
-        <div class="d-grid gap-2">
-            <a href="{% url 'users:profile' %}" class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-person me-2"></i>My Profile
+        {% else %}
+            <a href="{{ item.get_url }}" class="nav-link d-flex align-items-center mb-1 {% if item.is_active %}active{% endif %}">
+                <i class="bi bi-{{ item.icon }} me-3"></i>
+                <span>{{ item.label }}</span>
             </a>
-            <a href="{% url 'users:school_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-buildings me-2"></i>All Schools
-            </a>
-        </div>
-    </div>
-</div>
-
-<style>
-.sidebar-desktop {
-    background: var(--bs-body-bg);
-    border-right: 1px solid var(--bs-border-color);
-}
-
-.nav-link {
-    color: var(--bs-secondary);
-    transition: all 0.2s ease;
-    border-radius: 0.5rem;
-    margin: 0.125rem 0.5rem;
-}
-
-.nav-link:hover:not(.active) {
-    background-color: var(--bs-primary-bg-subtle);
-    color: var(--bs-primary);
-}
-
-.nav-link.active {
-    background-color: var(--bs-primary);
-    color: white !important;
-}
-
-.nav-link.active i {
-    color: white !important;
-}
-
-.nav-link.collapsed .bi-chevron-down {
-    transform: rotate(0deg);
-    transition: transform 0.3s ease;
-}
-
-.nav-link:not(.collapsed) .bi-chevron-down {
-    transform: rotate(180deg);
-}
-
-/* Dark mode adjustments */
-[data-bs-theme="dark"] .sidebar-desktop {
-    background: var(--bs-dark);
-}
-
-[data-bs-theme="dark"] .bg-light {
-    background-color: rgba(var(--bs-dark-rgb), 0.5) !important;
-}
-
-[data-bs-theme="dark"] .nav-link:hover:not(.active) {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Collapse children styling */
-.collapse .nav-link {
-    margin: 0.125rem 0;
-    padding-left: 3.5rem !important;
-    font-size: 0.875rem;
-}
-
-.collapse .nav-link:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.1);
-}
-</style>
-
-<script>
-// Initialize sidebar collapse behavior
-document.addEventListener('DOMContentLoaded', function() {
-    // Set active collapse based on current page
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.sidebar-desktop .nav-link[href]');
-    
-    navLinks.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href && href !== '#' && currentPath.startsWith(href)) {
-            link.classList.add('active');
-            
-            // Expand parent if this is a child item
-            const parentCollapse = link.closest('.collapse');
-            if (parentCollapse) {
-                parentCollapse.classList.add('show');
-                const parentToggle = document.querySelector(`[href="#${parentCollapse.id}"]`);
-                if (parentToggle) {
-                    parentToggle.classList.remove('collapsed');
-                }
-            }
-        }
-    });
-});
-</script>
+        {% endif %}
+    {% endfor %}
+</nav>

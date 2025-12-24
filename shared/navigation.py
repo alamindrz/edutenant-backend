@@ -1,7 +1,7 @@
 """
-UNIFIED NAVIGATION SYSTEM - Fixed with resilient URL resolution
+UNIFIED NAVIGATION SYSTEM - FINAL VERSION
+Handles: Role-Based Access, School Context, Mobile Visibility, and Resilient URLs.
 """
-
 import logging
 from django.urls import reverse, NoReverseMatch
 from django.apps import apps
@@ -9,75 +9,54 @@ from django.apps import apps
 logger = logging.getLogger(__name__)
 
 class NavigationItem:
-    def __init__(self, label, url_name=None, url=None, icon=None, permission=None,
-                 badge_count=0, badge_color='primary', system_role_types=None,
-                 is_public=False, children=None, requires_school=False,
-                 namespace=None, app_name=None, exact_match=False):
+    def __init__(self, label, url_name=None, url=None, icon='circle', permission=None,
+                 system_role_types=None, is_public=False, children=None, 
+                 requires_school=False, namespace=None, mobile_only=False, 
+                 hide_on_mobile=False):
         self.label = label
         self.url_name = url_name
         self.url = url
-        self.icon = icon or 'circle'
+        self.icon = icon
         self.permission = permission
-        self.badge_count = badge_count
-        self.badge_color = badge_color
         self.system_role_types = system_role_types or []
         self.is_public = is_public
         self.children = children or []
         self.requires_school = requires_school
         self.namespace = namespace
-        self.app_name = app_name
-        self.exact_match = exact_match
+        self.mobile_only = mobile_only
+        self.hide_on_mobile = hide_on_mobile
         self.is_active = False
 
     def get_url(self):
-        """Get URL safely with fallback for nested namespaces."""
-        if self.url:
-            return self.url
+        """Resilient URL resolution with fallbacks."""
+        if self.url: return self.url
+        if not self.url_name: return '#'
 
-        if not self.url_name:
-            return '#'
-
-        # 1. Try building the full name: namespace:app_name:url_name
-        parts = []
-        if self.namespace:
-            parts.append(self.namespace)
-        if self.app_name:
-            parts.append(self.app_name)
-        parts.append(self.url_name)
-        
-        full_name = ':'.join(parts)
-
+        # Try: namespace:url_name
+        full_path = f"{self.namespace}:{self.url_name}" if self.namespace else self.url_name
         try:
-            return reverse(full_name)
+            return reverse(full_path)
         except NoReverseMatch:
-            # 2. FALLBACK: Try namespace:url_name (skip app_name)
-            if self.namespace and self.app_name:
-                try:
-                    fallback_name = f"{self.namespace}:{self.url_name}"
-                    return reverse(fallback_name)
-                except NoReverseMatch:
-                    pass
-            
-            # 3. SECOND FALLBACK: Try just the url_name (no namespace)
+            # Fallback: Just url_name
             try:
                 return reverse(self.url_name)
             except NoReverseMatch:
-                logger.debug(f"URL Resolution failed for: {full_name}")
                 return '#'
 
     def is_visible(self, user, role, profile, school):
+        """Unified visibility logic for UI Scan bugs."""
         if self.is_public: return True
         if not user or not user.is_authenticated: return False
         if user.is_superuser: return True
         if self.requires_school and not school: return False
-        if school and not profile: return False
-
+        
+        # Role-based filter
         if self.system_role_types and role:
-            if role.system_role_type in self.system_role_types:
-                return True
+            if role.system_role_type not in self.system_role_types:
+                return False
 
+        # Permission-based filter
         if self.permission:
-            # Local import to prevent circular dependency
             from .decorators.permissions import PermissionChecker
             return PermissionChecker.has_permission(role, self.permission)
 
@@ -86,98 +65,79 @@ class NavigationItem:
 class NavigationBuilder:
     @staticmethod
     def get_navigation(request):
-        user = request.user if hasattr(request, 'user') else None
+        user = request.user
         school = getattr(request, 'school', None)
-        profile = None
-        role = None
+        profile, role = None, None
 
-        if user and user.is_authenticated and school:
+        if user.is_authenticated and school:
             try:
                 Profile = apps.get_model('users', 'Profile')
-                profile = Profile.objects.select_related('role').filter(
-                    user=user, school=school
-                ).first()
-                if profile:
-                    role = profile.role
-            except Exception as e:
-                logger.debug(f"Profile error: {e}")
+                profile = Profile.objects.select_related('role').filter(user=user, school=school).first()
+                if profile: role = profile.role
+            except Exception: pass
 
-        if not user or not user.is_authenticated:
-            desktop_nav = NavigationBuilder.get_public_navigation()
-            mobile_nav = NavigationBuilder.get_mobile_public_navigation()
-        else:
-            desktop_nav = NavigationBuilder.get_authenticated_navigation(user, role, profile, school)
-            mobile_nav = NavigationBuilder.get_mobile_authenticated_navigation(user, role, profile, school)
+        # Build Master List
+        all_items = NavigationBuilder._get_master_list(user, role, profile, school)
+        
+        # Filter for Desktop and Mobile
+        desktop_nav = [i for i in all_items if not i.mobile_only]
+        mobile_nav = [i for i in all_items if not i.hide_on_mobile]
 
-        NavigationBuilder._mark_active_items(request.path, desktop_nav + mobile_nav)
+        # Mark Active State
+        NavigationBuilder._mark_active(request.path, all_items)
+        
         return desktop_nav, mobile_nav, role, profile, school
 
     @staticmethod
-    def get_public_navigation():
-        return [
-            NavigationItem('Home', url='/', icon='house', is_public=True),
-            NavigationItem('Discover Schools', url_name='school_discovery', icon='search', is_public=True),
-            NavigationItem('Login', url_name='account_login', icon='box-arrow-in-right', is_public=True),
-        ]
-
-    @staticmethod
-    def get_authenticated_navigation(user, role, profile, school):
+    def _get_master_list(user, role, profile, school):
         items = []
         from .decorators.permissions import PermissionChecker
 
-        # Dashboard
+        # --- Dashboard (Primary) ---
         if school:
-            items.append(NavigationItem(
-                'Dashboard', url_name='dashboard', namespace='users', icon='speedometer2', requires_school=True
-            ))
+            items.append(NavigationItem('Dashboard', 'dashboard', namespace='users', icon='speedometer2', requires_school=True))
 
-        # Admin Section
-        admin_children = []
-        if role and PermissionChecker.has_permission(role, 'manage_staff'):
-            admin_children.append(NavigationItem('Staff', url_name='staff_list', namespace='users', icon='person-badge'))
-        if role and PermissionChecker.has_permission(role, 'manage_roles'):
-            admin_children.append(NavigationItem('Roles', url_name='role_list', namespace='users', icon='shield-check'))
-        
-        if admin_children:
-            items.append(NavigationItem('Administration', icon='gear', children=admin_children, requires_school=True))
-
-        # Academics
+        # --- Academic Management ---
         if role and PermissionChecker.has_permission(role, 'manage_academics'):
-            items.append(NavigationItem(
-                'Classes', url_name='class_list', namespace='academics', icon='journal'
-            ))
+            acad_children = [
+                NavigationItem('Classes', 'class_list', namespace='academics', icon='journal'),
+                NavigationItem('Subjects', 'subject_list', namespace='academics', icon='book'),
+            ]
+            items.append(NavigationItem('Academics', icon='mortarboard', children=acad_children, requires_school=True))
 
-        # Account / Profile
-        user_children = [
-            NavigationItem('Profile', url_name='profile', namespace='users', icon='person'),
-            NavigationItem('Logout', url_name='account_logout', icon='box-arrow-right'),
-        ]
-        items.append(NavigationItem('Account', icon='person-circle', children=user_children))
+        # --- Admissions ---
+        if role and PermissionChecker.has_permission(role, 'manage_admissions'):
+            items.append(NavigationItem('Admissions', 'application_list', namespace='admissions', icon='door-open', requires_school=True))
+
+        # --- Students & Parents ---
+        if role and PermissionChecker.has_permission(role, 'manage_students'):
+            stud_children = [
+                NavigationItem('Students', 'student_list', namespace='students', icon='people'),
+                NavigationItem('Parents', 'parent_list', namespace='students', icon='person-vcard'),
+            ]
+            items.append(NavigationItem('Students', icon='person-workspace', children=stud_children, requires_school=True))
+
+        # --- Attendance & Billing ---
+        if school:
+            items.append(NavigationItem('Attendance', 'dashboard', namespace='attendance', icon='calendar-check', permission='manage_attendance'))
+            items.append(NavigationItem('Billing', 'dashboard', namespace='billing', icon='cash-stack', permission='manage_finances'))
+
+        # --- Admin Tools ---
+        if role and (PermissionChecker.has_permission(role, 'manage_staff') or PermissionChecker.has_permission(role, 'manage_roles')):
+            admin_children = []
+            if PermissionChecker.has_permission(role, 'manage_staff'):
+                admin_children.append(NavigationItem('Staff', 'staff_list', namespace='users', icon='person-badge'))
+            if PermissionChecker.has_permission(role, 'manage_roles'):
+                admin_children.append(NavigationItem('Roles', 'role_list', namespace='users', icon='shield-lock'))
+            items.append(NavigationItem('Admin', icon='gear-wide-connected', children=admin_children, requires_school=True))
 
         return items
 
     @staticmethod
-    def get_mobile_public_navigation():
-        return [NavigationItem('Home', url='/', icon='house', is_public=True)]
-
-    @staticmethod
-    def get_mobile_authenticated_navigation(user, role, profile, school):
-        # Simplified mobile version
-        items = [NavigationItem('Dashboard', url_name='dashboard', namespace='users', icon='house')]
-        return items
-
-    @staticmethod
-    def _mark_active_items(current_path, navigation_items):
-        def mark_item_and_children(item, path):
-            item_url = item.get_url()
-            if item_url != '#' and path.startswith(item_url.rstrip('/')):
+    def _mark_active(path, items):
+        for item in items:
+            url = item.get_url()
+            if url != '#' and path.startswith(url.rstrip('/')):
                 item.is_active = True
-                return True
-            for child in item.children:
-                if mark_item_and_children(child, path):
-                    item.is_active = True
-                    return True
-            return False
-
-        for item in navigation_items:
-            mark_item_and_children(item, current_path)
+            if item.children:
+                NavigationBuilder._mark_active(path, item.children)

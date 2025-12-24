@@ -39,75 +39,61 @@ def _get_school_model():
 
 class SessionValidationMiddleware:
     """
-    Validates and repairs session data before other middleware uses it.
-    FIXED: No unnecessary session writes to prevent logout issues.
+    Validates session data safely.
+    FIXED: Removed aggressive 'flush()' which caused logouts on server restart.
     """
-
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # ✅ Validate session only when needed
-        if self._needs_session_validation(request):
-            self._validate_session(request)
+        if hasattr(request, 'session') and request.session.session_key:
+            # We only want to check if the session is working. 
+            # If it's not, Django's engine handles it. Manual flushing here is too risky.
+            try:
+                # Minimal read to check validity
+                _ = request.session.get('_session_valid')
+            except Exception as e:
+                logger.warning(f"Session read failed, letting Django handle it: {e}")
+        
+        return self.get_response(request)
 
+
+# ============ SECURITY HEADERS MIDDLEWARE ============
+
+class SecurityHeadersMiddleware:
+    """
+    Adds baseline security headers.
+    FIXED: Added check to ensure response is an object before assignment.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         response = self.get_response(request)
+
+        # BUG FIX: Ensure we have a proper HttpResponse object and not a function/None
+        if response is None or callable(response):
+            return response
+
+        # Add headers safely
+        try:
+            response["X-Content-Type-Options"] = "nosniff"
+            response["X-Frame-Options"] = "DENY"
+            response["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+            if request.path.startswith("/billing/payment/"):
+                response["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' https://js.paystack.co; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "frame-src https://js.paystack.co;"
+                )
+        except TypeError:
+            # Fallback if response is a TemplateResponse that isn't rendered yet
+            pass
+
         return response
 
-    def _needs_session_validation(self, request) -> bool:
-        """Check if session validation is needed."""
-        # Only validate on first request or if session is missing
-        if not hasattr(request, 'session'):
-            return True
-
-        if not request.session.session_key:
-            return True
-
-        # Check if session was recently validated
-        last_validated = request.session.get('_session_last_validated')
-        if last_validated:
-            try:
-                last_time = dj_timezone.datetime.fromisoformat(last_validated)
-                if (dj_timezone.now() - last_time).seconds < 60:
-                    return False
-            except (ValueError, TypeError):
-                pass
-
-        return True
-
-    def _validate_session(self, request):
-        """Validate and clean session data safely WITHOUT unnecessary writes."""
-        if not hasattr(request, 'session'):
-            return
-
-        try:
-            # Create session if it doesn't exist
-            if not request.session.session_key:
-                request.session.create()
-                logger.debug("Created new session")
-                # Mark as validated
-                request.session['_session_last_validated'] = dj_timezone.now().isoformat()
-                request.session.modified = True
-                return
-
-            # Test session accessibility with minimal writes
-            if '_session_valid' not in request.session:
-                request.session['_session_valid'] = True
-                request.session['_session_last_validated'] = dj_timezone.now().isoformat()
-                request.session.modified = True
-
-        except Exception as e:
-            logger.warning(f"Session validation failed: {e}")
-            # If session is corrupted, create a fresh one
-            try:
-                request.session.flush()
-                request.session.create()
-                request.session['_session_valid'] = True
-                request.session['_session_last_validated'] = dj_timezone.now().isoformat()
-                request.session.modified = True
-                logger.info("Replaced corrupted session with fresh session")
-            except Exception as flush_error:
-                logger.error(f"Could not flush session: {flush_error}")
 
 
 # ============ SCHOOL RESOLUTION MIDDLEWARE ============
