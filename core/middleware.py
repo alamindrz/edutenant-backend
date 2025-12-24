@@ -58,43 +58,6 @@ class SessionValidationMiddleware:
         return self.get_response(request)
 
 
-# ============ SECURITY HEADERS MIDDLEWARE ============
-
-class SecurityHeadersMiddleware:
-    """
-    Adds baseline security headers.
-    FIXED: Added check to ensure response is an object before assignment.
-    """
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        response = self.get_response(request)
-
-        # BUG FIX: Ensure we have a proper HttpResponse object and not a function/None
-        if response is None or callable(response):
-            return response
-
-        # Add headers safely
-        try:
-            response["X-Content-Type-Options"] = "nosniff"
-            response["X-Frame-Options"] = "DENY"
-            response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-            if request.path.startswith("/billing/payment/"):
-                response["Content-Security-Policy"] = (
-                    "default-src 'self'; "
-                    "script-src 'self' 'unsafe-inline' https://js.paystack.co; "
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                    "frame-src https://js.paystack.co;"
-                )
-        except TypeError:
-            # Fallback if response is a TemplateResponse that isn't rendered yet
-            pass
-
-        return response
-
-
 
 # ============ SCHOOL RESOLUTION MIDDLEWARE ============
 
@@ -409,31 +372,21 @@ class ExceptionHandlingMiddleware:
 # ============ SECURITY HEADERS MIDDLEWARE ============
 
 class SecurityHeadersMiddleware:
-    """Adds strict baseline security headers."""
-
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         response = self.get_response(request)
 
-        # Basic security headers for all responses
+        # FIX: allauth crashes if we don't return a proper response object
+        if response is None or callable(response) or not hasattr(response, 'status_code'):
+            return response
+
         response["X-Content-Type-Options"] = "nosniff"
         response["X-Frame-Options"] = "DENY"
         response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-        # Only add CSP for payment pages
-        if request.path.startswith("/billing/payment/"):
-            response["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' https://js.paystack.co; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src 'self' https://fonts.gstatic.com; "
-                "frame-src https://js.paystack.co; "
-                "connect-src 'self' https://api.paystack.co;"
-            )
-
         return response
+
 
 
 # ============ REQUEST LOGGING MIDDLEWARE ============
