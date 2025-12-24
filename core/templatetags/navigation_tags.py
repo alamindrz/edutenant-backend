@@ -8,14 +8,14 @@ register = template.Library()
 @register.simple_tag
 def get_navigation_items(context='default'):
     """Return navigation items based on context.
-    
+
     Args:
         context: 'default', 'mobile_bottom', etc.
-    
+
     Returns:
         List of navigation items with name, url, icon, active, etc.
     """
-    
+
     # Default public navigation items
     if context == 'mobile_bottom':
         return [

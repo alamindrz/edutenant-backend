@@ -7,6 +7,6 @@ from .application_fee import ApplicationPaymentService
 
 __all__ = [
     'PaymentCoreService',
-    'PaystackService', 
+    'PaystackService',
     'ApplicationPaymentService'
 ]

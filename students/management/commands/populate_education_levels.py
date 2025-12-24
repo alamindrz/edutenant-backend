@@ -7,7 +7,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         schools = School.objects.all()
-        
+
         level_templates = {
             'nursery': [
                 ('Playgroup', 0),
@@ -34,16 +34,16 @@ class Command(BaseCommand):
                 ('SSS 3', 2),
             ]
         }
-        
+
         created_count = 0
-        
+
         for school in schools:
             for level_type, levels in level_templates.items():
                 for level_name, order in levels:
                     # Check if level already exists
                     if not EducationLevel.objects.filter(
-                        school=school, 
-                        level=level_type, 
+                        school=school,
+                        level=level_type,
                         name=level_name
                     ).exists():
                         EducationLevel.objects.create(
@@ -53,7 +53,7 @@ class Command(BaseCommand):
                             order=order
                         )
                         created_count += 1
-        
+
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created {created_count} education levels')
         )

@@ -1,97 +1,60 @@
-<!-- templates/includes/mobile_bottom_nav.html -->
-<nav class="navbar navbar-light bg-white border-top fixed-bottom d-lg-none mobile-bottom-nav" id="mobile-bottom-nav">
-    <div class="container-fluid px-0">
-        <div class="d-flex justify-content-around w-100">
-            {% for item in mobile_navigation %}
-                {% if item.is_visible %}
-                {% if item.url_name != '#' and item.label != 'More' %}
+<nav class="navbar navbar-light bg-white border-top fixed-bottom d-lg-none mobile-bottom-nav" 
+     style="height: 65px; z-index: 1030; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
+    <div class="container-fluid px-0 h-100">
+        <div class="d-flex justify-content-around align-items-stretch w-100 h-100">
+            
+            {% for item in mobile_navigation|slice:":4" %}
                 <a href="{{ item.get_url }}" 
-                   class="btn btn-link text-decoration-none bottom-nav-item py-2 flex-fill {% if item.is_active %}active{% endif %}"
-                   data-bs-dismiss="offcanvas">
-                    <div class="d-flex flex-column align-items-center position-relative">
-                        <i class="bi bi-{{ item.icon }} fs-5 mb-1"></i>
-                        <small>{{ item.label|truncatechars:8 }}</small>
+                   class="btn btn-link text-decoration-none border-0 d-flex flex-column align-items-center justify-content-center flex-fill position-relative transition-all {% if item.is_active %}text-primary active-nav-item{% else %}text-muted{% endif %}"
+                   style="transition: 0.2s ease-in-out;">
+                    
+                    <div class="position-relative">
+                        <i class="bi bi-{{ item.icon }}{% if item.is_active %}-fill{% endif %} fs-4"></i>
                         {% if item.badge_count > 0 %}
-                        <span class="position-absolute notification-badge badge rounded-pill bg-{{ item.badge_color|default:'primary' }}">
-                            {{ item.badge_count }}
-                        </span>
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New alerts</span>
+                            </span>
                         {% endif %}
                     </div>
+                    
+                    <small class="fw-medium text-truncate" style="font-size: 0.6rem; max-width: 60px; margin-top: 2px;">
+                        {{ item.label|upper }}
+                    </small>
+
+                    {% if item.is_active %}
+                        <div class="position-absolute top-0 start-50 translate-middle-x bg-primary" 
+                             style="height: 3px; width: 20px; border-radius: 0 0 4px 4px;"></div>
+                    {% endif %}
                 </a>
-                {% else %}
-                <!-- More Menu Button -->
-                <button class="btn btn-link text-decoration-none bottom-nav-item py-2 flex-fill" 
-                        type="button"
-                        data-bs-toggle="offcanvas" 
-                        data-bs-target="#mobileMenuOffcanvas"
-                        aria-controls="mobileMenuOffcanvas">
-                    <div class="d-flex flex-column align-items-center position-relative">
-                        <i class="bi bi-three-dots fs-5 mb-1"></i>
-                        <small>More</small>
-                    </div>
-                </button>
-                {% endif %}
-                {% endif %}
             {% endfor %}
+
+            <button class="btn btn-link text-decoration-none border-0 d-flex flex-column align-items-center justify-content-center flex-fill text-muted" 
+                    type="button"
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#mobileMenuOffcanvas">
+                <i class="bi bi-grid-3x3-gap fs-4"></i>
+                <small class="fw-medium" style="font-size: 0.6rem; margin-top: 2px;">MORE</small>
+            </button>
         </div>
     </div>
 </nav>
 
 <style>
+/* CSS to make it feel like a native app */
 .mobile-bottom-nav {
-    height: 60px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    z-index: 1030;
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95) !important;
+    background-color: rgba(255, 255, 255, 0.92) !important;
 }
 
 [data-bs-theme="dark"] .mobile-bottom-nav {
-    background: rgba(33, 37, 41, 0.95) !important;
-    border-color: var(--bs-border-color);
+    background-color: rgba(33, 37, 41, 0.92) !important;
 }
 
-.bottom-nav-item {
-    color: var(--bs-secondary);
-    transition: all 0.2s ease;
-    border-radius: 0;
-    min-height: 60px;
+.active-nav-item {
+    background-color: rgba(var(--bs-primary-rgb), 0.08);
 }
 
-.bottom-nav-item:hover,
-.bottom-nav-item.active {
-    color: var(--bs-primary) !important;
-    background-color: rgba(var(--bs-primary-rgb), 0.1);
-}
-
-.bottom-nav-item.active i {
-    color: var(--bs-primary) !important;
-}
-
-.bottom-nav-item small {
-    font-size: 0.7rem;
-    line-height: 1;
-}
-
-.notification-badge {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.4rem;
-    top: 5px;
-    right: 20px;
-}
-
-/* Ensure content doesn't hide behind nav */
-body {
-    padding-bottom: 60px !important;
-}
-
-@media (max-width: 575.98px) {
-    .bottom-nav-item small {
-        font-size: 0.65rem;
-    }
-    
-    .bottom-nav-item i {
-        font-size: 1.25rem !important;
-    }
+.bottom-nav-item:active {
+    transform: scale(0.92);
 }
 </style>

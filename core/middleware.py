@@ -39,75 +39,61 @@ def _get_school_model():
 
 class SessionValidationMiddleware:
     """
-    Validates and repairs session data before other middleware uses it.
-    FIXED: No unnecessary session writes to prevent logout issues.
+    Validates session data safely.
+    FIXED: Removed aggressive 'flush()' which caused logouts on server restart.
     """
-
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # ✅ Validate session only when needed
-        if self._needs_session_validation(request):
-            self._validate_session(request)
+        if hasattr(request, 'session') and request.session.session_key:
+            # We only want to check if the session is working. 
+            # If it's not, Django's engine handles it. Manual flushing here is too risky.
+            try:
+                # Minimal read to check validity
+                _ = request.session.get('_session_valid')
+            except Exception as e:
+                logger.warning(f"Session read failed, letting Django handle it: {e}")
         
+        return self.get_response(request)
+
+
+# ============ SECURITY HEADERS MIDDLEWARE ============
+
+class SecurityHeadersMiddleware:
+    """
+    Adds baseline security headers.
+    FIXED: Added check to ensure response is an object before assignment.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         response = self.get_response(request)
+
+        # BUG FIX: Ensure we have a proper HttpResponse object and not a function/None
+        if response is None or callable(response):
+            return response
+
+        # Add headers safely
+        try:
+            response["X-Content-Type-Options"] = "nosniff"
+            response["X-Frame-Options"] = "DENY"
+            response["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+            if request.path.startswith("/billing/payment/"):
+                response["Content-Security-Policy"] = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' https://js.paystack.co; "
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                    "frame-src https://js.paystack.co;"
+                )
+        except TypeError:
+            # Fallback if response is a TemplateResponse that isn't rendered yet
+            pass
+
         return response
 
-    def _needs_session_validation(self, request) -> bool:
-        """Check if session validation is needed."""
-        # Only validate on first request or if session is missing
-        if not hasattr(request, 'session'):
-            return True
-        
-        if not request.session.session_key:
-            return True
-        
-        # Check if session was recently validated
-        last_validated = request.session.get('_session_last_validated')
-        if last_validated:
-            try:
-                last_time = dj_timezone.datetime.fromisoformat(last_validated)
-                if (dj_timezone.now() - last_time).seconds < 60:
-                    return False
-            except (ValueError, TypeError):
-                pass
-        
-        return True
-
-    def _validate_session(self, request):
-        """Validate and clean session data safely WITHOUT unnecessary writes."""
-        if not hasattr(request, 'session'):
-            return
-
-        try:
-            # Create session if it doesn't exist
-            if not request.session.session_key:
-                request.session.create()
-                logger.debug("Created new session")
-                # Mark as validated
-                request.session['_session_last_validated'] = dj_timezone.now().isoformat()
-                request.session.modified = True
-                return
-
-            # Test session accessibility with minimal writes
-            if '_session_valid' not in request.session:
-                request.session['_session_valid'] = True
-                request.session['_session_last_validated'] = dj_timezone.now().isoformat()
-                request.session.modified = True
-                
-        except Exception as e:
-            logger.warning(f"Session validation failed: {e}")
-            # If session is corrupted, create a fresh one
-            try:
-                request.session.flush()
-                request.session.create()
-                request.session['_session_valid'] = True
-                request.session['_session_last_validated'] = dj_timezone.now().isoformat()
-                request.session.modified = True
-                logger.info("Replaced corrupted session with fresh session")
-            except Exception as flush_error:
-                logger.error(f"Could not flush session: {flush_error}")
 
 
 # ============ SCHOOL RESOLUTION MIDDLEWARE ============
@@ -136,17 +122,17 @@ class SchoolMiddleware:
                 or self._resolve_session(request)
                 or self._dev_fallback(request)
             )
-            
+
             if school:
                 request.school = school
-                
+
                 # ✅ ONLY update session if school changed and user is authenticated
                 if hasattr(request, 'user') and request.user.is_authenticated:
                     current_session_school = request.session.get('current_school_id')
                     if not current_session_school or current_session_school != school.id:
                         request.session['current_school_id'] = school.id
                         request.session.modified = True
-                
+
         except Exception as e:
             logger.error(f"School resolution error: {e}", exc_info=True)
 
@@ -162,7 +148,7 @@ class SchoolMiddleware:
             # Skip subdomain resolution for certain paths
             if request.path.startswith(('/admin/', '/static/', '/media/', '/api/')):
                 return None
-                
+
             host = request.get_host().split(":")[0].lower()
 
             if host.startswith("www."):
@@ -181,18 +167,18 @@ class SchoolMiddleware:
 
             # ✅ Use lazy loading for School model
             School = _get_school_model()
-            
+
             school = School.objects.filter(
                 subdomain=subdomain,
                 is_active=True,
                 subdomain_status="active"
             ).first()
-            
+
             if school:
                 logger.debug(f"Resolved school from subdomain: {school.name}")
-                
+
             return school
-            
+
         except Exception as e:
             logger.debug(f"Subdomain resolution failed: {e}")
             return None
@@ -211,15 +197,15 @@ class SchoolMiddleware:
             school_id = request.session.get("current_school_id")
             if not school_id:
                 return None
-            
+
             # ✅ Use lazy loading for School model
             School = _get_school_model()
-                
+
             school = School.objects.filter(id=school_id, is_active=True).first()
             if school:
                 logger.debug(f"Resolved school from session: {school.name}")
             return school
-            
+
         except Exception as e:
             logger.debug(f"Session resolution failed: {e}")
             return None
@@ -289,16 +275,16 @@ class NotificationMiddleware:
                 # Check if we have cached notifications
                 cache_key = f'user_{user.id}_notifications'
                 notifications = request.session.get(cache_key)
-                
+
                 # Only refresh every 5 minutes
                 last_refresh = request.session.get(f'{cache_key}_time')
                 needs_refresh = not notifications or not last_refresh
-                
+
                 if needs_refresh:
                     notifications = self.get_unread_notifications(user)
                     request.session[cache_key] = notifications
                     request.session[f'{cache_key}_time'] = dj_timezone.now().isoformat()
-                
+
                 request.unread_notifications = notifications
                 request.notification_count = len(notifications)
             except Exception as e:
@@ -356,7 +342,7 @@ class WhiteLabelMiddleware:
         """Safely inject CSS variables into HTML head."""
         try:
             content = response.content.decode('utf-8')
-            
+
             # Only inject if </head> tag exists
             if '</head>' not in content:
                 return response
@@ -364,7 +350,7 @@ class WhiteLabelMiddleware:
             # ✅ Use safe defaults from shared constants
             primary_color = school.primary_color or "#3B82F6"
             secondary_color = school.secondary_color or "#1E40AF"
-            
+
             css_variables = f"""
             <style>
                 :root {{
@@ -380,10 +366,10 @@ class WhiteLabelMiddleware:
 
             content = content.replace('</head>', css_variables + '</head>')
             response.content = content.encode('utf-8')
-            
+
             # Update content length
             response['Content-Length'] = str(len(response.content))
-                
+
         except Exception as e:
             logger.debug(f"Branding injection failed: {e}")
 
@@ -435,7 +421,7 @@ class SecurityHeadersMiddleware:
         response["X-Content-Type-Options"] = "nosniff"
         response["X-Frame-Options"] = "DENY"
         response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        
+
         # Only add CSP for payment pages
         if request.path.startswith("/billing/payment/"):
             response["Content-Security-Policy"] = (

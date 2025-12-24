@@ -1,4 +1,4 @@
-# attendance/views.py 
+# attendance/views.py
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -31,7 +31,7 @@ class AttendanceStatus:
     SICK = 'sick'
     HALF_DAY = 'half_day'
     LEAVE = 'leave'
-    
+
     choices = (
         (PRESENT, 'Present'),
         (ABSENT, 'Absent'),
@@ -64,13 +64,13 @@ def _get_student_class(student):
         # First try to get from student's current_class field
         if hasattr(student, 'current_class') and student.current_class:
             return student.current_class
-        
+
         # Fallback: use ClassManager from shared
         from shared.models.class_manager import ClassManager
         # If student has class_id, use ClassManager to get it
         if hasattr(student, 'current_class_id') and student.current_class_id:
             return ClassManager.get_class(student.current_class_id, student.school, raise_exception=False)
-            
+
         return None
     except Exception as e:
         logger.warning(f"Error getting student class: {e}")
@@ -85,17 +85,17 @@ def _handle_bulk_attendance(request, school, selected_date):
             if key.startswith('attendance_'):
                 student_id = key.split('_')[1]
                 attendance_data[student_id] = value
-        
+
         # Get current term
         AcademicTerm = _get_model('AcademicTerm', 'students')
         current_term = AcademicTerm.objects.filter(
             school=school, is_active=True
         ).first()
-        
+
         if not current_term:
             messages.error(request, "No active academic term found.")
             return redirect('attendance:student_attendance_list')
-        
+
         # Get user profile
         Profile = _get_model('Profile', 'users')
         try:
@@ -105,13 +105,13 @@ def _handle_bulk_attendance(request, school, selected_date):
             if not recorded_by:
                 messages.error(request, "User profile not found.")
                 return redirect('attendance:student_attendance_list')
-        
+
         recorded_count = 0
         for student_id, status in attendance_data.items():
             try:
                 Student = _get_model('Student', 'students')
                 student = Student.objects.get(id=student_id, school=school)
-                
+
                 # Get or create attendance record
                 attendance, created = StudentAttendance.objects.get_or_create(
                     student=student,
@@ -122,24 +122,24 @@ def _handle_bulk_attendance(request, school, selected_date):
                         'recorded_by': recorded_by.user,  # Pass User, not Profile
                     }
                 )
-                
+
                 if not created:
                     attendance.status = status
                     attendance.recorded_by = recorded_by.user  # Pass User, not Profile
                     attendance.save()
-                
+
                 recorded_count += 1
-                
+
             except Student.DoesNotExist:
                 logger.warning(f"Student {student_id} not found for school {school.id}")
                 continue
-        
+
         messages.success(request, f"Attendance recorded for {recorded_count} students.")
-        
+
     except Exception as e:
         logger.error(f"Bulk attendance error: {str(e)}", exc_info=True)
         messages.error(request, "Error recording attendance. Please try again.")
-    
+
     return redirect('attendance:student_attendance_list')
 
 
@@ -163,7 +163,7 @@ def attendance_dashboard_view(request):
             'late_today': 0,
             'present_rate': 0,
         }
-        
+
         teacher_stats = {
             'total_teachers': 0,
             'present_today': 0,
@@ -171,7 +171,7 @@ def attendance_dashboard_view(request):
             'late_today': 0,
             'signin_rate': 0,
         }
-        
+
         class_group_attendance = []
         recent_student_attendance = []
         recent_teacher_attendance = []
@@ -185,7 +185,7 @@ def attendance_dashboard_view(request):
         AcademicTerm = _get_model('AcademicTerm', 'students')
         Student = _get_model('Student', 'students')
         Staff = _get_model('Staff', 'users')
-        
+
         # ---------------------------
         # Current term
         # ---------------------------
@@ -289,7 +289,7 @@ def attendance_dashboard_view(request):
         try:
             Class = _get_model('Class', 'core')
             classes = Class.objects.filter(school=school, is_active=True)
-            
+
             for class_obj in classes:
                 # Get student count for this class
                 class_total = Student.objects.filter(
@@ -382,7 +382,7 @@ def attendance_dashboard_view(request):
     except Exception as e:
         logger.error(f"Dashboard fatal error: {e}", exc_info=True)
         messages.error(request, "Error loading attendance dashboard")
-        
+
         # Return a safe context even on fatal errors
         safe_context = {
             'student_stats': {'total_students': 0, 'present_today': 0, 'absent_today': 0, 'late_today': 0, 'present_rate': 0},
@@ -406,41 +406,41 @@ def attendance_dashboard_view(request):
 def student_attendance_list_view(request):
     """List and manage student attendance - using core.Class."""
     school = request.school
-    
+
     try:
         # Get models safely
         AcademicTerm = _get_model('AcademicTerm', 'students')
         Student = _get_model('Student', 'students')
         Class = _get_model('Class', 'core')  # Using core.Class
-        
+
         # Get current academic term
         current_term = AcademicTerm.objects.filter(school=school, is_active=True).first()
-        
+
         # Filters
         date_filter = request.GET.get('date', timezone.now().date().isoformat())
         class_filter = request.GET.get('class', '')  # Changed from 'class_group'
         status_filter = request.GET.get('status', '')
-        
+
         try:
             selected_date = datetime.fromisoformat(date_filter).date()
         except (ValueError, TypeError):
             selected_date = timezone.now().date()
-        
+
         # Get attendance records for selected date
         attendance_records = StudentAttendance.objects.filter(
             student__school=school,
             date=selected_date
         ).select_related('student', 'recorded_by')
-        
+
         if class_filter:
             attendance_records = attendance_records.filter(student__current_class_id=class_filter)  # Using current_class
-        
+
         if status_filter:
             attendance_records = attendance_records.filter(status=status_filter)
-        
+
         # Get classes for filter - USING core.Class MODEL
         classes = Class.objects.filter(school=school, is_active=True)
-        
+
         # Get students without attendance records for the day
         students_without_attendance = Student.objects.filter(
             school=school,
@@ -448,17 +448,17 @@ def student_attendance_list_view(request):
         ).exclude(
             id__in=attendance_records.values_list('student_id', flat=True)
         )
-        
+
         if class_filter:
             students_without_attendance = students_without_attendance.filter(
                 current_class_id=class_filter  # Using current_class
             )
-        
+
         if request.method == 'POST':
             # Handle bulk attendance update
             if 'bulk_attendance' in request.POST:
                 return _handle_bulk_attendance(request, school, selected_date)
-        
+
         context = {
             'attendance_records': attendance_records,
             'students_without_attendance': students_without_attendance,
@@ -469,9 +469,9 @@ def student_attendance_list_view(request):
             'current_term': current_term,
             'attendance_statuses': AttendanceStatus.choices,  # Pass status choices to template
         }
-        
+
         return render(request, 'attendance/student_attendance_list.html', context)
-        
+
     except Exception as e:
         logger.error(f"Student attendance list error for school {school.id}: {str(e)}", exc_info=True)
         messages.error(request, "Error loading student attendance. Please try again.")
@@ -484,31 +484,31 @@ def student_attendance_list_view(request):
 def class_attendance_view(request):
     """Class-level attendance overview - using core.Class."""
     school = request.school
-    
+
     try:
         # Get models safely
         AcademicTerm = _get_model('AcademicTerm', 'students')
         Student = _get_model('Student', 'students')
         Class = _get_model('Class', 'core')
-        
+
         # Get current academic term
         current_term = AcademicTerm.objects.filter(school=school, is_active=True).first()
-        
+
         # Filters
         date_filter = request.GET.get('date', timezone.now().date().isoformat())
         class_filter = request.GET.get('class', '')  # Changed from 'class_group'
-        
+
         try:
             selected_date = datetime.fromisoformat(date_filter).date()
         except (ValueError, TypeError):
             selected_date = timezone.now().date()
-        
+
         # Get all active classes
         classes = Class.objects.filter(school=school, is_active=True)
-        
+
         if class_filter:
             classes = classes.filter(id=class_filter)
-        
+
         # Calculate attendance for each class
         class_attendance = []
         for class_obj in classes:
@@ -517,16 +517,16 @@ def class_attendance_view(request):
                 current_class=class_obj,
                 is_active=True
             ).count()
-            
+
             # Get attendance records for this date
             present_count = StudentAttendance.objects.filter(
                 student__current_class=class_obj,
                 date=selected_date,
                 status=AttendanceStatus.PRESENT  # ✅ Using constant
             ).count()
-            
+
             attendance_rate = (present_count / total_students * 100) if total_students > 0 else 0
-            
+
             class_attendance.append({
                 'class': class_obj,
                 'total_students': total_students,
@@ -535,7 +535,7 @@ def class_attendance_view(request):
                 'attendance_rate': round(attendance_rate, 1),
                 'form_master': class_obj.form_master,
             })
-        
+
         context = {
             'class_attendance': class_attendance,
             'classes': classes,
@@ -543,9 +543,9 @@ def class_attendance_view(request):
             'class_filter': class_filter,
             'current_term': current_term,
         }
-        
+
         return render(request, 'attendance/class_attendance.html', context)
-        
+
     except Exception as e:
         logger.error(f"Class attendance view error for school {school.id}: {str(e)}", exc_info=True)
         messages.error(request, "Error loading class attendance. Please try again.")
@@ -560,33 +560,33 @@ def class_attendance_view(request):
 def teacher_attendance_list_view(request):
     """List and manage teacher attendance."""
     school = request.school
-    
+
     try:
         # Get models safely
         AcademicTerm = _get_model('AcademicTerm', 'students')
         Staff = _get_model('Staff', 'users')
-        
+
         # Get current academic term
         current_term = AcademicTerm.objects.filter(school=school, is_active=True).first()
-        
+
         # Filters
         date_filter = request.GET.get('date', timezone.now().date().isoformat())
         status_filter = request.GET.get('status', '')
-        
+
         try:
             selected_date = datetime.fromisoformat(date_filter).date()
         except (ValueError, TypeError):
             selected_date = timezone.now().date()
-        
+
         # Get attendance records for selected date
         attendance_records = TeacherAttendance.objects.filter(
             staff__school=school,
             date=selected_date
         ).select_related('staff', 'recorded_by')
-        
+
         if status_filter:
             attendance_records = attendance_records.filter(status=status_filter)
-        
+
         # Get teachers without attendance records for the day
         teachers_without_attendance = Staff.objects.filter(
             school=school,
@@ -594,7 +594,7 @@ def teacher_attendance_list_view(request):
         ).exclude(
             id__in=attendance_records.values_list('staff_id', flat=True)
         )
-        
+
         context = {
             'attendance_records': attendance_records,
             'teachers_without_attendance': teachers_without_attendance,
@@ -603,9 +603,9 @@ def teacher_attendance_list_view(request):
             'current_term': current_term,
             'attendance_statuses': AttendanceStatus.choices,  # Pass status choices to template
         }
-        
+
         return render(request, 'attendance/teacher_attendance_list.html', context)
-        
+
     except Exception as e:
         logger.error(f"Teacher attendance list error for school {school.id}: {str(e)}", exc_info=True)
         messages.error(request, "Error loading teacher attendance. Please try again.")
@@ -618,23 +618,23 @@ def teacher_attendance_list_view(request):
 def teacher_signin_view(request, staff_id):
     """Record teacher sign-in."""
     school = request.school
-    
+
     try:
         Staff = _get_model('Staff', 'users')
         Profile = _get_model('Profile', 'users')
         AcademicTerm = _get_model('AcademicTerm', 'students')
-        
+
         staff = get_object_or_404(Staff, id=staff_id, school=school)
-        
+
         # Get current academic term
         current_term = AcademicTerm.objects.filter(school=school, is_active=True).first()
-        
+
         if not current_term:
             messages.error(request, "No active academic term found.")
             return redirect('attendance:teacher_attendance_list')
-        
+
         today = timezone.now().date()
-        
+
         # Get user profile for recording
         try:
             recorded_by = Profile.objects.get(user=request.user, school=school)
@@ -644,7 +644,7 @@ def teacher_signin_view(request, staff_id):
             if not recorded_by:
                 messages.error(request, "User profile not found.")
                 return redirect('attendance:teacher_attendance_list')
-        
+
         # Get or create attendance record
         attendance, created = TeacherAttendance.objects.get_or_create(
             staff=staff,
@@ -656,7 +656,7 @@ def teacher_signin_view(request, staff_id):
                 'recorded_by': recorded_by.user,  # Pass User, not Profile
             }
         )
-        
+
         if not created:
             # Update existing record
             if attendance.sign_in_time:
@@ -667,16 +667,16 @@ def teacher_signin_view(request, staff_id):
                 attendance.recorded_by = recorded_by.user  # Pass User, not Profile
                 attendance.save()
                 messages.success(request, f"{staff.full_name} signed in successfully.")
-        
+
         else:
             messages.success(request, f"{staff.full_name} signed in successfully.")
-        
+
         logger.info(f"Teacher sign-in recorded: {staff.full_name} by {request.user.email}")
-        
+
     except Exception as e:
         logger.error(f"Teacher sign-in error: {str(e)}", exc_info=True)
         messages.error(request, "Error recording sign-in. Please try again.")
-    
+
     return redirect('attendance:teacher_attendance_list')
 
 
@@ -686,12 +686,12 @@ def teacher_signin_view(request, staff_id):
 def teacher_signout_view(request, staff_id):
     """Record teacher sign-out."""
     school = request.school
-    
+
     try:
         Staff = _get_model('Staff', 'users')
         staff = get_object_or_404(Staff, id=staff_id, school=school)
         today = timezone.now().date()
-        
+
         # Get today's attendance record
         attendance = get_object_or_404(
             TeacherAttendance,
@@ -699,7 +699,7 @@ def teacher_signout_view(request, staff_id):
             date=today,
             sign_in_time__isnull=False
         )
-        
+
         if attendance.sign_out_time:
             messages.warning(request, f"{staff.full_name} has already signed out today.")
         else:
@@ -707,13 +707,13 @@ def teacher_signout_view(request, staff_id):
             attendance.save()
             messages.success(request, f"{staff.full_name} signed out successfully.")
             logger.info(f"Teacher sign-out recorded: {staff.full_name} by {request.user.email}")
-        
+
     except TeacherAttendance.DoesNotExist:
         messages.error(request, f"No sign-in record found for {staff.full_name} today.")
     except Exception as e:
         logger.error(f"Teacher sign-out error: {str(e)}", exc_info=True)
         messages.error(request, "Error recording sign-out. Please try again.")
-    
+
     return redirect('attendance:teacher_attendance_list')
 
 
@@ -725,31 +725,31 @@ def teacher_signout_view(request, staff_id):
 def attendance_reports_view(request):
     """Generate attendance reports."""
     school = request.school
-    
+
     try:
         # Get models safely
         AcademicTerm = _get_model('AcademicTerm', 'students')
-        
+
         # Get current academic term
         current_term = AcademicTerm.objects.filter(school=school, is_active=True).first()
-        
+
         if not current_term:
             messages.warning(request, "No active academic term found.")
             return render(request, 'attendance/reports.html', {})
-        
+
         # Report parameters
         report_type = request.GET.get('report_type', 'student')
         period = request.GET.get('period', 'monthly')
         date_from = request.GET.get('date_from', (timezone.now() - timedelta(days=30)).date().isoformat())
         date_to = request.GET.get('date_to', timezone.now().date().isoformat())
-        
+
         try:
             date_from = datetime.fromisoformat(date_from).date()
             date_to = datetime.fromisoformat(date_to).date()
         except (ValueError, TypeError):
             date_from = (timezone.now() - timedelta(days=30)).date()
             date_to = timezone.now().date()
-        
+
         if report_type == 'student':
             # Student attendance report - using constants
             attendance_data = StudentAttendance.objects.filter(
@@ -763,7 +763,7 @@ def attendance_reports_view(request):
             ).annotate(
                 count=Count('id')
             ).order_by('student__current_class__name', 'student__first_name')  # Using current_class
-            
+
             # Calculate summary - using constants
             summary = {
                 'total_records': StudentAttendance.objects.filter(
@@ -781,7 +781,7 @@ def attendance_reports_view(request):
                     status=AttendanceStatus.ABSENT  # ✅ Using constant
                 ).count(),
             }
-            
+
         else:
             # Teacher attendance report - using constants
             attendance_data = TeacherAttendance.objects.filter(
@@ -794,7 +794,7 @@ def attendance_reports_view(request):
             ).annotate(
                 count=Count('id')
             ).order_by('staff__first_name')
-            
+
             # Calculate summary
             summary = {
                 'total_records': TeacherAttendance.objects.filter(
@@ -812,7 +812,7 @@ def attendance_reports_view(request):
                     sign_in_time__isnull=False
                 ).count(),
             }
-        
+
         context = {
             'report_type': report_type,
             'period': period,
@@ -822,9 +822,9 @@ def attendance_reports_view(request):
             'summary': summary,
             'current_term': current_term,
         }
-        
+
         return render(request, 'attendance/reports.html', context)
-        
+
     except Exception as e:
         logger.error(f"Attendance reports error for school {school.id}: {str(e)}", exc_info=True)
         messages.error(request, "Error generating reports. Please try again.")
@@ -838,31 +838,31 @@ def attendance_reports_view(request):
 def student_attendance_table_partial(request):
     """HTMX endpoint for student attendance table."""
     school = request.school
-    
+
     try:
         date_filter = request.GET.get('date', timezone.now().date().isoformat())
         class_filter = request.GET.get('class', '')  # Changed from 'class_group'
-        
+
         try:
             selected_date = datetime.fromisoformat(date_filter).date()
         except (ValueError, TypeError):
             selected_date = timezone.now().date()
-        
+
         attendance_records = StudentAttendance.objects.filter(
             student__school=school,
             date=selected_date
         ).select_related('student')
-        
+
         if class_filter:
             attendance_records = attendance_records.filter(student__current_class_id=class_filter)  # Using current_class
-        
+
         context = {
             'attendance_records': attendance_records,
             'selected_date': selected_date,
         }
-        
+
         return render(request, 'attendance/partials/student_attendance_table.html', context)
-        
+
     except Exception as e:
         logger.error(f"Student attendance table partial error: {str(e)}", exc_info=True)
         return render(request, 'attendance/partials/error.html', {'message': 'Error loading attendance data'})
@@ -875,36 +875,36 @@ def student_attendance_table_partial(request):
 def get_attendance_stats_api(request):
     """API endpoint for attendance statistics."""
     school = request.school
-    
+
     try:
         today = timezone.now().date()
-        
+
         # Student stats
         student_total = _get_model('Student', 'students').objects.filter(
             school=school, is_active=True
         ).count()
-        
+
         student_present = StudentAttendance.objects.filter(
             student__school=school,
             date=today,
             status=AttendanceStatus.PRESENT  # ✅ Using constant
         ).count()
-        
+
         student_rate = (student_present / student_total * 100) if student_total > 0 else 0
-        
+
         # Teacher stats
         teacher_total = _get_model('Staff', 'users').objects.filter(
             school=school, is_active=True
         ).count()
-        
+
         teacher_present = TeacherAttendance.objects.filter(
             staff__school=school,
             date=today,
             status=AttendanceStatus.PRESENT  # ✅ Using constant
         ).count()
-        
+
         teacher_rate = (teacher_present / teacher_total * 100) if teacher_total > 0 else 0
-        
+
         return JsonResponse({
             'success': True,
             'data': {
@@ -917,7 +917,7 @@ def get_attendance_stats_api(request):
                 'date': today.isoformat(),
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Attendance stats API error: {str(e)}", exc_info=True)
         return JsonResponse({

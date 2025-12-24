@@ -1,7 +1,7 @@
 # core/exceptions.py - FIXED
 class SchoolManagementException(Exception):
     """Base exception for all school management system errors."""
-    
+
     def __init__(self, message=None, user_friendly=False, details=None, error_code=None):
         self.message = message or "An error occurred"
         self.user_friendly = user_friendly

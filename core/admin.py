@@ -8,7 +8,7 @@ class SubjectAdmin(admin.ModelAdmin):
     list_filter = ['category', 'difficulty_level', 'is_active', 'school']
     search_fields = ['name', 'code', 'description']
     list_editable = ['is_active']
-    
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:

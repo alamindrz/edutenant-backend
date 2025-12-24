@@ -24,14 +24,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    
+
     # Third party apps
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'corsheaders',
     'rest_framework',
-    
+
     # Local apps
     'core',
     'users',
@@ -48,7 +48,7 @@ SITE_ID = 1
 # FIXED: Proper middleware order
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    
+
     # Django core middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # Add CORS if you have CORS_ORIGIN_ALLOW_ALL=True
@@ -57,17 +57,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+
     # Custom middleware (FIXED order)
     'core.middleware.SessionValidationMiddleware',  # Must come after SessionMiddleware
     'core.middleware.SchoolMiddleware',  # Before TimezoneMiddleware
     'core.middleware.TimezoneMiddleware',
     'core.middleware.NotificationMiddleware',
     'core.middleware.WhiteLabelMiddleware',
-    
+
     # Allauth (must be after authentication middleware)
     'allauth.account.middleware.AccountMiddleware',
-    
+
     # Security and logging (end of chain)
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.RequestLoggingMiddleware',
@@ -295,4 +295,4 @@ DEFAULT_TIMEZONE = 'Africa/Lagos'
 # IMPORTANT: Remove or fix the broken import at the end
 # Comment out or fix this line:
 # from .billing_settings import *
-# If billing_settings.py doesn't exist, remove this line
+# If billing_settings.py doesn't exist, remove this line# Triggering Sourcery Scan

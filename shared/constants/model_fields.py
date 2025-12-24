@@ -13,7 +13,7 @@ PARENT_EMAIL_FIELD = 'email'
 STUDENT_CLASS_FIELD = 'current_class'  # ALWAYS core.Class, NEVER class_group
 STUDENT_CLASS_ID_FIELD = 'current_class_id'
 
-# Application model fields  
+# Application model fields
 APPLICATION_CLASS_FIELD = 'proposed_class'  # core.Class foreign key
 APPLICATION_STATUS_FIELD = 'status'
 
@@ -59,7 +59,7 @@ class StatusChoices:
     ACTIVE = 'Active'
     PAST_DUE = "Past Due"
     EXPIRED = 'expired'
-    
+
 # Payment methods
 class PaymentMethods:
     PAYSTACK = 'paystack'

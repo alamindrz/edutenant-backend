@@ -27,7 +27,7 @@ def home_view(request):
         if hasattr(request, 'school') and request.school:
             return redirect('users:dashboard')
         return redirect('users:school_list')
-    
+
     # Public landing page
     try:
         # REMOVED select_related('logo') - logo is not a relationship field
@@ -37,55 +37,55 @@ def home_view(request):
         ).order_by('-created_at')[:6]
     except Exception:
         featured_schools = []
-    
+
     context = {
         'featured_schools': featured_schools,
         'total_schools': School.objects.filter(is_active=True).count(),
         'page_title': 'Edutenant - School Management Platform',
         'show_hero': True,
     }
-    
+
     return render(request, 'home.html', context)
 
 
 def school_discovery_view(request):
     """Public school discovery with filtering."""
     schools = School.objects.filter(is_active=True, application_form_enabled=True)
-    
+
     # Apply filters
     search = request.GET.get('q', '')
     school_type = request.GET.get('type', '')
     sort = request.GET.get('sort', 'newest')
-    
+
     if search:
         schools = schools.filter(
             Q(name__icontains=search) |
             Q(address__icontains=search) |
             Q(description__icontains=search)
         )
-    
+
     if school_type:
         schools = schools.filter(school_type=school_type)
-    
+
     # Sorting
     if sort == 'name':
         schools = schools.order_by('name')
     else:  # newest
         schools = schools.order_by('-created_at')
-    
+
     # Pagination
     paginator = Paginator(schools, 12)
     page = request.GET.get('page', 1)
-    
+
     try:
         schools_page = paginator.page(page)
     except:
         schools_page = paginator.page(1)
-    
+
     # Stats for cards
     hiring_schools = School.objects.filter(is_active=True).count()
     open_positions = 0
-    
+
     context = {
         'schools': schools_page,
         'search_query': search,
@@ -96,20 +96,20 @@ def school_discovery_view(request):
         'new_this_week': 0,
         'page_title': 'Discover Schools',
     }
-    
+
     return render(request, 'school_discovery.html', context)
 
 
 def school_overview_view(request, school_id):
     """Public school profile page."""
     school = get_object_or_404(School, id=school_id, is_active=True)
-    
+
     context = {
         'school': school,
         'page_title': school.name,
-        'page_subtitle': f'{school.get_school_type_display()} • {school.city or school.address}',
+        'page_subtitle': f'{school.get_school_type_display()} • {school.address}',
     }
-    
+
     return render(request, 'schools/overview.html', context)
 
 
@@ -129,7 +129,7 @@ def application_start_view(request, form_slug):
     except School.DoesNotExist:
         messages.error(request, "Application form not found.")
         return redirect('school_discovery')
-    
+
     # Check if user is already a member
     if request.user.is_authenticated:
         try:
@@ -139,12 +139,12 @@ def application_start_view(request, form_slug):
                 return redirect('users:dashboard')
         except:
             pass
-    
+
     context = {
         'school': school,
         'page_title': f'Apply to {school.name}',
     }
-    
+
     return render(request, 'admissions/public_application_start.html', context)
 
 
@@ -162,7 +162,7 @@ def theme_toggle_view(request):
             return JsonResponse({'success': True, 'theme': theme})
         except:
             return JsonResponse({'success': False}, status=400)
-    
+
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
@@ -182,16 +182,16 @@ def health_check_view(request):
     """System health check endpoint."""
     from django.db import connection
     from django.db.utils import OperationalError
-    
+
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
         db_status = True
     except OperationalError:
         db_status = False
-    
+
     status_code = 200 if db_status else 503
-    
+
     return JsonResponse({
         'status': 'healthy' if db_status else 'unhealthy',
         'database': 'connected' if db_status else 'disconnected',
@@ -247,7 +247,7 @@ def handler400(request, exception):
 def test_urls(request):
     """Test URL resolution."""
     from django.urls import reverse, NoReverseMatch
-    
+
     test_cases = [
         ('users:dashboard', 'User Dashboard'),
         ('users:school_list', 'School List'),
@@ -259,7 +259,7 @@ def test_urls(request):
         ('account_login', 'Login'),
         ('account_logout', 'Logout'),
     ]
-    
+
     results = []
     for url_name, description in test_cases:
         try:
@@ -267,20 +267,20 @@ def test_urls(request):
             results.append({'name': url_name, 'description': description, 'url': url, 'status': '✓'})
         except NoReverseMatch as e:
             results.append({'name': url_name, 'description': description, 'url': str(e), 'status': '✗'})
-    
+
     context = {
         'results': results,
         'page_title': 'URL Test',
     }
-    
+
     return render(request, 'test_urls.html', context)
 
 
-@login_required 
+@login_required
 def debug_context(request):
     """View all available context variables."""
     context_data = {}
-    
+
     # Basic request info
     context_data['request'] = {
         'path': request.path,
@@ -289,14 +289,14 @@ def debug_context(request):
         'user_authenticated': request.user.is_authenticated,
         'is_htmx': request.headers.get('HX-Request') == 'true',
     }
-    
+
     # School context
     if hasattr(request, 'school'):
         context_data['school'] = {
             'name': request.school.name if request.school else None,
             'id': request.school.id if request.school else None,
         }
-    
+
     # Session data (safe)
     if hasattr(request, 'session'):
         session_keys = list(request.session.keys())
@@ -305,17 +305,17 @@ def debug_context(request):
             'keys': safe_keys[:10],
             'session_key': request.session.session_key[:20] + '...' if request.session.session_key else None,
         }
-    
+
     # User context from middleware
     if hasattr(request, 'notification_count'):
         context_data['notifications'] = {
             'count': request.notification_count,
             'has_unread': request.notification_count > 0,
         }
-    
+
     context = {
         'debug_data': context_data,
         'page_title': 'Debug Context',
     }
-    
+
     return render(request, 'debug_context.html', context)

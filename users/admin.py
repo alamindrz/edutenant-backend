@@ -1,4 +1,4 @@
-# users/admin.py 
+# users/admin.py
 """
 CLEANED USER ADMIN - Using shared architecture
 NO circular imports, consistent field naming
@@ -52,7 +52,7 @@ class RoleAdmin(admin.ModelAdmin):
     list_filter = ('category', 'is_system_role', 'school')
     search_fields = ('name', 'school__name', 'system_role_type')
     readonly_fields = ('is_system_role', 'system_role_type')
-    
+
     def get_readonly_fields(self, request, obj=None):
         """Prevent editing system roles."""
         if obj and obj.is_system_role:

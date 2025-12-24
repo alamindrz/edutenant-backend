@@ -1,192 +1,103 @@
-<!-- templates/includes/top_navbar.html -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top" id="main-header">
-    <div class="container-fluid">
-        <!-- Logo & Brand -->
-        <a class="navbar-brand d-flex align-items-center" href="{% if request.user.is_authenticated %}{% url 'users:dashboard' %}{% else %}/{% endif %}">
-            <i class="bi bi-house-door-fill text-primary fs-4 me-2"></i>
-            <span class="fw-bold">SchoolSys</span>
+<!-- templates/includes/top_navbar.html --><nav class="navbar navbar-expand-lg border-bottom sticky-top shadow-sm" id="main-header" 
+     style="background-color: var(--bs-body-bg); min-height: 64px;">
+    <div class="container-fluid px-lg-4">
+        
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            <div class="bg-primary rounded-3 p-1 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                <i class="bi bi-mortarboard-fill text-white fs-5"></i>
+            </div>
+            <span class="fw-bold tracking-tight text-primary">EDUTENANT</span>
         </a>
 
-        <!-- Desktop Controls -->
-        <div class="d-none d-lg-flex align-items-center ms-auto">
-            {% if request.user.is_authenticated %}
-            <!-- School Selector -->
-            {% if current_school %}
-            <div class="dropdown me-3">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                        type="button" 
-                        data-bs-toggle="dropdown">
-                    <i class="bi bi-building me-1"></i>
-                    {{ current_school.name|truncatechars:20 }}
-                </button>
-                <ul class="dropdown-menu">
-                    {% if user_profile %}
-                    <li>
-                        <a class="dropdown-item" href="#">
-                            {{ current_school.name }}
-                            <small class="text-muted d-block">
-                                {% if user_role %}{{ user_role.name }}{% else %}No Role{% endif %}
-                            </small>
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    {% endif %}
-                    <li>
-                        <a class="dropdown-item" href="{% url 'users:school_list' %}">
-                            <i class="bi bi-buildings me-2"></i>All Schools
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{% url 'school_discovery' %}">
-                            <i class="bi bi-search me-2"></i>Discover Schools
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            {% endif %}
+        <div class="collapse navbar-collapse d-none d-lg-flex" id="desktopNavbar">
+            {% if user.is_authenticated %}
+            <div class="ms-auto d-flex align-items-center gap-3">
+                
+                {% if current_school %}
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm rounded-pill px-3 border d-flex align-items-center gap-2" data-bs-toggle="dropdown">
+                        <i class="bi bi-building text-secondary"></i>
+                        <span class="fw-medium">{{ current_school.name|truncatechars:15 }}</span>
+                        <i class="bi bi-chevron-down small opacity-50"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2">
+                        <li><h6 class="dropdown-header">Active School</h6></li>
+                        <li><a class="dropdown-item py-2 active" href="#"><i class="bi bi-check2-circle me-2"></i>{{ current_school.name }}</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'users:school_list' %}"><i class="bi bi-arrow-left-right me-2"></i>Switch School</a></li>
+                    </ul>
+                </div>
+                {% endif %}
 
-            <!-- Notifications -->
-            {% if request.notification_count > 0 %}
-            <div class="dropdown me-3">
-                <button class="btn btn-outline-secondary btn-sm position-relative" 
-                        type="button" 
-                        data-bs-toggle="dropdown">
-                    <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        {{ request.notification_count }}
-                    </span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><h6 class="dropdown-header">Notifications</h6></li>
-                    {% for notification in request.unread_notifications|slice:":5" %}
-                    <li>
-                        <a class="dropdown-item" href="#">
-                            <div class="d-flex">
-                                <div class="flex-shrink-0">
-                                    <i class="bi bi-info-circle text-primary"></i>
-                                </div>
-                                <div class="flex-grow-1 ms-2">
-                                    <div class="small">{{ notification.title|truncatechars:30 }}</div>
-                                    <div class="text-muted">{{ notification.created_at|timesince }} ago</div>
-                                </div>
-                            </div>
-                        </a>
-                    </li>
-                    {% endfor %}
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item text-center" href="#">
-                            View All Notifications
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            {% endif %}
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm rounded-circle p-2 position-relative border" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell"></i>
+                        {% if request.notification_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                        {% endif %}
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 mt-2" style="width: 320px;">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold">Notifications</h6>
+                            <span class="badge bg-primary-subtle text-primary">{{ request.notification_count }} New</span>
+                        </div>
+                        <div class="overflow-auto" style="max-height: 350px;">
+                            {% for notification in request.unread_notifications|slice:":5" %}
+                                <a href="#" class="dropdown-item p-3 border-bottom text-wrap">
+                                    <div class="small fw-bold text-dark">{{ notification.title }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ notification.created_at|timesince }} ago</div>
+                                </a>
+                            {% empty %}
+                                <div class="p-4 text-center text-muted italic">No new notifications</div>
+                            {% endfor %}
+                        </div>
+                        <a href="#" class="dropdown-item text-center py-2 bg-light small fw-bold">View All</a>
+                    </div>
+                </div>
 
-            <!-- User Menu -->
-            <div class="dropdown">
-                <button class="btn btn-link text-decoration-none dropdown-toggle" 
-                        type="button" 
-                        data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle fs-4 text-secondary"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <h6 class="dropdown-header">
-                            {{ request.user.get_full_name|default:request.user.username }}
-                        </h6>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{% url 'users:profile' %}">
-                            <i class="bi bi-person me-2"></i>My Profile
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{% url 'users:school_list' %}">
-                            <i class="bi bi-building me-2"></i>My Schools
-                        </a>
-                    </li>
-                    {% if current_school %}
-                    <li>
-                        <a class="dropdown-item" href="{% url 'users:switch_school' current_school.id %}">
-                            <i class="bi bi-arrow-left-right me-2"></i>Switch School
-                        </a>
-                    </li>
-                    {% endif %}
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <button class="dropdown-item" onclick="toggleDarkMode()">
-                            <i class="bi bi-moon me-2"></i>
-                            <span id="theme-toggle-top">Dark Mode</span>
-                        </button>
-                    </li>
-                    <li>
-                        <a class="dropdown-item text-danger" href="{% url 'account_logout' %}">
-                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                        </a>
-                    </li>
-                </ul>
+                <div class="dropdown">
+                    <button class="btn p-0 border-0" data-bs-toggle="dropdown">
+                        <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=random" 
+                             class="rounded-circle border" width="36" height="36" alt="Avatar">
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2">
+                        <li class="px-3 py-2 border-bottom mb-2">
+                            <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                            <div class="text-muted small">{{ user.email }}</div>
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="bi bi-person me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'users:school_list' %}"><i class="bi bi-gear me-2"></i>Account Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'account_logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                    </ul>
+                </div>
             </div>
             {% else %}
-            <!-- Public Menu -->
-            <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-link text-decoration-none" onclick="toggleDarkMode()">
-                    <i class="bi bi-moon"></i>
-                </button>
-                <a href="{% url 'account_login' %}" class="btn btn-outline-primary btn-sm">
-                    Login
-                </a>
-                <a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm">
-                    Sign Up
-                </a>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <a href="{% url 'account_login' %}" class="btn btn-link text-decoration-none text-dark fw-medium">Login</a>
+                <a href="{% url 'account_signup' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">Get Started</a>
             </div>
             {% endif %}
         </div>
 
-        <!-- Mobile Controls -->
-        <div class="d-flex d-lg-none align-items-center">
-            {% if request.user.is_authenticated and request.notification_count > 0 %}
-            <a href="#" class="btn btn-link text-decoration-none me-2 position-relative">
-                <i class="bi bi-bell fs-5"></i>
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
-                    {{ request.notification_count }}
-                </span>
-            </a>
+        <div class="d-flex d-lg-none align-items-center gap-2">
+            {% if user.is_authenticated and request.notification_count > 0 %}
+                <button class="btn btn-light btn-sm rounded-circle position-relative">
+                    <i class="bi bi-bell"></i>
+                    <span class="position-absolute top-1 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.5rem;">
+                        {{ request.notification_count }}
+                    </span>
+                </button>
             {% endif %}
-            <button class="btn btn-link text-decoration-none me-2" onclick="toggleDarkMode()">
-                <i class="bi bi-moon fs-5"></i>
+            
+            <button class="btn btn-light btn-sm rounded-circle" id="mobile-theme-toggle" onclick="toggleDarkMode()">
+                <i class="bi bi-moon-stars"></i>
             </button>
-            <button class="navbar-toggler" 
-                    type="button" 
-                    data-bs-toggle="offcanvas" 
-                    data-bs-target="#mobileMenuOffcanvas">
-                <span class="navbar-toggler-icon"></span>
+
+            <button class="btn btn-primary btn-sm rounded-3 ms-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenuOffcanvas">
+                <i class="bi bi-list fs-5"></i>
             </button>
         </div>
     </div>
 </nav>
 
-<style>
-#main-header {
-    z-index: 1020;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-}
-
-[data-bs-theme="dark"] #main-header {
-    background-color: var(--bs-dark) !important;
-    border-color: var(--bs-border-color) !important;
-}
-
-.dropdown-menu {
-    min-width: 200px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Adjust for mobile bottom nav */
-@media (max-width: 991.98px) {
-    #main-header {
-        margin-bottom: 0;
-    }
-}
-</style>

@@ -74,16 +74,16 @@ def format_phone(value):
     """
     if not value:
         return ""
-    
+
     # Remove all non-digit characters
     cleaned = ''.join(filter(str.isdigit, str(value)))
-    
+
     # Format Nigerian phone numbers
     if len(cleaned) == 11 and cleaned.startswith('0'):
         return f"+234 {cleaned[1:4]} {cleaned[4:7]} {cleaned[7:]}"
     elif len(cleaned) == 10 and cleaned.startswith('0'):
         return f"+234 {cleaned[1:4]} {cleaned[4:7]} {cleaned[7:]}"
-    
+
     return value
 
 @register.filter
