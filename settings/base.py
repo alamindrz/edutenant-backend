@@ -65,13 +65,14 @@ MIDDLEWARE = [
     'core.middleware.NotificationMiddleware',
     'core.middleware.WhiteLabelMiddleware',
 
-    # Allauth (must be after authentication middleware)
-    'allauth.account.middleware.AccountMiddleware',
+
 
     # Security and logging (end of chain)
     'core.middleware.SecurityHeadersMiddleware',
     'core.middleware.RequestLoggingMiddleware',
     'core.middleware.ExceptionHandlingMiddleware',
+    
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = [

@@ -406,35 +406,6 @@ class ExceptionHandlingMiddleware:
         }, status=500)
 
 
-# ============ SECURITY HEADERS MIDDLEWARE ============
-
-class SecurityHeadersMiddleware:
-    """Adds strict baseline security headers."""
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        response = self.get_response(request)
-
-        # Basic security headers for all responses
-        response["X-Content-Type-Options"] = "nosniff"
-        response["X-Frame-Options"] = "DENY"
-        response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-        # Only add CSP for payment pages
-        if request.path.startswith("/billing/payment/"):
-            response["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' https://js.paystack.co; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src 'self' https://fonts.gstatic.com; "
-                "frame-src https://js.paystack.co; "
-                "connect-src 'self' https://api.paystack.co;"
-            )
-
-        return response
-
 
 # ============ REQUEST LOGGING MIDDLEWARE ============
 

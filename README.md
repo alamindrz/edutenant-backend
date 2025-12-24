@@ -1,8 +1,8 @@
-Nigerian School Management System - Edusuite
+Nigerian School Management System - Edutenant
 
 🏫 Overview
 
-Edusuite is a comprehensive school management system designed specifically for Nigerian educational institutions. It streamlines admissions, student management, billing, and academic administration while addressing local educational requirements and payment systems.
+Edutenant is a comprehensive school management system designed specifically for Nigerian educational institutions. It streamlines admissions, student management, billing, and academic administration while addressing local educational requirements and payment systems.
 
 🎯 Key Features
 
@@ -46,7 +46,7 @@ Edusuite is a comprehensive school management system designed specifically for N
 App Structure
 
 ```
-edusuite/
+Edutenant/
 ├── core/           # Core models (School, Class, Subject)
 ├── users/          # User authentication and staff management
 ├── students/       # Student management and academic records
@@ -251,7 +251,7 @@ Built for Nigerian Schools
 
 🎯 Mission
 
-Edusuite aims to digitize and streamline Nigerian school administration, making it easier for schools to manage operations, for parents to engage with their children's education, and for students to thrive in an organized academic environment.
+Edutenant aims to digitize and streamline Nigerian school administration, making it easier for schools to manage operations, for parents to engage with their children's education, and for students to thrive in an organized academic environment.
 
 ---
 
