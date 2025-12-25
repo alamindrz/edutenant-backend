@@ -1,22 +1,57 @@
-# ENV
-.env
-
-# Django Stuff
+# Python
 __pycache__/
-db.sqlite3
-
-# Static
-staticfiles/
-
-# Media
-media/
-
-# Logs
-*.log
-logs/
-
-# Compiled
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
 *.pyo
 *.pyd
+
+# Django
 *.sqlite3
+*.db
+db.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Static files collected
+staticfiles/
+
+# Media files
+media/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
+
+# Local settings
+local_settings.py
+settings/local.py
