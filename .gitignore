@@ -1,23 +1,44 @@
-# ENV
-.env
-
-# Django Stuff
+# Python
 __pycache__/
-db.sqlite3
-
-# Static
-staticfiles/
-
-# Media
-media/
-
-# Logs
-*.log
-logs/
-
-# Compiled
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
 *.pyo
 *.pyd
-*.sqlite3__pycache__/
-*.pyc
+*.py.class
+
+# Build/install files
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
