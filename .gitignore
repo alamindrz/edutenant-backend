@@ -8,26 +8,15 @@ __pycache__/
 *.pyd
 *.py.class
 
-# Build/install files
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Django
+*.sqlite3
+*.db
 
-# Environments
+# Logs
+logs/
+*.log
+
+# Environment
 .env
 .venv
 env/
@@ -42,3 +31,27 @@ venv.bak/
 *.swp
 *.swo
 *~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Static files collected
+staticfiles/
+
+# Media files (user uploaded)
+media/
+
+# Local settings
+local_settings.py
+settings/local.py
+
+# Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
