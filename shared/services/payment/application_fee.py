@@ -108,13 +108,12 @@ class ApplicationPaymentService:
             else:
                 # Create minimal invoice placeholder
                 from django.db import models
-                invoice = type('Invoice', (), {
-                    'id': 0,
-                    'metadata': {},
-                    'save': lambda self: None
-                })()
-                invoice.metadata = {}
-
+                              invoice = type('Invoice', (), {
+                  'id': 0,
+                  'amount': fee_amount,  # <--- ADD THIS
+                  'metadata': {},
+                  'save': lambda self: None
+              })()
             # 5. Store metadata in invoice for later use
             invoice.metadata = {
                 'form_id': form.id,

@@ -5,38 +5,63 @@ DEPENDS ONLY ON: shared.constants
 """
 from shared.constants.model_fields import FORM_TO_MODEL
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class FieldMapper:
     """Handle field name standardization and mapping."""
+
+    # Centralized mapping configuration
+    MAPS = {
+        'student': {
+            'first_name': 'first_name',
+            'surname': 'last_name',
+            'date_of_birth': 'dob',
+        },
+        'parent': {
+            'phone': 'phone_number',
+            'email_address': 'email',
+        },
+        'application': {
+            'applied_class': 'applied_class_id',
+        }
+    }
 
     @staticmethod
     def map_form_to_model(form_data, model_name=None):
         """
         Apply consistent field mapping from forms to models.
-
-        Args:
-            form_data (dict): Data from form.cleaned_data or request.POST
-            model_name (str, optional): 'parent', 'student', 'application'
-
-        Returns:
-            dict: Standardized data with correct field names
         """
         if not form_data:
             return {}
 
-        mapped_data = form_data.copy()
+        # FIXED: Create a new dict instead of modifying the copy in a loop
+        standardized_data = {}
+        
+        # Get the specific map for the model, or an empty dict if not found
+        # This addresses the CodeRabbit "Minor comment" about missing defaults
+        mapping = FieldMapper.MAPS.get(model_name, {})
 
-        # 1. Apply global form→model mapping
-        for form_field, model_field in FORM_TO_MODEL.items():
-            if form_field in mapped_data:
-                mapped_data[model_field] = mapped_data.pop(form_field)
+        for key, value in form_data.items():
+            # If the key exists in our map, use the model field name
+            new_key = mapping.get(key, key)
+            standardized_data[new_key] = value
 
-        # 2. Standardize phone number if present
-        if 'phone_number' in mapped_data:
-            mapped_data['phone_number'] = FieldMapper.standardize_phone_number(
-                mapped_data['phone_number']
+        # Standardize phone number if present
+        if 'phone_number' in standardized_data:
+            standardized_data['phone_number'] = FieldMapper.standardize_phone_number(
+                standardized_data['phone_number']
             )
 
-        return mapped_data
+        return standardized_data
+
+    @staticmethod
+    def standardize_phone_number(phone):
+        """Placeholder for your phone standardization logic."""
+        if not phone:
+            return phone
+        return str(phone).strip().replace(" ", "")
 
     @staticmethod
     def standardize_phone_number(phone):

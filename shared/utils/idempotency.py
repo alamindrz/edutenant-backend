@@ -10,25 +10,32 @@ class IdempotencyService:
     """Service to ensure operations are processed only once."""
 
     @staticmethod
-    def get_key(event_type, identifier):
-        """Generate unique key for idempotency."""
-        return f"idempotency_{event_type}_{identifier}"
-
-    @staticmethod
-    def check_and_lock(key, ttl=300):  # 5 minutes lock
-        """
-        Check if operation was already processed and lock for processing.
-        Returns True if should proceed, False if duplicate.
-        """
-        # Try to set the lock
-        if cache.add(f"{key}_lock", True, ttl):
-            # Check if already processed
-            if cache.get(f"{key}_processed"):
-                # Release lock and return False (duplicate)
-                cache.delete(f"{key}_lock")
-                return False
-            return True  # Proceed with processing
-        return False  # Already being processed
+    def get_idempotency_key(request):
+        # Safe way to get the key from headers
+        key = request.headers.get('X-Idempotency-Key')
+        if not key:
+            return None
+        
+        # Prefix with user ID to ensure the key is unique to this user
+        user_id = getattr(request.user, 'id', 'anonymous')
+        return f"idemp_{user_id}_{key}"
+    
+    
+        @staticmethod
+        def check_and_lock(key, ttl=300):  # 5 minutes lock
+            """
+            Check if operation was already processed and lock for processing.
+            Returns True if should proceed, False if duplicate.
+            """
+            # Try to set the lock
+            if cache.add(f"{key}_lock", True, ttl):
+                # Check if already processed
+                if cache.get(f"{key}_processed"):
+                    # Release lock and return False (duplicate)
+                    cache.delete(f"{key}_lock")
+                    return False
+                return True  # Proceed with processing
+            return False  # Already being processed
 
     @staticmethod
     def mark_processed(key, ttl=24*60*60):  # 24 hours

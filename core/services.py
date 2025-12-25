@@ -12,7 +12,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.apps import apps
-from django.db.models import Q, Sum, Avg, F
+from django.db.models import Q, Sum, Avg, F, Count
 
 
 # SHARED IMPORTS
@@ -246,17 +246,11 @@ class ClassManagementService:
             logger.error(f"Class deactivation error: {e}", exc_info=True)
             raise ClassManagementError(f"Failed to deactivate class: {str(e)}")
 
+
     @staticmethod
     def get_class_stats(school, filters: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Get class statistics for a school.
-
-        Args:
-            school: School instance
-            filters: Optional filters
-
-        Returns:
-            dict: Class statistics
         """
         try:
             Class = _get_model('Class')
@@ -288,6 +282,7 @@ class ClassManagementService:
             )
 
             # Classes by category
+            # FIXED: Now using imported Count
             categories_stats = queryset.filter(
                 category__isnull=False
             ).values(
@@ -310,7 +305,7 @@ class ClassManagementService:
                 'capacity_stats': capacity_stats,
                 'categories_stats': list(categories_stats),
                 'full_classes': queryset.filter(
-                    current_strength__gte=models.F('max_students')
+                    current_strength__gte=F('max_students') # FIXED: models.F -> F
                 ).count(),
                 'empty_classes': queryset.filter(current_strength=0).count(),
             }
@@ -318,6 +313,8 @@ class ClassManagementService:
         except Exception as e:
             logger.error(f"Class stats error: {e}", exc_info=True)
             raise ClassManagementError(f"Failed to get class statistics: {str(e)}")
+
+
 
     @staticmethod
     def get_classes_for_teacher(teacher, school) -> List[Any]:

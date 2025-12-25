@@ -375,7 +375,14 @@
         }
     });
     </script>
-    
+    [data-bs-theme="dark"] .navbar {
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-gray-400) !important; /* Forces utility classes to be visible */
+}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

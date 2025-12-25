@@ -596,9 +596,11 @@ def application_list_view(request):
     school = request.school
 
     try:
+        # 1. FIXED: Use form__school (Already done, but kept for consistency)
+        # 2. ADDED: .distinct() to prevent duplicates when filtering across relationships
         applications = Application.objects.filter(
             form__school=school
-        ).select_related('student', 'parent', 'form', 'assigned_to').order_by('-submitted_at')
+        ).select_related('parent', 'form', 'assigned_to').order_by('-submitted_at')
 
         # Filters
         status_filter = request.GET.get('status', '')
@@ -612,16 +614,19 @@ def application_list_view(request):
             applications = applications.filter(form_id=form_filter)
         if priority_filter:
             applications = applications.filter(priority=priority_filter)
+            
         if search_query:
+            # FIX: Only filter on student__ names if the student model is definitely 
+            # related. Otherwise, search the JSON 'data' field or application_number.
             applications = applications.filter(
                 Q(application_number__icontains=search_query) |
-                Q(student__first_name__icontains=search_query) |
-                Q(student__last_name__icontains=search_query) |
                 Q(parent__first_name__icontains=search_query) |
                 Q(parent__last_name__icontains=search_query) |
                 Q(parent__email__icontains=search_query) |
                 Q(parent__phone_number__icontains=search_query)
-            )
+                # NOTE: If student info is in a JSONField named 'data', use:
+                # Q(data__first_name__icontains=search_query)
+            ).distinct()
 
         # Get available forms for filter
         forms = ApplicationForm.objects.filter(school=school, status='active')
@@ -631,7 +636,7 @@ def application_list_view(request):
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
-        # Status counts for filter display
+        # 3. FIXED: Status counts must also use form__school
         status_counts = Application.objects.filter(
             form__school=school
         ).values('status').annotate(count=Count('id'))
@@ -643,7 +648,7 @@ def application_list_view(request):
             'form_filter': form_filter,
             'priority_filter': priority_filter,
             'search_query': search_query,
-            'status_counts': status_counts,
+            'status_counts': {item['status']: item['count'] for item in status_counts}, # Better format for template
             'page_obj': page_obj,
             'page_title': 'Applications List',
         }
@@ -651,9 +656,10 @@ def application_list_view(request):
         return render(request, 'admissions/application_list.html', context)
 
     except Exception as e:
-        logger.error(f"Application list error for school {school.id}: {str(e)}")
-        messages.error(request, "Error loading applications. Please try again.")
+        logger.error(f"Application list error for school {school.id}: {str(e)}", exc_info=True)
+        messages.error(request, f"Error loading applications: {str(e)}")
         return redirect('admissions:dashboard')
+
 
 
 @login_required
