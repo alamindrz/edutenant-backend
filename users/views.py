@@ -5,7 +5,7 @@ NO circular imports, PROPER service usage, WELL LOGGED
 """
 import logging
 from typing import Optional
-
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -95,11 +95,21 @@ def recover_school_context(request) -> Optional[Any]:
 
 
 def school_onboarding_start(request):
-    """Start school onboarding process with proper error handling."""
+    """
+    School onboarding process that handles both user registration and school creation.
+    """
+    # If user is already logged in and has a school, redirect to dashboard
+    if request.user.is_authenticated:
+        if hasattr(request, 'school') and request.school:
+            messages.info(request, f"You already have a school: {request.school.name}")
+            return redirect('users:dashboard')
+    
     if request.method == 'POST':
         logger.info("School onboarding POST request received")
-
+        
+        # Use your existing form
         form = SchoolOnboardingForm(request.POST)
+        
         if not form.is_valid():
             logger.warning(f"Form validation failed: {form.errors}")
             # Show form errors to user
@@ -114,46 +124,219 @@ def school_onboarding_start(request):
             return render(request, 'users/school_onboarding.html', {'form': form})
 
         try:
-            logger.info("Form is valid, creating school...")
-
-            # Create school from template
-            school = SchoolOnboardingService.create_school_from_template(form.cleaned_data)
-            logger.info(f"School created successfully: {school.name}")
-
-            # Get the admin user and set backend
+            logger.info("Form is valid, processing school creation...")
+            
+            cleaned_data = form.cleaned_data
+            
+            # Check if user already exists (by email)
             User = get_user_model()
-            admin_user = User.objects.get(email=form.cleaned_data['admin_email'])
-
-            # Set the authentication backend
-            admin_user.backend = 'django.contrib.auth.backends.ModelBackend'
-
-            # Log in the admin user
-            login(request, admin_user)
-
+            admin_email = cleaned_data['admin_email']
+            
+            if User.objects.filter(email=admin_email).exists():
+                # User exists, check if they're logged in
+                existing_user = User.objects.get(email=admin_email)
+                
+                if request.user.is_authenticated:
+                    if request.user != existing_user:
+                        messages.error(request, 
+                            f"This email is already registered to another account. "
+                            f"Please sign in with the correct account or use a different email."
+                        )
+                        return render(request, 'users/school_onboarding.html', {'form': form})
+                    # User is logged in and this is their email - proceed
+                    admin_user = request.user
+                else:
+                    # User exists but isn't logged in
+                    messages.error(request,
+                        f"An account with email '{admin_email}' already exists. "
+                        f"Please sign in first, or use a different email address."
+                    )
+                    return redirect('account_login')
+            else:
+                # Create new user if not logged in
+                if not request.user.is_authenticated:
+                    # Create user from form data
+                    admin_user = User.objects.create_user(
+                        username=admin_email,
+                        email=admin_email,
+                        password=cleaned_data['admin_password'],
+                        first_name=cleaned_data.get('admin_first_name', ''),
+                        last_name=cleaned_data.get('admin_last_name', '')
+                    )
+                    
+                    # Add phone if provided
+                    if 'admin_phone' in cleaned_data and cleaned_data['admin_phone']:
+                        admin_user.phone = cleaned_data['admin_phone']
+                        admin_user.save()
+                    
+                    # Log in the new user
+                    admin_user.backend = 'django.contrib.auth.backends.ModelBackend'
+                    login(request, admin_user)
+                    logger.info(f"New user created and logged in: {admin_email}")
+                else:
+                    # User is already logged in
+                    admin_user = request.user
+            
+            # Now create the school using your existing service
+            logger.info(f"Creating school for user: {admin_user.email}")
+            
+            # Prepare data for your SchoolOnboardingService
+            school_data = {
+                'school_name': cleaned_data['school_name'],
+                'school_type': cleaned_data['school_type'],
+                'contact_email': cleaned_data.get('contact_email', admin_email),
+                'phone_number': cleaned_data.get('phone_number'),
+                'address': cleaned_data.get('address'),
+                'subdomain': cleaned_data.get('subdomain'),
+                'bank_code': cleaned_data.get('bank_code'),
+                'account_number': cleaned_data.get('account_number'),
+                'account_name': cleaned_data.get('account_name'),
+                'admin_email': admin_email,
+                'admin_first_name': admin_user.first_name,
+                'admin_last_name': admin_user.last_name,
+                'admin_phone': getattr(admin_user, 'phone', ''),
+            }
+            
+            # Use your existing service to create school
+            school = SchoolOnboardingService.create_school_from_template(school_data)
+            logger.info(f"School created successfully: {school.name}")
+            
+            # Create profile for user in this school
+            try:
+                from .models import Profile, Role
+                
+                # Get or create default admin role
+                default_role, _ = Role.objects.get_or_create(
+                    system_role_type='principal',
+                    defaults={
+                        'name': 'School Principal',
+                        'can_manage_staff': True,
+                        'can_manage_students': True,
+                        'can_manage_academics': True,
+                        'can_manage_finances': True,
+                        'can_manage_roles': True,
+                        'can_view_reports': True,
+                        'can_communicate': True,
+                        'can_manage_attendance': True,
+                        'can_manage_admissions': True,
+                    }
+                )
+                
+                # Create profile
+                Profile.objects.create(
+                    user=admin_user,
+                    school=school,
+                    role=default_role
+                )
+                logger.info(f"Profile created for {admin_user.email} in school {school.name}")
+                
+            except Exception as profile_error:
+                logger.error(f"Error creating profile: {profile_error}")
+                # Continue anyway - school was created successfully
+            
+            # Set session school
+            request.session['current_school_id'] = school.id
+            
+            # Send success message
             messages.success(
                 request,
-                f"Welcome to Edusuite! Your school '{school.name}' has been created successfully."
+                f"Congratulations! Your school '{school.name}' has been created successfully. "
+                f"You're now logged in as the school principal."
             )
+            
+            # Redirect to dashboard
             return redirect('users:dashboard')
 
         except SchoolOnboardingError as e:
             logger.error(f"School onboarding error: {e}", exc_info=True)
             messages.error(request, str(e))
+            
+            # If user was created but school failed, log them out
+            if 'admin_user' in locals() and not request.user.is_authenticated:
+                logout(request)
+                
         except Exception as e:
             logger.error(f"Unexpected error during onboarding: {e}", exc_info=True)
             messages.error(
                 request,
-                "An error occurred during setup. Please try again or contact support."
+                "An unexpected error occurred during setup. Please try again or contact support."
             )
+            
+            # Clean up: logout if user was just created
+            if 'admin_user' in locals() and not request.user.is_authenticated:
+                logout(request)
+    
     else:
+        # GET request - initialize form
         form = SchoolOnboardingForm()
+        
+        # Pre-fill with user data if logged in
+        if request.user.is_authenticated:
+            initial_data = {
+                'admin_email': request.user.email,
+                'admin_first_name': request.user.first_name,
+                'admin_last_name': request.user.last_name,
+            }
+            
+            # Add phone if exists on user model
+            if hasattr(request.user, 'phone') and request.user.phone:
+                initial_data['admin_phone'] = request.user.phone
+            
+            form = SchoolOnboardingForm(initial=initial_data)
 
     context = {
         'form': form,
-        'page_title': 'Create Your School'
+        'page_title': 'Create Your School',
+        'page_subtitle': 'Everything you need to start managing your school digitally',
+        'user_is_authenticated': request.user.is_authenticated,
     }
+    
     return render(request, 'users/school_onboarding.html', context)
 
+
+
+
+def check_subdomain_availability(request):
+    """API endpoint to check subdomain availability."""
+    subdomain = request.GET.get('subdomain', '').strip().lower()
+    
+    if not subdomain:
+        return JsonResponse({'error': 'Subdomain required'}, status=400)
+    
+    # Validate format
+    import re
+    if not re.match(r'^[a-zA-Z0-9-]+$', subdomain):
+        return JsonResponse({'available': False, 'error': 'Invalid format'})
+    
+    if len(subdomain) < 3:
+        return JsonResponse({'available': False, 'error': 'Too short'})
+    
+    if len(subdomain) > 30:
+        return JsonResponse({'available': False, 'error': 'Too long'})
+    
+    # Check reserved words
+    reserved = ['admin', 'api', 'app', 'dashboard', 'help', 'support', 'www', 'mail', 'ftp']
+    if subdomain in reserved:
+        return JsonResponse({'available': False, 'error': 'Reserved word'})
+    
+    # Check database
+    from core.models import School
+    exists = School.objects.filter(subdomain=subdomain).exists()
+    
+    suggestions = []
+    if exists:
+        # Generate suggestions
+        for i in range(1, 5):
+            suggestion = f"{subdomain}{i}"
+            if not School.objects.filter(subdomain=suggestion).exists():
+                suggestions.append(suggestion)
+                if len(suggestions) >= 3:
+                    break
+    
+    return JsonResponse({
+        'available': not exists,
+        'suggestions': suggestions
+    })
 
 
 def accept_invitation_view(request, token: str):

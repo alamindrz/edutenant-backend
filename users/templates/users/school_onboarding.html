@@ -4,299 +4,284 @@
 
 {% block title %}Create Your School - Edusuite{% endblock %}
 
+{% block page_title %}Create Your School{% endblock %}
+{% block page_subtitle %}Transform your school into a digital institution in minutes{% endblock %}
+
 {% block content %}
-<div class="min-vh-100 bg-light">
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <!-- Header -->
-                <div class="text-center mb-5">
-                    <h1 class="display-4 text-primary mb-3">Create Your School</h1>
-                    <p class="lead text-muted">Transform your school into a digital institution in minutes</p>
-                    <div class="progress mb-4" style="height: 6px;">
-                        <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Progress Steps -->
+            <div class="text-center mb-5">
+                <div class="d-flex justify-content-center align-items-center mb-3">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div class="bg-primary" style="height: 3px; width: 100px;"></div>
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div class="bg-primary" style="height: 3px; width: 100px;"></div>
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                        <i class="bi bi-check-circle"></i>
                     </div>
                 </div>
+                <p class="text-muted">Create Account → Setup School → Get Started</p>
+            </div>
 
-                <!-- Onboarding Form -->
-                <div class="card shadow-lg border-0">
-                    <div class="card-body p-5">
-                        <form method="post" id="schoolOnboardingForm" novalidate>
-                            {% csrf_token %}
-                            
-                            {% if form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                {% for error in form.non_field_errors %}
-                                {{ error }}
-                                {% endfor %}
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="schoolOnboardingForm" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                        <div class="mb-4">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <!-- Left Column: Account Creation (only if not logged in) -->
+                            {% if not request.user.is_authenticated %}
+                            <div class="col-lg-6 border-end-lg pe-lg-4 mb-4 mb-lg-0">
+                                <h4 class="mb-4"><i class="bi bi-person me-2"></i>Create Admin Account</h4>
+                                <p class="text-muted mb-4">This will be your login as the school principal.</p>
+                                
+                                <!-- Name Fields -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="admin_first_name" class="form-label">First Name *</label>
+                                        <input type="text" class="form-control" id="admin_first_name" name="admin_first_name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="admin_last_name" class="form-label">Last Name *</label>
+                                        <input type="text" class="form-control" id="admin_last_name" name="admin_last_name" required>
+                                    </div>
+                                </div>
+                                
+                                <!-- Email -->
+                                <div class="mb-3">
+                                    <label for="admin_email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="admin_email" name="admin_email" required>
+                                    <div class="form-text">This will be your login username</div>
+                                </div>
+                                
+                                <!-- Phone -->
+                                <div class="mb-3">
+                                    <label for="admin_phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="admin_phone" name="admin_phone">
+                                </div>
+                                
+                                <!-- Password -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="admin_password" class="form-label">Password *</label>
+                                        <input type="password" class="form-control" id="admin_password" name="admin_password" required minlength="8">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="admin_password_confirm" class="form-label">Confirm Password *</label>
+                                        <input type="password" class="form-control" id="admin_password_confirm" name="admin_password_confirm" required>
+                                    </div>
+                                </div>
+                                
+                                <!-- Already have account -->
+                                <div class="text-center mt-4">
+                                    <p class="text-muted small">
+                                        Already have an account? 
+                                        <a href="{% url 'account_login' %}?next={% url 'users:school_onboarding' %}" 
+                                           class="text-decoration-none">Sign in here</a>
+                                    </p>
+                                </div>
+                            </div>
+                            {% else %}
+                            <!-- If already logged in -->
+                            <div class="col-lg-6 border-end-lg pe-lg-4 mb-4 mb-lg-0">
+                                <h4 class="mb-4"><i class="bi bi-person-check me-2"></i>Your Account</h4>
+                                <div class="alert alert-info">
+                                    <div class="d-flex">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <div>
+                                            <strong>Signed in as {{ request.user.get_full_name|default:request.user.email }}</strong><br>
+                                            <small>You'll be the administrator for this school.</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             {% endif %}
-
-                            <!-- School Information -->
-                            <div class="mb-5">
-                                <h4 class="border-bottom pb-2 mb-4">School Information</h4>
+                            
+                            <!-- Right Column: School Information -->
+                            <div class="col-lg-6 ps-lg-4">
+                                <h4 class="mb-4"><i class="bi bi-building me-2"></i>School Information</h4>
                                 
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="mb-3">
-                                            <label for="{{ form.school_name.id_for_label }}" class="form-label">
-                                                School Name *
-                                            </label>
-                                            {{ form.school_name }}
-                                            {% if form.school_name.errors %}
-                                            <div class="text-danger small mt-1">{{ form.school_name.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.school_type.id_for_label }}" class="form-label">
-                                                School Type *
-                                            </label>
-                                            {{ form.school_type }}
-                                            {% if form.school_type.errors %}
-                                            <div class="text-danger small mt-1">{{ form.school_type.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.subdomain.id_for_label }}" class="form-label">
-                                                Custom Subdomain <small class="text-muted">(Optional)</small>
-                                            </label>
-                                            <div class="input-group">
-                                                {{ form.subdomain }}
-                                                <span class="input-group-text">.edusuite.com</span>
-                                            </div>
-                                            {% if form.subdomain.errors %}
-                                            <div class="text-danger small mt-1">{{ form.subdomain.errors }}</div>
-                                            {% endif %}
-                                            <div class="form-text">
-                                                Leave blank to use path-based URL: edusuite.com/your-school/
-                                            </div>
-                                            <div id="subdomain-feedback" class="mt-1"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.contact_email.id_for_label }}" class="form-label">
-                                                School Contact Email *
-                                            </label>
-                                            {{ form.contact_email }}
-                                            {% if form.contact_email.errors %}
-                                            <div class="text-danger small mt-1">{{ form.contact_email.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">
-                                                Phone Number
-                                            </label>
-                                            {{ form.phone_number }}
-                                            {% if form.phone_number.errors %}
-                                            <div class="text-danger small mt-1">{{ form.phone_number.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
+                                <!-- School Name -->
                                 <div class="mb-3">
-                                    <label for="{{ form.address.id_for_label }}" class="form-label">
-                                        School Address
-                                    </label>
-                                    {{ form.address }}
-                                    {% if form.address.errors %}
-                                    <div class="text-danger small mt-1">{{ form.address.errors }}</div>
-                                    {% endif %}
+                                    <label for="school_name" class="form-label">School Name *</label>
+                                    <input type="text" class="form-control" id="school_name" name="school_name" required
+                                           placeholder="e.g., Bright Future Academy">
                                 </div>
-                            </div>
-
-                            <!-- Bank Details (Optional) -->
-                            <div class="mb-5">
-                                <h4 class="border-bottom pb-2 mb-4">Payment Setup <small class="text-muted">(Optional)</small></h4>
-                                <p class="text-muted mb-4">
-                                    Add your bank details to receive parent payments directly. You can skip this and set it up later.
-                                </p>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.bank_code.id_for_label }}" class="form-label">
-                                                Bank Code
-                                            </label>
-                                            {{ form.bank_code }}
-                                            {% if form.bank_code.errors %}
-                                            <div class="text-danger small mt-1">{{ form.bank_code.errors }}</div>
-                                            {% endif %}
-                                            <div class="form-text">e.g., 058 for GTBank</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.account_number.id_for_label }}" class="form-label">
-                                                Account Number
-                                            </label>
-                                            {{ form.account_number }}
-                                            {% if form.account_number.errors %}
-                                            <div class="text-danger small mt-1">{{ form.account_number.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
+                                
+                                <!-- School Type -->
                                 <div class="mb-3">
-                                    <label for="{{ form.account_name.id_for_label }}" class="form-label">
-                                        Account Name
-                                    </label>
-                                            {{ form.account_name }}
-                                            {% if form.account_name.errors %}
-                                            <div class="text-danger small mt-1">{{ form.account_name.errors }}</div>
-                                            {% endif %}
+                                    <label for="school_type" class="form-label">School Type *</label>
+                                    <select class="form-select" id="school_type" name="school_type" required>
+                                        <option value="" selected disabled>Select school type</option>
+                                        <option value="nursery">Nursery School</option>
+                                        <option value="primary">Primary School</option>
+                                        <option value="secondary">Secondary School</option>
+                                        <option value="combined">Combined School</option>
+                                        <option value="full">Full K-12 School</option>
+                                        <option value="vocational">Vocational/Training Center</option>
+                                        <option value="university">University/College</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Subdomain -->
+                                <div class="mb-3">
+                                    <label for="subdomain" class="form-label">Custom Subdomain <small class="text-muted">(Optional)</small></label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="subdomain" name="subdomain" 
+                                               placeholder="yourschool" pattern="[a-zA-Z0-9-]+" minlength="3">
+                                        <span class="input-group-text">.edusuite.com</span>
+                                    </div>
+                                    <div class="form-text">
+                                        Leave blank to use path-based URL: edusuite.com/your-school/
+                                    </div>
+                                    <div id="subdomain-feedback" class="mt-1 small"></div>
+                                </div>
+                                
+                                <!-- Contact Info -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="contact_email" class="form-label">School Email *</label>
+                                        <input type="email" class="form-control" id="contact_email" name="contact_email" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="phone_number" class="form-label">School Phone</label>
+                                        <input type="tel" class="form-control" id="phone_number" name="phone_number">
+                                    </div>
+                                </div>
+                                
+                                <!-- Address -->
+                                <div class="mb-4">
+                                    <label for="address" class="form-label">School Address</label>
+                                    <textarea class="form-control" id="address" name="address" rows="2" 
+                                              placeholder="Full street address"></textarea>
+                                </div>
+                                
+                                <!-- Bank Details Section -->
+                                <div class="border-top pt-3 mt-3">
+                                    <h6 class="text-muted mb-3">Payment Setup <small class="text-muted">(Optional)</small></h6>
+                                    <p class="small text-muted mb-3">Add your bank details to receive parent payments directly.</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="bank_code" class="form-label">Bank Code</label>
+                                                <select class="form-select" id="bank_code" name="bank_code">
+                                                    <option value="">Select Bank</option>
+                                                    <option value="058">058 - GTBank</option>
+                                                    <option value="032">032 - Access Bank</option>
+                                                    <option value="033">033 - UBA</option>
+                                                    <option value="044">044 - Access Bank (Diamond)</option>
+                                                    <option value="050">050 - Ecobank</option>
+                                                    <option value="070">070 - Fidelity Bank</option>
+                                                    <option value="076">076 - Polaris Bank</option>
+                                                    <option value="082">082 - Keystone Bank</option>
+                                                    <option value="101">101 - Providus Bank</option>
+                                                    <option value="214">214 - First Bank</option>
+                                                    <option value="215">215 - Unity Bank</option>
+                                                    <option value="221">221 - Stanbic IBTC</option>
+                                                    <option value="232">232 - Sterling Bank</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="account_number" class="form-label">Account Number</label>
+                                                <input type="text" class="form-control" id="account_number" name="account_number" 
+                                                       maxlength="10" pattern="\d{10}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="account_name" class="form-label">Account Name</label>
+                                        <input type="text" class="form-control" id="account_name" name="account_name">
+                                    </div>
+                                    
+                                    <div class="alert alert-warning small">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        You can skip payment setup and configure it later in the billing settings.
+                                    </div>
                                 </div>
                             </div>
-
-                            <!-- Admin Account -->
-                            <div class="mb-5">
-                                <h4 class="border-bottom pb-2 mb-4">Admin Account</h4>
-                                <p class="text-muted mb-4">
-                                    This will be your login account as the school principal.
-                                </p>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.admin_first_name.id_for_label }}" class="form-label">
-                                                First Name
-                                            </label>
-                                            {{ form.admin_first_name }}
-                                            {% if form.admin_first_name.errors %}
-                                            <div class="text-danger small mt-1">{{ form.admin_first_name.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.admin_last_name.id_for_label }}" class="form-label">
-                                                Last Name
-                                            </label>
-                                            {{ form.admin_last_name }}
-                                            {% if form.admin_last_name.errors %}
-                                            <div class="text-danger small mt-1">{{ form.admin_last_name.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.admin_email.id_for_label }}" class="form-label">
-                                                Email Address *
-                                            </label>
-                                            {{ form.admin_email }}
-                                            {% if form.admin_email.errors %}
-                                            <div class="text-danger small mt-1">{{ form.admin_email.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.admin_phone.id_for_label }}" class="form-label">
-                                                Phone Number
-                                            </label>
-                                            {{ form.admin_phone }}
-                                            {% if form.admin_phone.errors %}
-                                            <div class="text-danger small mt-1">{{ form.admin_phone.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.admin_password.id_for_label }}" class="form-label">
-                                                Password *
-                                            </label>
-                                            {{ form.admin_password }}
-                                            {% if form.admin_password.errors %}
-                                            <div class="text-danger small mt-1">{{ form.admin_password.errors }}</div>
-                                            {% endif %}
-                                            <div class="form-text">Minimum 8 characters</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="{{ form.admin_password_confirm.id_for_label }}" class="form-label">
-                                                Confirm Password *
-                                            </label>
-                                            {{ form.admin_password_confirm }}
-                                            {% if form.admin_password_confirm.errors %}
-                                            <div class="text-danger small mt-1">{{ form.admin_password_confirm.errors }}</div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Terms and Submit -->
-                            <div class="mb-4">
+                        </div>
+                        
+                        <!-- Terms and Submit -->
+                        <div class="row mt-4 pt-4 border-top">
+                            <div class="col-lg-8">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="_terms" name="agree_terms" required>
-                                    <label class="form-check-label" for="_terms" name="agree_terms">
-                                        I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
+                                    <input class="form-check-input" type="checkbox" id="agree_terms" name="agree_terms" required>
+                                    <label class="form-check-label small" for="agree_terms">
+                                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> 
+                                        and <a href="#" class="text-decoration-none">Privacy Policy</a>. I understand that I get a 30-day free trial with full access.
                                     </label>
                                 </div>
                             </div>
-
-                            <!-- Submit Button -->
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                                <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn">
                                     <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
-                                    Create My School
+                                    {% if request.user.is_authenticated %}
+                                        Create School
+                                    {% else %}
+                                        Create Account & School
+                                    {% endif %}
                                 </button>
                             </div>
-
-                            <div class="text-center mt-3">
-                                <small class="text-muted">
-                                    By creating a school, you'll get instant access to all features with a 30-day free trial.
-                                </small>
-                            </div>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
-
-                <!-- Benefits Section -->
-                <div class="row mt-5">
-                    <div class="col-md-4 text-center">
-                        <div class="text-primary mb-2">
-                            <i class="fas fa-bolt fa-2x"></i>
-                        </div>
-                        <h5>Instant Setup</h5>
-                        <p class="text-muted small">Your school is ready in minutes with automated configuration</p>
+            </div>
+            
+            <!-- Benefits Section -->
+            <div class="row mt-5">
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 d-inline-block mb-3">
+                        <i class="bi bi-lightning fs-4"></i>
                     </div>
-                    <div class="col-md-4 text-center">
-                        <div class="text-primary mb-2">
-                            <i class="fas fa-graduation-cap fa-2x"></i>
-                        </div>
-                        <h5>Complete Features</h5>
-                        <p class="text-muted small">Students, parents, attendance, scores, fees, and more</p>
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <div class="text-primary mb-2">
-                            <i class="fas fa-shield-alt fa-2x"></i>
-                        </div>
-                        <h5>White-label</h5>
-                        <p class="text-muted small">Your branding, your colors - parents see only your school</p>
-                    </div>
+                    <h5>Instant Setup</h5>
+                    <p class="text-muted small">Your school is ready in minutes with automated configuration</p>
                 </div>
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 d-inline-block mb-3">
+                        <i class="bi bi-graph-up fs-4"></i>
+                    </div>
+                    <h5>Complete Features</h5>
+                    <p class="text-muted small">Students, parents, attendance, scores, fees, and more</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 d-inline-block mb-3">
+                        <i class="bi bi-shield-check fs-4"></i>
+                    </div>
+                    <h5>White-label</h5>
+                    <p class="text-muted small">Your branding, your colors - parents see only your school</p>
+                </div>
+            </div>
+            
+            <!-- Alternative Option -->
+            <div class="text-center mt-5">
+                <p class="text-muted">
+                    Want to join an existing school instead? 
+                    <a href="{% url 'school_discovery' %}" class="text-decoration-none">Browse schools</a> or 
+                    <a href="{% url 'users:school_list' %}" class="text-decoration-none">view your schools</a>
+                </p>
             </div>
         </div>
     </div>
@@ -307,73 +292,123 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('schoolOnboardingForm');
-    const subdomainInput = document.getElementById('id_subdomain');
+    const subdomainInput = document.getElementById('subdomain');
     const subdomainFeedback = document.getElementById('subdomain-feedback');
     const submitBtn = document.getElementById('submitBtn');
     const spinner = submitBtn.querySelector('.spinner-border');
+    const passwordInput = document.getElementById('admin_password');
+    const confirmPasswordInput = document.getElementById('admin_password_confirm');
 
-    // Real-time subdomain validation
+    // Password validation
+    if (passwordInput && confirmPasswordInput) {
+        function validatePassword() {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+                confirmPasswordInput.setCustomValidity("Passwords don't match");
+                confirmPasswordInput.classList.add('is-invalid');
+            } else {
+                confirmPasswordInput.setCustomValidity('');
+                confirmPasswordInput.classList.remove('is-invalid');
+            }
+        }
+        
+        passwordInput.addEventListener('change', validatePassword);
+        confirmPasswordInput.addEventListener('keyup', validatePassword);
+    }
+
+    // Subdomain validation
     subdomainInput.addEventListener('input', function() {
         const subdomain = this.value.trim();
         
+        // Clear previous feedback
+        subdomainFeedback.innerHTML = '';
+        this.classList.remove('is-invalid', 'is-valid');
+        
         if (subdomain.length === 0) {
-            subdomainFeedback.innerHTML = '<small class="text-muted">Using path-based URL</small>';
+            return;
+        }
+
+        // Validate format
+        const subdomainRegex = /^[a-zA-Z0-9-]+$/;
+        if (!subdomainRegex.test(subdomain)) {
+            subdomainFeedback.innerHTML = '<span class="text-danger">Only letters, numbers, and hyphens allowed</span>';
+            this.classList.add('is-invalid');
             return;
         }
 
         if (subdomain.length < 3) {
-            subdomainFeedback.innerHTML = '<small class="text-warning">Subdomain must be at least 3 characters</small>';
+            subdomainFeedback.innerHTML = '<span class="text-warning">Must be at least 3 characters</span>';
+            this.classList.add('is-invalid');
             return;
         }
 
-        // Check availability via AJAX
-        fetch(`/users/onboarding/check-subdomain/?subdomain=${encodeURIComponent(subdomain)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.available) {
-                    subdomainFeedback.innerHTML = '<small class="text-success">✓ Subdomain available</small>';
-                } else {
-                    let message = '<small class="text-danger">✗ Subdomain not available</small>';
-                    if (data.suggestions && data.suggestions.length > 0) {
-                        message += `<br><small class="text-muted">Suggestions: ${data.suggestions.join(', ')}</small>`;
-                    }
-                    subdomainFeedback.innerHTML = message;
-                }
-            })
-            .catch(error => {
-                console.error('Subdomain check failed:', error);
-            });
+        if (subdomain.length > 30) {
+            subdomainFeedback.innerHTML = '<span class="text-warning">Maximum 30 characters</span>';
+            this.classList.add('is-invalid');
+            return;
+        }
+
+        // Check reserved words
+        const reserved = ['admin', 'api', 'app', 'dashboard', 'help', 'support', 'www', 'mail', 'ftp'];
+        if (reserved.includes(subdomain.toLowerCase())) {
+            subdomainFeedback.innerHTML = '<span class="text-danger">This subdomain is reserved</span>';
+            this.classList.add('is-invalid');
+            return;
+        }
+
+        // Show checking message
+        subdomainFeedback.innerHTML = '<span class="text-muted">Checking availability...</span>';
+
+        // Simulate API check (you'd implement real API call)
+        setTimeout(() => {
+            // For demo, assume available if contains 'demo'
+            const isAvailable = !subdomain.includes('taken');
+            
+            if (isAvailable) {
+                subdomainFeedback.innerHTML = '<span class="text-success">✓ Subdomain available</span>';
+                this.classList.add('is-valid');
+            } else {
+                subdomainFeedback.innerHTML = '<span class="text-danger">✗ Subdomain not available. Try adding numbers or different words.</span>';
+                this.classList.add('is-invalid');
+            }
+        }, 500);
     });
 
-    // Form submission handling
+    // Form submission
     form.addEventListener('submit', function(e) {
-        const Terms = document.getElementById('_terms');
-        if (!Terms.checked) {
+        // Validate terms agreement
+        const termsCheckbox = document.getElementById('agree_terms');
+        if (!termsCheckbox.checked) {
             e.preventDefault();
-            alert('Please agree to the Terms of Service to continue.');
-            return;
+            alert('Please agree to the Terms of Service and Privacy Policy');
+            return false;
         }
 
-        // Show loading state
+        // Validate passwords match
+        if (passwordInput && confirmPasswordInput) {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+                e.preventDefault();
+                alert('Passwords do not match');
+                return false;
+            }
+        }
+
+        // Show loading spinner
         submitBtn.disabled = true;
         spinner.classList.remove('d-none');
-        submitBtn.innerHTML = 'Creating Your School...';
     });
 
-    // Password confirmation validation
-    const password = document.getElementById('id_admin_password');
-    const confirmPassword = document.getElementById('id_admin_password_confirm');
-    
-    function validatePassword() {
-        if (password.value !== confirmPassword.value) {
-            confirmPassword.setCustomValidity("Passwords don't match");
-        } else {
-            confirmPassword.setCustomValidity('');
-        }
+    // Bank account number validation
+    const accountNumberInput = document.getElementById('account_number');
+    if (accountNumberInput) {
+        accountNumberInput.addEventListener('input', function() {
+            const value = this.value.replace(/\D/g, '');
+            if (value.length > 10) {
+                this.value = value.substring(0, 10);
+            } else {
+                this.value = value;
+            }
+        });
     }
-
-    password.addEventListener('input', validatePassword);
-    confirmPassword.addEventListener('input', validatePassword);
 });
 </script>
 {% endblock %}
