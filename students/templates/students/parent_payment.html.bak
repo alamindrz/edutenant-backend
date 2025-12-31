@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load static humanize %}
 
-{% block title %}Pay Fees - Edutenant{% endblock %}
+{% block title %}Pay Fees - Edusuite{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">

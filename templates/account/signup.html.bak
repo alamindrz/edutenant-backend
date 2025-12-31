@@ -1,7 +1,7 @@
 <!-- templates/account/signup.html -->
 {% extends "base.html" %}
 
-{% block title %}Sign Up - Edutenant{% endblock %}
+{% block title %}Sign Up - Edusuite{% endblock %}
 
 {% block content %}
 <div class="signup-container">

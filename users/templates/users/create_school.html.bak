@@ -1,7 +1,7 @@
 <!-- templates/users/create_school.html -->
 {% extends "base.html" %}
 
-{% block title %}Create School - Edutenant{% endblock %}
+{% block title %}Create School - Edusuite{% endblock %}
 
 {% block content %}
 <div class="form-container">

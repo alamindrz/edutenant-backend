@@ -64,7 +64,7 @@ class PaystackService:
             headers = {
                 'Authorization': f'Bearer {self.secret_key}',
                 'Content-Type': 'application/json',
-                'User-Agent': 'Edutenant/1.0'
+                'User-Agent': 'Edusuite/1.0'
             }
 
             logger.debug(f"Paystack {method} {endpoint} - Attempt {retry_count + 1}")

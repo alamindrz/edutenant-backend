@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}My Schools - Edutenant{% endblock %}
+{% block title %}My Schools - Edusuite{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">

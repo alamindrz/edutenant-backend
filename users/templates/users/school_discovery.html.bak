@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Discover Schools - Edutenant{% endblock %}
+{% block title %}Discover Schools - Edusuite{% endblock %}
 
 {% block page_title %}Discover Schools{% endblock %}
 

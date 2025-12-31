@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load static humanize %}
 
-{% block title %}Parent Dashboard - Edutenant{% endblock %}
+{% block title %}Parent Dashboard - Edusuite{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
