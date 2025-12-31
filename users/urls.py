@@ -24,6 +24,9 @@ urlpatterns = [
     path('schools/onboarding/',
          views.school_onboarding_start, name='school_onboarding'),
 
+    path('onboarding/check-subdomain/', views.check_subdomain_availability, name='check_subdomain'),
+    
+
     # ============ STAFF MANAGEMENT ============
     path('staff/', views.staff_list_view, name='staff_list'),
     path('staff/create/', views.staff_create_view, name='staff_create'),

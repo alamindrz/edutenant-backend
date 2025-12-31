@@ -16,7 +16,7 @@ urlpatterns = [
     # Public routes
     # ----------------------------------------------------------------
     path("", views.home_view, name="home"),
-    path("discover/", views.school_discovery_view, name="school_discovery"),
+    path("discover/", views.school_discovery_view, name="school_feed"),
     path(
         "schools/<int:school_id>/",
         views.school_overview_view,

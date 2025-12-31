@@ -1,6 +1,6 @@
 # settings/billing.py
 """
-Billing and Paystack configuration for Edutenant.
+Billing and Paystack configuration for Edusuite.
 """
 
 import os

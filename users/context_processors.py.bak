@@ -98,7 +98,7 @@ def navigation_context(request):
             context['school_stats'] = {}
 
     # Add site-wide settings
-    context['site_name'] = getattr(settings, 'SITE_NAME', 'Edutenant')
+    context['site_name'] = getattr(settings, 'SITE_NAME', 'Edusuite')
     context['support_email'] = getattr(settings, 'SUPPORT_EMAIL', 'support@edusuite.com')
     context['debug'] = settings.DEBUG
 

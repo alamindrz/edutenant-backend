@@ -1,6 +1,6 @@
 # config/wsgi.py
 """
-WSGI config for Edusuite project.
+WSGI config for Edutenant project.
 """
 
 import os

@@ -1,6 +1,6 @@
 # settings/base.py - FIXED
 """
-Base settings for Edusuite project.
+Base settings for Edutenant project.
 """
 
 import os
@@ -187,8 +187,8 @@ if os.getenv('DEBUG', 'True').lower() == 'true':
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOWED_ORIGINS = [
-        "https://edusuite.com",
-        "https://*.edusuite.com",
+        "https://edutenant.com",
+        "https://*.edutenant.com",
     ]
 
 ALLOWED_HOSTS = [
@@ -210,7 +210,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Console for 
 # EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 # EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 # EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Edusuite <noreply@edusuite.com>')
+# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Edutenant <noreply@edutenant.com>')
 
 # Paystack Configuration
 PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', '')
@@ -229,7 +229,7 @@ CACHES = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Use db for now
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_NAME = 'edusuite_session'
+SESSION_COOKIE_NAME = 'edutenant_session'
 SESSION_SAVE_EVERY_REQUEST = True  # Helpful for session updates
 
 # Security settings (base - will be overridden in production)

@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Create Your School - Edutenant{% endblock %}
+{% block title %}Create Your School - Edusuite{% endblock %}
 
 {% block page_title %}Create Your School{% endblock %}
 {% block page_subtitle %}Transform your school into a digital institution in minutes{% endblock %}

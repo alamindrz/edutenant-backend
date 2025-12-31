@@ -348,8 +348,8 @@ function followSchool(schoolId, button) {
 function shareSchool(schoolId) {
     if (navigator.share) {
         navigator.share({
-            title: 'Check out this school on Edutenant',
-            text: 'I found an interesting school on Edutenant!',
+            title: 'Check out this school on Edusuite',
+            text: 'I found an interesting school on Edusuite!',
             url: window.location.href,
         });
     } else {

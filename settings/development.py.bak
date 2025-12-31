@@ -1,6 +1,6 @@
 # settings/development.py
 """
-Development settings for Edutenant project.
+Development settings for Edusuite project.
 """
 from .base import *
 import os

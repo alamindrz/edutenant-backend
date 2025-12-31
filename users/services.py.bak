@@ -141,7 +141,7 @@ class EmailService:
     def send_welcome_email(school, admin_user):
         """Send welcome email to school admin."""
         try:
-            subject = f"Welcome to Edutenant - {school.name} is Ready!"
+            subject = f"Welcome to Edusuite - {school.name} is Ready!"
 
             context = {
                 'school': school,

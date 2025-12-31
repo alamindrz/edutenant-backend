@@ -14,14 +14,14 @@
 </head>
 <body>
     <div class="header">
-        <h1>🎉 Welcome to Edutenant!</h1>
+        <h1>🎉 Welcome to Edusuite!</h1>
         <p>Your school <strong>{{ school.name }}</strong> is now live</p>
     </div>
     
     <div class="content">
         <h2>Hello {{ admin_user.first_name|default:admin_user.email }},</h2>
         
-        <p>Congratulations! Your school has been successfully set up on Edutenant and is ready to use.</p>
+        <p>Congratulations! Your school has been successfully set up on Edusuite and is ready to use.</p>
         
         <div class="info-box">
             <h3>🚀 Quick Start Information</h3>
@@ -49,7 +49,7 @@
     </div>
     
     <div class="footer">
-        <p>&copy; {% now "Y" %} Edutenant. All rights reserved.</p>
+        <p>&copy; {% now "Y" %} Edusuite. All rights reserved.</p>
         <p>Transform your school into a digital institution</p>
     </div>
 </body>

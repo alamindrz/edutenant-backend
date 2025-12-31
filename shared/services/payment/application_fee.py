@@ -110,10 +110,11 @@ class ApplicationPaymentService:
                 from django.db import models
                 invoice = type('Invoice', (), {
                     'id': 0,
+                    'total_amount': fee_amount,  # Changed from 'amount' to match PaystackService
+                    'invoice_number': f"APP-FEE-{timezone.now().strftime('%Y%m%d%H%M')}",
                     'metadata': {},
                     'save': lambda self: None
                 })()
-                invoice.metadata = {}
 
             # 5. Store metadata in invoice for later use
             invoice.metadata = {
