@@ -68,7 +68,7 @@ LOGGING = {
             'style': '{',
         },
         'json': {
-            'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "module": "%(module)s", "message": "%(message)s", "webhook_id": "%(webhook_id)s"}',
+            'format': '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "module": "%(module)s", "message": "%(message)s"}',
         },
     },
     'handlers': {
